@@ -1,0 +1,107 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Products</h1>
+      <p>
+        @if (loading()) {
+          Loading the shelf...
+        } @else {
+          {{ visible().length }} of {{ items().length }} products
+        }
+      </p>
+    </div>
+
+    @if (auth.canManageItems()) {
+      <a routerLink="/products/new" class="btn btn-primary"><i class="fas fa-plus"></i> Add product</a>
+    }
+  </div>
+
+  <!-- Search, sort and category filters -->
+  <div class="toolbar">
+    <div class="search">
+      <i class="fas fa-magnifying-glass"></i>
+      <input #search type="search" class="form-control" placeholder="Search by name, code, or description"
+             [value]="searchTerm()" (input)="searchTerm.set(search.value)" aria-label="Search products" />
+    </div>
+    <select #sortBox class="custom-select sort" aria-label="Sort products"
+            (change)="sort.set($any(sortBox.value))">
+      @for (option of sortOptions; track option.value) {
+        <option [value]="option.value" [selected]="option.value === sort()">{{ option.label }}</option>
+      }
+    </select>
+  </div>
+
+  @if (categories().length > 1) {
+    <div class="chips" role="group" aria-label="Filter by category">
+      <button type="button" [class.on]="category() === ''" (click)="category.set('')">All</button>
+      @for (name of categories(); track name) {
+        <button type="button" [class.on]="category() === name" (click)="category.set(name)">{{ name }}</button>
+      }
+    </div>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+
+  <div class="grid">
+    @if (loading()) {
+      @for (n of [1, 2, 3, 4, 5, 6, 7, 8]; track n) {
+        <div class="product skeleton" aria-hidden="true"></div>
+      }
+    } @else {
+      @for (item of visible(); track item.itemId) {
+        <article class="product" [class.is-out]="isOut(item)">
+          <a class="product-link" [routerLink]="['/products', item.itemId]">
+            <span class="photo">
+              <img [src]="image(item)" [alt]="item.itemName" loading="lazy" (error)="onImageError($event)" />
+              @if (discount(item) !== null) {
+                <span class="off">{{ discount(item) }}% off</span>
+              }
+            </span>
+            @if (item.category) {
+              <span class="category">{{ item.category }}</span>
+            }
+            <span class="name">{{ item.itemName }}</span>
+            <span class="price">
+              @if (item.sellingPrice != null) {
+                Nu. {{ item.sellingPrice | number: '1.2-2' }}
+              } @else {
+                Price on request
+              }
+              @if (discount(item) !== null) {
+                <s>Nu. {{ item.mrp | number: '1.2-2' }}</s>
+              }
+            </span>
+            @if (stockText(item)) {
+              <span class="stock" [class]="'stock ' + stockClass(item)">{{ stockText(item) }}</span>
+            }
+          </a>
+
+          <div class="actions">
+            <button type="button" class="btn btn-primary btn-sm add" [disabled]="isOut(item)" (click)="addToCart(item)">
+              <i class="fas fa-bag-shopping"></i> {{ isOut(item) ? 'Sold out' : 'Add to cart' }}
+            </button>
+            @if (auth.isStaff() && item.sku) {
+              <a class="btn btn-secondary btn-sm" routerLink="/restock"
+                 [queryParams]="{ sku: item.sku, itemName: item.itemName }" title="Restock this item">
+                <i class="fas fa-boxes-stacked"></i>
+                <span class="sr-only">Restock</span>
+              </a>
+            }
+          </div>
+        </article>
+      } @empty {
+        @if (!error()) {
+          <div class="none">
+            <i class="fas fa-box-open"></i>
+            <h2>No products found</h2>
+            <p>Try a different word, or clear the filters to see everything.</p>
+            <button type="button" class="btn btn-outline-primary" (click)="clearFilters()">Clear filters</button>
+          </div>
+        }
+      }
+    }
+  </div>
+</div>
+

@@ -1,0 +1,96 @@
+.done {
+  display: flex;
+  justify-content: center;
+}
+
+.card-done {
+  width: 100%;
+  max-width: 600px;
+  padding: 44px 32px 36px;
+  text-align: center;
+}
+
+.tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 10px var(--green-soft);
+  color: #fff;
+  font-size: 1.8rem;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 2rem;
+}
+
+.lead {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.lead strong {
+  color: var(--ink);
+}
+
+.next {
+  margin: 0 0 30px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--wash);
+  list-style: none;
+  text-align: left;
+}
+
+.next li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 10px 0;
+}
+
+.next li + li {
+  border-top: 1px solid var(--line);
+}
+
+.n {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--saffron);
+  color: #2b1d00;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.next strong {
+  display: block;
+}
+
+.next li span:not(.n) {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .card-done {
+    padding: 32px 18px 26px;
+  }
+}

@@ -1,0 +1,115 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Contact us</h1>
+      <p>A question about an order, a product, or anything else? Send us a message.</p>
+    </div>
+  </div>
+
+  <div class="contact">
+    <!-- ============ How to reach us ============ -->
+    <aside class="panel info">
+      <h2>Get in touch</h2>
+
+      <ul>
+        <li>
+          <span class="icon"><i class="fas fa-phone"></i></span>
+          <div>
+            <span class="label">Phone</span>
+            <a href="tel:77269712">77269712</a>
+            <a href="tel:17941806">17941806</a>
+            <a href="tel:77803506">77803506</a>
+          </div>
+        </li>
+        <li>
+          <span class="icon"><i class="fas fa-envelope"></i></span>
+          <div>
+            <span class="label">Email</span>
+            <a href="mailto:dikbdrghalley12&#64;gmail.com">dikbdrghalley12&#64;gmail.com</a>
+          </div>
+        </li>
+        <li>
+          <span class="icon"><i class="fas fa-location-dot"></i></span>
+          <div>
+            <span class="label">Address</span>
+            <span>Thimphu, Bhutan</span>
+          </div>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- ============ The message ============ -->
+    <section class="panel message">
+      @if (done()) {
+        <div class="sent" role="status">
+          <span class="tick"><i class="fas fa-check"></i></span>
+          <h2>Message sent</h2>
+          <p>
+            Thank you@if (form.name) {, {{ form.name.split(' ')[0] }}}. We have your message
+            and will reply to <strong>{{ form.email }}</strong>.
+          </p>
+          <div class="sent-actions">
+            <button type="button" class="btn btn-primary" (click)="sendAnother()">Send another message</button>
+            <a routerLink="/orders" class="btn btn-secondary">My orders</a>
+          </div>
+        </div>
+      } @else {
+        <h2>Send us a message</h2>
+
+        @if (orderRef(); as ref) {
+          <p class="about-order"><i class="fas fa-receipt"></i> You are writing about order #{{ ref }}.</p>
+        }
+
+        <form (ngSubmit)="submit()" novalidate>
+          <div class="two">
+            <div class="field">
+              <label for="name">Your name</label>
+              <input id="name" name="name" type="text" class="form-control" autocomplete="name"
+                     [class.is-invalid]="submitted() && errors().name" [(ngModel)]="form.name" />
+              @if (submitted() && errors().name) {
+                <p class="err">{{ errors().name }}</p>
+              }
+            </div>
+
+            <div class="field">
+              <label for="email">Your email</label>
+              <input id="email" name="email" type="email" class="form-control" autocomplete="email"
+                     [class.is-invalid]="submitted() && errors().email" [(ngModel)]="form.email" />
+              @if (submitted() && errors().email) {
+                <p class="err">{{ errors().email }}</p>
+              }
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="6" class="form-control"
+                      placeholder="How can we help?"
+                      [class.is-invalid]="submitted() && errors().message" [(ngModel)]="form.message"></textarea>
+            @if (submitted() && errors().message) {
+              <p class="err">{{ errors().message }}</p>
+            }
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg send" [disabled]="sending()">
+            @if (sending()) {
+              <span class="spinner-border spinner-border-sm" role="status"></span> Sending...
+            } @else {
+              <i class="fas fa-paper-plane"></i> Send message
+            }
+          </button>
+        </form>
+      }
+    </section>
+  </div>
+
+  <!-- ============ Map ============ -->
+  <div class="map panel">
+    <iframe
+      title="Our location on the map"
+      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d8839.703143697567!2d89.63593241401117!3d27.462254127445924!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39e195393b0315c5%3A0x4ef0b864bcbc47f8!2sChangzamtog!5e0!3m2!1sen!2sbt!4v1767084097406!5m2!1sen!2sbt"
+      allowfullscreen=""
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </div>
+</div>

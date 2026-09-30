@@ -1,0 +1,154 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Orders</h1>
+      <p>Confirm payments, ship orders and follow them to delivery.</p>
+    </div>
+
+    <div class="seg" role="tablist" aria-label="Which orders to show">
+      <button type="button" role="tab" [attr.aria-selected]="view() === 'needs-action'"
+              [class.on]="view() === 'needs-action'" (click)="view.set('needs-action'); statusFilter.set('')">
+        Needs action ({{ needsActionCount() }})
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="view() === 'all'"
+              [class.on]="view() === 'all'" (click)="view.set('all'); statusFilter.set('')">
+        All orders ({{ orders().length }})
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search">
+      <i class="fas fa-magnifying-glass"></i>
+      <input #search type="search" class="form-control" placeholder="Search by order number, customer name or email"
+             [value]="searchTerm()" (input)="searchTerm.set(search.value)" aria-label="Search orders" />
+    </div>
+    <select #statusBox class="custom-select" aria-label="Filter by status" (change)="statusFilter.set(statusBox.value)">
+      @for (option of statusOptions; track option.value) {
+        <option [value]="option.value" [selected]="option.value === statusFilter()">{{ option.label }}</option>
+      }
+    </select>
+    <select #sortBox class="custom-select" aria-label="Sort orders" (change)="sortOrder.set($any(sortBox.value))">
+      <option value="desc" [selected]="sortOrder() === 'desc'">Newest first</option>
+      <option value="asc" [selected]="sortOrder() === 'asc'">Oldest first</option>
+    </select>
+  </div>
+
+  @if (loading()) {
+    <p class="note">Loading orders...</p>
+  } @else if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  } @else {
+    @for (order of filtered(); track order.orderId) {
+      <article class="order panel">
+        <header class="head">
+          <div class="who">
+            <h2>Order #{{ order.orderId }}</h2>
+            <span class="customer">{{ order.customerName || 'Unknown customer' }}</span>
+            <span class="contact">
+              {{ order.customerEmail || 'No email' }}@if (order.customerPhone) {, {{ order.customerPhone }}}
+            </span>
+          </div>
+          <div class="pills">
+            <span [class]="'pill ' + orderPill(order.orderStatus)">{{ orderLabel(order.orderStatus) }}</span>
+            <span [class]="'pill ' + paymentPill(order.paymentStatus)">Payment: {{ paymentLabel(order.paymentStatus) }}</span>
+          </div>
+        </header>
+
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="num">Qty</th>
+                <th class="num">In stock</th>
+                <th class="num">Price</th>
+                <th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of order.items || []; track $index) {
+                <tr>
+                  <td>{{ item.itemName || 'Deleted item' }}@if (item.uom) { <span class="uom">({{ item.uom }})</span> }</td>
+                  <td class="num">{{ item.quantityOrdered || 0 }}</td>
+                  <td class="num" [class.short]="short(item)">
+                    {{ item.stockAvailable || 0 }}
+                    @if (short(item)) { <i class="fas fa-triangle-exclamation" title="Not enough stock"></i> }
+                  </td>
+                  <td class="num">Nu. {{ item.unitPrice || 0 | number: '1.2-2' }}</td>
+                  <td class="num strong">Nu. {{ lineTotal(item) | number: '1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <footer class="foot">
+          <div class="meta">
+            <span>Placed {{ order.createdAt ? (order.createdAt | date: 'd MMM y, h:mm a') : 'at an unknown time' }}</span>
+            <strong>Total Nu. {{ order.totalAmount | number: '1.2-2' }}</strong>
+          </div>
+
+          <div class="actions">
+            @if (order.paymentStatus === 'PENDING' || order.paymentStatus === 'PARTIALLY_PAID') {
+              @if (auth.can('payments.verify')) {
+                <button type="button" class="btn btn-primary btn-sm" [disabled]="busyId() === order.orderId" (click)="confirmPayment(order)">
+                  Confirm payment
+                </button>
+              } @else {
+                <span class="view-only">Waiting for a payment check</span>
+              }
+            } @else if (order.paymentStatus === 'PAID' && order.orderStatus === 'CREATED') {
+              @if (!auth.can('orders.fulfil')) {
+                <span class="view-only">Ready to confirm</span>
+              } @else if (allInStock(order)) {
+                <button type="button" class="btn btn-primary btn-sm" [disabled]="busyId() === order.orderId" (click)="confirmOrder(order)">
+                  Confirm order
+                </button>
+              } @else {
+                <span class="warn"><i class="fas fa-triangle-exclamation"></i> Not enough stock</span>
+                <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="busyId() === order.orderId" (click)="cancelOrder(order)">
+                  Cancel order
+                </button>
+              }
+            } @else if (order.orderStatus === 'CONFIRMED') {
+              @if (auth.can('orders.fulfil')) {
+                <button type="button" class="btn btn-primary btn-sm" [disabled]="busyId() === order.orderId" (click)="shipOrder(order)">
+                  Ship order
+                </button>
+              } @else {
+                <span class="view-only">Ready to ship</span>
+              }
+            } @else if (order.orderStatus === 'SHIPPED') {
+              @if (auth.can('orders.fulfil')) {
+                <button type="button" class="btn btn-primary btn-sm" [disabled]="busyId() === order.orderId" (click)="completeOrder(order)">
+                  Mark delivered
+                </button>
+              } @else {
+                <span class="view-only">On its way</span>
+              }
+            }
+          </div>
+        </footer>
+      </article>
+    } @empty {
+      <div class="empty panel">
+        <i class="fas fa-circle-check"></i>
+        <h2>
+          @if (view() === 'needs-action' && !searchTerm() && !statusFilter()) {
+            You are all caught up
+          } @else {
+            No orders match
+          }
+        </h2>
+        <p>
+          @if (view() === 'needs-action' && !searchTerm() && !statusFilter()) {
+            No order needs your attention right now.
+          } @else {
+            Try a different search or status, or look at all orders.
+          }
+        </p>
+      </div>
+    }
+  }
+</div>

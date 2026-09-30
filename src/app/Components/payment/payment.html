@@ -1,0 +1,191 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Checkout</h1>
+      <p>Check your order, choose how to pay, and place it.</p>
+    </div>
+  </div>
+
+  <div class="co">
+    <!-- ============ Left: what we need from you ============ -->
+    <div class="co-main">
+      @if (mode === 'buyNow') {
+        <section class="step panel">
+          <h2><span class="num">1</span> Delivery details</h2>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="billingName">Full name</label>
+              <input id="billingName" type="text" class="form-control" [class.is-invalid]="submitted() && errors().name"
+                     [(ngModel)]="billing.name" name="billingName" autocomplete="name" />
+              @if (submitted() && errors().name) {
+                <p class="err">{{ errors().name }}</p>
+              }
+            </div>
+            <div class="field">
+              <label for="billingPhone">Phone number</label>
+              <input id="billingPhone" type="tel" inputmode="numeric" class="form-control" placeholder="8 digits"
+                     [class.is-invalid]="submitted() && errors().phone" [(ngModel)]="billing.phone" name="billingPhone"
+                     autocomplete="tel" />
+              @if (submitted() && errors().phone) {
+                <p class="err">{{ errors().phone }}</p>
+              }
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="billingAddress">Delivery address</label>
+            <textarea id="billingAddress" rows="3" class="form-control" placeholder="House, street, town"
+                      [class.is-invalid]="submitted() && errors().address" [(ngModel)]="billing.address"
+                      name="billingAddress" autocomplete="street-address"></textarea>
+            @if (submitted() && errors().address) {
+              <p class="err">{{ errors().address }}</p>
+            }
+          </div>
+        </section>
+      }
+
+      <section class="step panel">
+        <h2><span class="num">{{ paymentStepNumber }}</span> Payment method</h2>
+
+        <div class="methods" role="radiogroup" aria-label="Payment method">
+          <button type="button" role="radio" class="method" [class.on]="paymentMethod() === 'cod'"
+                  [attr.aria-checked]="paymentMethod() === 'cod'" (click)="paymentMethod.set('cod')">
+            <i class="fas fa-hand-holding-dollar"></i>
+            <span>
+              <strong>Cash on delivery</strong>
+              <small>Pay when your order arrives.</small>
+            </span>
+          </button>
+          <button type="button" role="radio" class="method" [class.on]="paymentMethod() === 'bank'"
+                  [attr.aria-checked]="paymentMethod() === 'bank'" (click)="paymentMethod.set('bank')">
+            <i class="fas fa-building-columns"></i>
+            <span>
+              <strong>Bank transfer</strong>
+              <small>Pay now with mobile banking.</small>
+            </span>
+          </button>
+        </div>
+
+        @if (paymentMethod() === 'bank') {
+          <div class="bank">
+            <div class="bank-details">
+              <h3>Send Nu. {{ amount | number: '1.2-2' }} to</h3>
+              <dl>
+                <div><dt>Account name</dt><dd>{{ account.name }}</dd></div>
+                <div>
+                  <dt>Account number</dt>
+                  <dd>
+                    {{ account.number }}
+                    <button type="button" class="copy" (click)="copy(account.number, 'Account number')">
+                      <i class="fas fa-copy"></i> Copy
+                    </button>
+                  </dd>
+                </div>
+                <div><dt>Bank</dt><dd>{{ account.bank }}</dd></div>
+                <div>
+                  <dt>Reference</dt>
+                  <dd>
+                    @if (mode === 'order') {
+                      Order #{{ orderId }}
+                    } @else {
+                      Your full name
+                    }
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div class="qr">
+              <img src="Images/QR.jpeg" alt="Bank QR code" />
+              <span>Scan to pay</span>
+            </div>
+          </div>
+
+          <div class="field journal">
+            <label for="journalNumber">Journal number from your receipt</label>
+            <input id="journalNumber" type="text" class="form-control" placeholder="e.g. TXN20260109ABC"
+                   [class.is-invalid]="submitted() && errors().journal" [(ngModel)]="journalNumber" name="journalNumber" />
+            @if (submitted() && errors().journal) {
+              <p class="err">{{ errors().journal }}</p>
+            } @else {
+              <p class="hint">We use this to check your payment. You can also send the receipt to us by email or WhatsApp.</p>
+            }
+          </div>
+        }
+      </section>
+    </div>
+
+    <!-- ============ Right: the order and the button ============ -->
+    <aside class="summary panel" aria-label="Order summary">
+      <h2>Order summary</h2>
+
+      @if (mode === 'order') {
+        <p class="order-no">Order #{{ orderId }}</p>
+        <ul class="lines">
+          @for (line of orderItems(); track $index) {
+            <li>
+              <img [src]="image(line)" [alt]="line.itemName || 'Item'" />
+              <span class="l-name">{{ line.itemName || 'Item' }}<small>x {{ line.quantity }}</small></span>
+              <span class="l-total">Nu. {{ lineTotal(line) | number: '1.2-2' }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        @if (item(); as it) {
+          <ul class="lines">
+            <li>
+              <img [src]="buyNowImage(it)" [alt]="it.itemName" />
+              <span class="l-name">{{ it.itemName }}<small>Nu. {{ price() | number: '1.2-2' }} each</small></span>
+              <span class="l-total">Nu. {{ amount | number: '1.2-2' }}</span>
+            </li>
+          </ul>
+
+          @if (stock() > 0) {
+            <div class="qty">
+              <span>Quantity</span>
+              <div class="stepper">
+                <button type="button" (click)="changeQty(-1)" [disabled]="quantity() <= 1" aria-label="One less"><i class="fas fa-minus"></i></button>
+                <input #qty type="number" min="1" [max]="stock()" [value]="quantity()" (change)="onQtyInput(qty)" aria-label="Quantity" />
+                <button type="button" (click)="changeQty(1)" [disabled]="quantity() >= stock()" aria-label="One more"><i class="fas fa-plus"></i></button>
+              </div>
+              <small>{{ stock() }} available</small>
+            </div>
+          } @else {
+            <p class="err">This item is out of stock.</p>
+          }
+        } @else if (loadError()) {
+          <div class="alert alert-danger">{{ loadError() }}</div>
+        } @else {
+          <p class="hint">Loading your item...</p>
+        }
+      }
+
+      <div class="total">
+        <span>Total to pay</span>
+        <strong>Nu. {{ amount | number: '1.2-2' }}</strong>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-lg place" (click)="submit()"
+              [disabled]="submitting() || (mode === 'buyNow' && (!item() || stock() <= 0))">
+        @if (submitting()) {
+          <span class="spinner-border spinner-border-sm" role="status"></span> Placing your order...
+        } @else {
+          <i class="fas fa-lock"></i> Place order
+        }
+      </button>
+
+      <p class="after">
+        @if (paymentMethod() === 'bank') {
+          We check your transfer before we ship your order.
+        } @else {
+          You pay in cash when your order arrives.
+        }
+      </p>
+
+      <a class="back" [routerLink]="mode === 'order' ? '/cart' : '/products'">
+        <i class="fas fa-arrow-left"></i> {{ mode === 'order' ? 'Back to cart' : 'Back to products' }}
+      </a>
+    </aside>
+  </div>
+</div>

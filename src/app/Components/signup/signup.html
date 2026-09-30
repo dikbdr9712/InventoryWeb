@@ -1,0 +1,78 @@
+<app-auth-layout title="Create your account" subtitle="It takes a minute. You can order right after.">
+  <form (ngSubmit)="submit()" novalidate>
+    @if (formError()) {
+      <div class="alert alert-danger" role="alert">{{ formError() }}</div>
+    }
+
+    <div class="auth-field">
+      <label for="name">Full name</label>
+      <input id="name" name="name" type="text" class="form-control" autocomplete="name"
+             [class.is-invalid]="submitted() && errors().name" [(ngModel)]="form.name" />
+      @if (submitted() && errors().name) {
+        <p class="auth-err">{{ errors().name }}</p>
+      }
+    </div>
+
+    <div class="auth-two">
+      <div class="auth-field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" class="form-control" autocomplete="email"
+               [class.is-invalid]="submitted() && errors().email" [(ngModel)]="form.email" />
+        @if (submitted() && errors().email) {
+          <p class="auth-err">{{ errors().email }}</p>
+        }
+      </div>
+
+      <div class="auth-field">
+        <label for="phone">Phone number</label>
+        <input id="phone" name="phone" type="tel" inputmode="numeric" placeholder="8 digits" class="form-control"
+               autocomplete="tel" [class.is-invalid]="submitted() && errors().phone" [(ngModel)]="form.phone" />
+        @if (submitted() && errors().phone) {
+          <p class="auth-err">{{ errors().phone }}</p>
+        }
+      </div>
+    </div>
+
+    <div class="auth-two">
+      <div class="auth-field">
+        <label for="password">Password</label>
+        <div class="pw">
+          <input id="password" name="password" class="form-control" autocomplete="new-password"
+                 [type]="showPassword() ? 'text' : 'password'"
+                 [class.is-invalid]="submitted() && errors().password" [(ngModel)]="form.password" />
+          <button type="button" (click)="showPassword.set(!showPassword())" [attr.aria-pressed]="showPassword()">
+            {{ showPassword() ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+        @if (submitted() && errors().password) {
+          <p class="auth-err">{{ errors().password }}</p>
+        } @else {
+          <p class="auth-hint">At least 6 characters.</p>
+        }
+      </div>
+
+      <div class="auth-field">
+        <label for="confirm">Confirm password</label>
+        <input id="confirm" name="confirm" class="form-control" autocomplete="new-password"
+               [type]="showPassword() ? 'text' : 'password'"
+               [class.is-invalid]="submitted() && errors().confirm" [(ngModel)]="form.confirm" />
+        @if (submitted() && errors().confirm) {
+          <p class="auth-err">{{ errors().confirm }}</p>
+        }
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg auth-submit" [disabled]="loading()">
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm" role="status"></span> Creating your account...
+      } @else {
+        Create account
+      }
+    </button>
+
+    <p class="auth-alt">
+      Already have an account?
+      <a routerLink="/login" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}">Sign in</a>
+    </p>
+  </form>
+</app-auth-layout>

@@ -1,0 +1,73 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>My orders</h1>
+      <p>Track what you ordered and where it is now.</p>
+    </div>
+
+    <div class="seg" role="group" aria-label="Sort orders">
+      <button type="button" [class.on]="sortOrder() === 'desc'" (click)="sortOrder.set('desc')">Newest first</button>
+      <button type="button" [class.on]="sortOrder() === 'asc'" (click)="sortOrder.set('asc')">Oldest first</button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="note">Loading your orders...</p>
+  } @else if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  } @else {
+    @for (order of sorted(); track order.orderId) {
+      <article class="order panel">
+        <header class="order-head">
+          <div>
+            <h2>Order #{{ order.orderId }}</h2>
+            <span class="when">Placed {{ order.createdAt | date: 'd MMM y, h:mm a' }}</span>
+          </div>
+          <span class="pill" [class]="'pill ' + pillClass(order.orderStatus)">{{ statusLabel(order.orderStatus) }}</span>
+        </header>
+
+        <!-- Progress: only for orders that have not been cancelled -->
+        @if (stage(order.orderStatus) >= 0) {
+          <ol class="track" aria-label="Order progress">
+            @for (step of steps; track step; let i = $index) {
+              <li [class.done]="i < stage(order.orderStatus)" [class.now]="i === stage(order.orderStatus)">
+                <span class="dot"></span>{{ step }}
+              </li>
+            }
+          </ol>
+        }
+
+        <ul class="items">
+          @for (item of order.items; track $index) {
+            <li>
+              <img [src]="image(item)" [alt]="item.itemName || 'Item'" loading="lazy" />
+              <span class="item-name">{{ item.itemName || 'Unknown item' }}</span>
+              <span class="item-qty">x {{ item.quantity || 0 }}</span>
+              <span class="item-total">Nu. {{ lineTotal(item) | number: '1.2-2' }}</span>
+            </li>
+          }
+        </ul>
+
+        <footer class="order-foot">
+          <div class="order-total">
+            <span>Total</span>
+            <strong>Nu. {{ order.totalAmount | number: '1.2-2' }}</strong>
+          </div>
+          <div class="order-actions">
+            @if (order.orderStatus === 'PENDING') {
+              <button type="button" class="btn btn-outline-danger btn-sm" (click)="cancelOrder(order)">Cancel order</button>
+            }
+            <a [routerLink]="['/orders', order.orderId]" class="btn btn-outline-primary btn-sm">View details</a>
+          </div>
+        </footer>
+      </article>
+    } @empty {
+      <div class="empty panel">
+        <i class="fas fa-box-open"></i>
+        <h2>No orders yet</h2>
+        <p>When you place an order, you can follow it here.</p>
+        <a routerLink="/products" class="btn btn-primary">Browse products</a>
+      </div>
+    }
+  }
+</div>

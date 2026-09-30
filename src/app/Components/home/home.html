@@ -1,0 +1,84 @@
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-copy">
+    <h1>Quality natural products, delivered fast.</h1>
+    <p>
+      We buy and sell natural products you can trust, from skincare and haircare to supplements.
+      Browse the shelf, order online, and we will take care of the rest.
+    </p>
+    <div class="hero-actions">
+      <a routerLink="/products" class="btn btn-primary btn-lg">Shop products</a>
+      <a routerLink="/contact" class="btn btn-secondary btn-lg">Contact us</a>
+    </div>
+  </div>
+
+  <div class="banner" role="region" aria-roledescription="carousel" aria-label="Shop photos">
+    @for (slide of slides; track slide; let i = $index) {
+      <img class="banner-img" [class.on]="i === current()" [src]="slide"
+           [alt]="'Inside the shop, photo ' + (i + 1)" [attr.aria-hidden]="i !== current()" />
+    }
+    <button type="button" class="banner-btn prev" (click)="prev()" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>
+    <button type="button" class="banner-btn next" (click)="next()" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>
+    <div class="banner-dots">
+      @for (slide of slides; track slide; let i = $index) {
+        <button type="button" [class.on]="i === current()" (click)="goTo(i)" [attr.aria-label]="'Show photo ' + (i + 1)"></button>
+      }
+    </div>
+  </div>
+</section>
+
+<div class="page home-page">
+  <!-- Why us -->
+  <section class="values">
+    @for (v of values; track v.title) {
+      <article class="value">
+        <span class="value-icon"><i class="fas" [class]="'fas ' + v.icon"></i></span>
+        <h2>{{ v.title }}</h2>
+        <p>{{ v.text }}</p>
+      </article>
+    }
+  </section>
+
+  <!-- Featured products (real items from the shop) -->
+  @if (featured().length > 0) {
+    <section class="featured">
+      <div class="section-head">
+        <h2>From the shelf</h2>
+        <a routerLink="/products">See all products</a>
+      </div>
+      <div class="cards">
+        @for (item of featured(); track item.itemId) {
+          <a class="card-product" [routerLink]="['/products', item.itemId]">
+            <span class="card-photo">
+              <img [src]="image(item)" [alt]="item.itemName" loading="lazy" (error)="onImageError($event)" />
+              @if (discount(item) !== null) {
+                <span class="card-off">{{ discount(item) }}% off</span>
+              }
+            </span>
+            <span class="card-name">{{ item.itemName }}</span>
+            <span class="card-price">
+              Nu. {{ item.sellingPrice | number: '1.2-2' }}
+              @if (discount(item) !== null) {
+                <s>Nu. {{ item.mrp | number: '1.2-2' }}</s>
+              }
+            </span>
+          </a>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Mission -->
+  <section class="mission">
+    <img src="Images/alternative-medicine-capsules.jpg" alt="Natural capsules and supplements" loading="lazy" />
+    <div>
+      <blockquote>Individually, we are one drop. Together, we are an ocean.</blockquote>
+      <p>
+        We are here to help you get everything you need in a short time, with the best quality and natural
+        products that help you look after your health. Our team is dedicated to giving you the best service,
+        so you can be sure your order will be handled with care.
+      </p>
+      <a routerLink="/about" class="btn btn-outline-primary">About us</a>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,11 @@
+1) src/index.html  -> inside <head>, add these 3 lines (the Figtree font):
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+2) angular.json -> in "build" > "options", change
+   "styles": ["src/styles.css"]
+   to
+   "styles": ["src/styles.css", "src/theme.css"]
+
+3) Restart: Ctrl+C, then ng serve

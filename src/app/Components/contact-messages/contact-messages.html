@@ -1,0 +1,60 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Customer messages</h1>
+      <p>
+        @if (loading()) {
+          Loading messages...
+        } @else {
+          {{ visible().length }} of {{ messages().length }} messages, newest first
+        }
+      </p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  } @else if (!loading()) {
+    <div class="search">
+      <i class="fas fa-magnifying-glass"></i>
+      <input #search type="search" class="form-control" placeholder="Search by name, email or words in the message"
+             [value]="searchTerm()" (input)="searchTerm.set(search.value)" aria-label="Search messages" />
+    </div>
+
+    @for (m of visible(); track $index) {
+      <article class="msg panel">
+        <header>
+          <span class="avatar">{{ initials(m.name) }}</span>
+          <div class="who">
+            <strong>{{ m.name }}</strong>
+            <a [href]="'mailto:' + m.email">{{ m.email }}</a>
+          </div>
+          <time>{{ m.submittedAt | date: 'd MMM y, h:mm a' }}</time>
+        </header>
+
+        <p class="text">{{ m.message }}</p>
+
+        <footer>
+          @if (orderRef(m); as ref) {
+            <a class="ref" routerLink="/admin/orders" [queryParams]="{ q: ref }">
+              <i class="fas fa-receipt"></i> Open order #{{ ref }}
+            </a>
+          }
+          <a class="btn btn-outline-primary btn-sm" [href]="mailto(m)"><i class="fas fa-reply"></i> Reply by email</a>
+        </footer>
+      </article>
+    } @empty {
+      <div class="empty panel">
+        <i class="fas fa-inbox"></i>
+        <h2>@if (searchTerm()) { No messages match } @else { No messages yet }</h2>
+        <p>
+          @if (searchTerm()) {
+            Try a different word.
+          } @else {
+            Messages from the Contact page will appear here.
+          }
+        </p>
+      </div>
+    }
+  }
+</div>

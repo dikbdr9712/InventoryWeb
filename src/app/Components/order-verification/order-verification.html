@@ -1,0 +1,114 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Verify payments</h1>
+      <p>Check each payment against your bank record before the order goes ahead.</p>
+    </div>
+
+    <div class="seg" role="group" aria-label="Sort orders">
+      <button type="button" [class.on]="sortOrder() === 'desc'" (click)="sortOrder.set('desc')">Newest first</button>
+      <button type="button" [class.on]="sortOrder() === 'asc'" (click)="sortOrder.set('asc')">Oldest first</button>
+    </div>
+  </div>
+
+  <div class="search">
+    <i class="fas fa-magnifying-glass"></i>
+    <input #search type="search" class="form-control" placeholder="Search by order number, customer, email or journal number"
+           [value]="searchTerm()" (input)="searchTerm.set(search.value)" aria-label="Search orders" />
+  </div>
+
+  @if (loading()) {
+    <p class="note">Loading orders...</p>
+  } @else if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  } @else {
+    @for (order of visible(); track order.orderId) {
+      <article class="order panel">
+        <header class="head">
+          <div>
+            <h2>Order #{{ order.orderId }}</h2>
+            <span class="customer">{{ order.customerName }}, {{ order.customerEmail }}</span>
+          </div>
+          @if (waitingForCustomer(order)) {
+            <span class="pill pill-info">Waiting for the customer</span>
+          } @else {
+            <span class="pill pill-wait">Waiting for verification</span>
+          }
+        </header>
+
+        <dl class="facts">
+          <div>
+            <dt>Payment method</dt>
+            <dd>{{ methodLabel(order) }}</dd>
+          </div>
+          <div>
+            <dt>Amount paid</dt>
+            <dd>
+              @if (order.payment?.amount) {
+                Nu. {{ order.payment?.amount | number: '1.2-2' }}
+              } @else {
+                Not recorded
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Order total</dt>
+            <dd>Nu. {{ order.totalAmount | number: '1.2-2' }}</dd>
+          </div>
+          <div class="journal">
+            <dt>Journal number</dt>
+            <dd>
+              @if (order.payment?.journalNumber) {
+                <code>{{ order.payment?.journalNumber }}</code>
+                <button type="button" class="copy" (click)="copy(order.payment?.journalNumber ?? '')">
+                  <i class="fas fa-copy"></i> Copy
+                </button>
+              } @else {
+                <span class="none">Not provided</span>
+              }
+            </dd>
+          </div>
+        </dl>
+
+        @if (waitingForCustomer(order) && order.note) {
+          <p class="asked"><strong>You asked:</strong> {{ order.note }}</p>
+        }
+
+        @if (amountDiffers(order)) {
+          <p class="differs">
+            <i class="fas fa-triangle-exclamation"></i>
+            The amount paid does not match the order total. Check your bank record before you mark it as paid.
+          </p>
+        }
+
+        <footer class="foot">
+          <span class="when">
+            Placed {{ order.createdAt | date: 'd MMM y, h:mm a' }}
+            @if (order.updatedBy) {
+              , last checked by {{ order.updatedBy }}@if (order.updatedAt) { on {{ order.updatedAt | date: 'd MMM y' }} }
+            }
+          </span>
+
+          <div class="decisions">
+            @for (d of decisions; track d.key) {
+              <button type="button" [class]="'btn btn-sm ' + d.style" [disabled]="busyId() === order.orderId"
+                      (click)="decide(order, d)">{{ d.button }}</button>
+            }
+          </div>
+        </footer>
+      </article>
+    } @empty {
+      <div class="empty panel">
+        <i class="fas fa-circle-check"></i>
+        <h2>@if (searchTerm()) { No orders match } @else { Nothing to verify }</h2>
+        <p>
+          @if (searchTerm()) {
+            Try a different search.
+          } @else {
+            Every payment has been checked. New ones will appear here.
+          }
+        </p>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,17 @@
+@if (groups().length > 0) {
+  <nav class="sb" aria-label="Staff tools">
+    <div class="sb-inner">
+      <span class="sb-tag"><i class="fas fa-screwdriver-wrench"></i> Staff</span>
+
+      @for (group of groups(); track group.title) {
+        <div class="sb-group" role="group" [attr.aria-label]="group.title">
+          @for (item of group.items; track item.path) {
+            <a [routerLink]="item.path" routerLinkActive="active">
+              <i class="fas" [class]="'fas ' + item.icon"></i> {{ item.label }}
+            </a>
+          }
+        </div>
+      }
+    </div>
+  </nav>
+}

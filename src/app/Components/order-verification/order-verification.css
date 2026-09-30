@@ -1,0 +1,162 @@
+/* Complete replacement: this page no longer uses your old OrderVerification.css. */
+
+.search {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.search i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search input {
+  padding-left: 40px;
+}
+
+.note {
+  color: var(--muted);
+}
+
+.order {
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.customer {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px 24px;
+  margin: 0;
+  padding: 18px 20px;
+}
+
+.facts dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.facts dd {
+  margin: 3px 0 0;
+  font-weight: 700;
+}
+
+.facts code {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--wash);
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.journal dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.none {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.copy {
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--green);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.copy:hover {
+  border-color: var(--green);
+}
+
+.differs {
+  margin: 0 20px 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--saffron-soft);
+  color: #7a5200;
+  font-weight: 600;
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--wash);
+}
+
+.when {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.decisions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.empty {
+  padding: 52px 20px;
+  text-align: center;
+}
+
+.empty i {
+  margin-bottom: 10px;
+  color: var(--green);
+  font-size: 2.2rem;
+}
+
+.empty h2 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+}
+
+.empty p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.asked {
+  margin: 0 20px 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--blue-soft);
+  color: var(--blue);
+}

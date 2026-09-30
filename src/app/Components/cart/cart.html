@@ -1,0 +1,111 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Your cart</h1>
+      <p>
+        @if (cart.count() > 0) {
+          {{ cart.count() }} {{ cart.count() === 1 ? 'item' : 'items' }} ready to order
+        } @else {
+          Nothing here yet
+        }
+      </p>
+    </div>
+    @if (cart.count() > 0) {
+      <a routerLink="/products" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Continue shopping</a>
+    }
+  </div>
+
+  @if (cart.items().length === 0) {
+    <div class="empty panel">
+      <i class="fas fa-bag-shopping"></i>
+      <h2>Your cart is empty</h2>
+      <p>Find something you like and add it here.</p>
+      <a routerLink="/products" class="btn btn-primary">Browse products</a>
+    </div>
+  } @else {
+    <div class="cart">
+      <!-- ============ Items ============ -->
+      <section class="items panel" aria-label="Items in your cart">
+        @for (item of cart.items(); track item.id) {
+          <article class="row">
+            <img [src]="item.image" [alt]="item.name" (error)="onImageError($event)" />
+
+            <div class="row-info">
+              <a class="row-name" [routerLink]="['/products', item.id]">{{ item.name }}</a>
+              <span class="row-price">Nu. {{ item.price | number: '1.2-2' }} each</span>
+            </div>
+
+            <div class="stepper">
+              <button type="button" (click)="change(item, -1)" aria-label="One less"><i class="fas fa-minus"></i></button>
+              <input #qty type="number" min="1" [value]="item.quantity" (change)="onQuantityInput(item, qty)" aria-label="Quantity" />
+              <button type="button" (click)="change(item, 1)" aria-label="One more"><i class="fas fa-plus"></i></button>
+            </div>
+
+            <strong class="row-total">Nu. {{ item.price * item.quantity | number: '1.2-2' }}</strong>
+
+            <button type="button" class="remove" (click)="remove(item)" [attr.aria-label]="'Remove ' + item.name">
+              <i class="fas fa-trash-can"></i>
+            </button>
+          </article>
+        }
+      </section>
+
+      <!-- ============ Summary and delivery ============ -->
+      <aside class="summary panel" aria-label="Order summary">
+        <h2>Order summary</h2>
+
+        <dl class="sums">
+          <div><dt>Items</dt><dd>{{ cart.count() }}</dd></div>
+          <div><dt>Subtotal</dt><dd>Nu. {{ cart.total() | number: '1.2-2' }}</dd></div>
+        </dl>
+
+        <div class="total">
+          <span>Total</span>
+          <strong>Nu. {{ cart.total() | number: '1.2-2' }}</strong>
+        </div>
+
+        @if (auth.isLoggedIn()) {
+          <div class="delivery">
+            <h3>Delivery details</h3>
+            <p class="who">Ordering as <strong>{{ auth.name() }}</strong></p>
+
+            <div class="field">
+              <label for="phone">Phone number</label>
+              <input id="phone" type="tel" inputmode="numeric" class="form-control" placeholder="8 digits"
+                     [class.is-invalid]="submitted() && errors().phone" [(ngModel)]="delivery.phone" name="phone" autocomplete="tel" />
+              @if (submitted() && errors().phone) {
+                <p class="err">{{ errors().phone }}</p>
+              }
+            </div>
+
+            <div class="field">
+              <label for="address">Delivery address</label>
+              <textarea id="address" rows="3" class="form-control" placeholder="House, street, town"
+                        [class.is-invalid]="submitted() && errors().address" [(ngModel)]="delivery.address" name="address"
+                        autocomplete="street-address"></textarea>
+              @if (submitted() && errors().address) {
+                <p class="err">{{ errors().address }}</p>
+              }
+            </div>
+          </div>
+        } @else {
+          <p class="signin-note">
+            <i class="fas fa-circle-info"></i>
+            Sign in to place your order. Your cart will be kept.
+          </p>
+        }
+
+        <button type="button" class="btn btn-primary btn-lg go" [disabled]="placing()" (click)="placeOrder()">
+          @if (placing()) {
+            <span class="spinner-border spinner-border-sm" role="status"></span> Creating your order...
+          } @else if (auth.isLoggedIn()) {
+            Continue to payment <i class="fas fa-arrow-right"></i>
+          } @else {
+            Sign in to continue
+          }
+        </button>
+        <p class="after">You choose how to pay on the next step.</p>
+      </aside>
+    </div>
+  }
+</div>

@@ -1,0 +1,73 @@
+<div class="page narrow">
+  <div class="page-head">
+    <div>
+      <h1>My profile</h1>
+      <p>Your account details and a look at your orders.</p>
+    </div>
+  </div>
+
+  <section class="panel who">
+    <span class="avatar">{{ initials }}</span>
+    <div class="who-text">
+      <h2>{{ name }}</h2>
+      <span class="who-email">{{ email }}</span>
+      <span class="role-pill">{{ roleLabel }}</span>
+    </div>
+    <button type="button" class="btn btn-outline-danger" (click)="signOut()">
+      <i class="fas fa-arrow-right-from-bracket"></i> Sign out
+    </button>
+  </section>
+
+  <div class="grid">
+    <section class="panel box">
+      <h2>Your details</h2>
+      <dl>
+        <div><dt>Name</dt><dd>{{ name }}</dd></div>
+        <div><dt>Email</dt><dd>{{ email }}</dd></div>
+        <div>
+          <dt>Phone</dt>
+          <dd>{{ phone || 'Not given' }}</dd>
+        </div>
+      </dl>
+      <p class="help">
+        Need to change your name, phone number or password?
+        <a routerLink="/contact">Contact us</a> and we will update it for you.
+      </p>
+    </section>
+
+    <section class="panel box">
+      <h2>Your orders</h2>
+
+      @if (!ordersLoaded()) {
+        <p class="muted">Loading your orders...</p>
+      } @else if (latest(); as order) {
+        <p class="count"><strong>{{ orders().length }}</strong> {{ orders().length === 1 ? 'order' : 'orders' }} so far</p>
+
+        <a class="latest" [routerLink]="['/orders', order.orderId]">
+          <span class="latest-top">
+            <strong>Order #{{ order.orderId }}</strong>
+            <span [class]="'pill ' + orderPill(order.orderStatus)">{{ orderLabel(order.orderStatus) }}</span>
+          </span>
+          <span class="muted">Your latest order. Tap to see where it is.</span>
+        </a>
+
+        <a routerLink="/orders" class="btn btn-outline-primary btn-sm">See all my orders</a>
+      } @else {
+        <p class="muted">You have not placed an order yet.</p>
+        <a routerLink="/products" class="btn btn-primary btn-sm">Browse products</a>
+      }
+    </section>
+  </div>
+
+  @if (abilities.length > 0) {
+    <section class="panel box access">
+      <h2>What your account can do</h2>
+      <p class="muted">Signed in as <strong>{{ roleLabel }}</strong>. On top of shopping, you can:</p>
+      <ul>
+        @for (ability of abilities; track ability) {
+          <li><i class="fas fa-check"></i> {{ ability }}</li>
+        }
+      </ul>
+    </section>
+  }
+</div>

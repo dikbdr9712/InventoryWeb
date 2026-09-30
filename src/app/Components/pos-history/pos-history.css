@@ -1,0 +1,173 @@
+/* Complete replacement. */
+
+.note {
+  color: var(--muted);
+}
+
+/* Summary strip */
+.strip {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  margin-bottom: 18px;
+}
+
+.strip > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border-left: 1px solid var(--line);
+}
+
+.strip > div:first-child {
+  border-left: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--green-soft);
+}
+
+.label {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.strip strong {
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.strip-main strong {
+  font-size: 2rem;
+  color: var(--green-deep);
+}
+
+/* Search */
+.search {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.search i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search input {
+  padding-left: 40px;
+}
+
+/* Table */
+.table-panel {
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  padding: 13px 18px;
+}
+
+.num {
+  text-align: right;
+}
+
+.strong {
+  font-weight: 700;
+}
+
+.act {
+  text-align: right;
+  white-space: nowrap;
+}
+
+tr.open > td {
+  background: var(--green-soft);
+}
+
+.items-row > td {
+  padding: 0 18px 16px;
+  background: var(--green-soft);
+}
+
+.inner {
+  width: 100%;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.inner th,
+.inner td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.inner thead th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.inner tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.none {
+  color: var(--muted);
+}
+
+.empty {
+  padding: 40px 18px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .strip > div {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .strip > div:first-child {
+    grid-column: 1 / -1;
+    border-top: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .table th,
+  .table td {
+    padding: 11px 12px;
+  }
+}
+
+/* Custom date range */
+.range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin-bottom: 18px;
+  padding: 14px 18px;
+}
+
+.range label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.range-error {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--red);
+  font-size: 0.9rem;
+  font-weight: 600;
+}

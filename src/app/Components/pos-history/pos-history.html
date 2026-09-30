@@ -1,0 +1,128 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Sales history</h1>
+      <p>Counter sales made at the point of sale.</p>
+    </div>
+
+    <div class="seg" role="group" aria-label="Time period">
+      @for (r of ranges; track r.value) {
+        <button type="button" [class.on]="range() === r.value" (click)="range.set(r.value)">{{ r.label }}</button>
+      }
+    </div>
+  </div>
+
+  @if (range() === 'custom') {
+    <div class="range panel">
+      <label>From
+        <input #from type="date" class="form-control" [value]="customFrom()" [max]="customTo()" (input)="customFrom.set(from.value)" />
+      </label>
+      <label>To
+        <input #to type="date" class="form-control" [value]="customTo()" [min]="customFrom()" (input)="customTo.set(to.value)" />
+      </label>
+      @if (customFrom() || customTo()) {
+        <button type="button" class="btn btn-link" (click)="customFrom.set(''); customTo.set('')">Clear dates</button>
+      }
+      @if (dateError()) {
+        <p class="range-error"><i class="fas fa-circle-exclamation"></i> {{ dateError() }}</p>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="note">Loading sales...</p>
+  } @else if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  } @else {
+    <section class="strip panel" aria-label="Summary">
+      <div class="strip-main">
+        <span class="label">Sales {{ rangeLabel() }}</span>
+        <strong>Nu. {{ summary().total | number: '1.2-2' }}</strong>
+      </div>
+      <div>
+        <span class="label">Number of sales</span>
+        <strong>{{ summary().count }}</strong>
+      </div>
+      <div>
+        <span class="label">Average sale</span>
+        <strong>Nu. {{ summary().average | number: '1.0-0' }}</strong>
+      </div>
+    </section>
+
+    <div class="search">
+      <i class="fas fa-magnifying-glass"></i>
+      <input #search type="search" class="form-control" placeholder="Search by sale number or customer name"
+             [value]="searchTerm()" (input)="searchTerm.set(search.value)" aria-label="Search sales" />
+    </div>
+
+    <section class="panel table-panel">
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>Sale</th>
+              <th>Customer</th>
+              <th>When</th>
+              <th>Paid by</th>
+              <th class="num">Total</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (sale of visible(); track sale.orderId) {
+              <tr [class.open]="openOrderId() === sale.orderId">
+                <td><strong>#{{ sale.orderId }}</strong></td>
+                <td>{{ sale.customerName || 'Walk-in customer' }}</td>
+                <td>{{ sale.createdAt | date: 'd MMM y, h:mm a' }}</td>
+                <td>{{ paymentLabel(sale.paymentMethod) || 'Not recorded' }}</td>
+                <td class="num strong">Nu. {{ sale.totalAmount | number: '1.2-2' }}</td>
+                <td class="act">
+                  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="toggle(sale.orderId)"
+                          [attr.aria-expanded]="openOrderId() === sale.orderId">
+                    {{ openOrderId() === sale.orderId ? 'Hide items' : 'View items' }}
+                  </button>
+                </td>
+              </tr>
+
+              @if (openOrderId() === sale.orderId) {
+                <tr class="items-row">
+                  <td colspan="6">
+                    @if (itemsByOrder()[sale.orderId]; as items) {
+                      <table class="inner">
+                        <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr></thead>
+                        <tbody>
+                          @for (item of items; track $index) {
+                            <tr>
+                              <td>{{ item.itemName || 'Unknown item' }}</td>
+                              <td class="num">{{ item.quantity || 0 }}</td>
+                              <td class="num">Nu. {{ item.unitPrice || 0 | number: '1.2-2' }}</td>
+                              <td class="num">Nu. {{ lineTotal(item) | number: '1.2-2' }}</td>
+                            </tr>
+                          } @empty {
+                            <tr><td colspan="4" class="none">No items found for this sale.</td></tr>
+                          }
+                        </tbody>
+                      </table>
+                    } @else {
+                      <span class="none">Loading items...</span>
+                    }
+                  </td>
+                </tr>
+              }
+            } @empty {
+              <tr>
+                <td colspan="6" class="empty">
+                  @if (searchTerm()) {
+                    No sales match your search.
+                  } @else {
+                    No sales {{ rangeLabel() }}. Try a longer period.
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>

@@ -1,0 +1,129 @@
+<div class="page">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a routerLink="/orders"><i class="fas fa-arrow-left"></i> My orders</a>
+  </nav>
+
+  @if (order(); as order) {
+    <div class="page-head">
+      <div>
+        <h1>Order #{{ order.orderId }}</h1>
+        <p>Placed {{ order.createdAt | date: 'EEEE, d MMMM y, h:mm a' }}</p>
+      </div>
+      <span [class]="'pill big ' + orderPill(order.orderStatus)">{{ orderLabel(order.orderStatus) }}</span>
+    </div>
+
+    <!-- What the shop needs from the customer, or why a payment was refused -->
+    @if (needsInfo()) {
+      <section class="notice ask" role="alert">
+        <i class="fas fa-circle-exclamation"></i>
+        <div>
+          <h2>We need a little more information</h2>
+          <p>
+            @if (order.note) {
+              {{ order.note }}
+            } @else {
+              We could not finish checking your payment. Please contact us and we will sort it out.
+            }
+          </p>
+          <a routerLink="/contact" [queryParams]="{ order: order.orderId }" class="btn btn-primary btn-sm">Reply to us</a>
+        </div>
+      </section>
+    }
+
+    @if (paymentRefused()) {
+      <section class="notice refused" role="alert">
+        <i class="fas fa-circle-xmark"></i>
+        <div>
+          <h2>We could not accept your payment</h2>
+          <p>
+            @if (order.note) {
+              {{ order.note }}
+            } @else {
+              Your payment could not be verified. Please contact us to arrange another way to pay.
+            }
+          </p>
+          <a routerLink="/contact" [queryParams]="{ order: order.orderId }" class="btn btn-outline-danger btn-sm">Contact us about this</a>
+        </div>
+      </section>
+    }
+
+    <section class="tracking panel">
+      @if (cancelled()) {
+        <p class="cancelled"><i class="fas fa-ban"></i> This order was cancelled.</p>
+      } @else {
+        <app-order-tracker [status]="order.orderStatus" />
+      }
+    </section>
+
+    <div class="layout">
+      <section class="items panel">
+        <h2>Items</h2>
+        <ul>
+          @for (item of items(); track $index) {
+            <li>
+              <img [src]="image(item)" [alt]="item.itemName || 'Item'" loading="lazy" />
+              <div class="i-info">
+                <strong>{{ item.itemName || 'Unknown item' }}</strong>
+                <span>{{ item.quantity || 0 }} x Nu. {{ item.unitPrice || 0 | number: '1.2-2' }}@if (item.uom) { , {{ item.uom }} }</span>
+              </div>
+              <strong class="i-total">Nu. {{ lineTotal(item) | number: '1.2-2' }}</strong>
+            </li>
+          } @empty {
+            <li class="none">No items were found for this order.</li>
+          }
+        </ul>
+      </section>
+
+      <aside class="side">
+        <section class="panel box">
+          <h2>Summary</h2>
+          <dl>
+            <div class="grand"><dt>Total</dt><dd>Nu. {{ order.totalAmount | number: '1.2-2' }}</dd></div>
+            @if (order.paymentStatus) {
+              <div>
+                <dt>Payment</dt>
+                <dd><span [class]="'pill ' + paymentPill(order.paymentStatus)">{{ paymentLabel(order.paymentStatus) }}</span></dd>
+              </div>
+            }
+            @if (order.paymentMethod) {
+              <div><dt>Method</dt><dd>{{ order.paymentMethod }}</dd></div>
+            }
+          </dl>
+        </section>
+
+        @if (order.customerPhone || order.address) {
+          <section class="panel box">
+            <h2>Delivery</h2>
+            <dl>
+              @if (order.customerName) {
+                <div><dt>Name</dt><dd>{{ order.customerName }}</dd></div>
+              }
+              @if (order.customerPhone) {
+                <div><dt>Phone</dt><dd>{{ order.customerPhone }}</dd></div>
+              }
+              @if (order.address) {
+                <div><dt>Address</dt><dd>{{ order.address }}</dd></div>
+              }
+            </dl>
+          </section>
+        }
+
+        <div class="buttons">
+          @if (canCancel()) {
+            <button type="button" class="btn btn-outline-danger" [disabled]="cancelling()" (click)="cancel(order)">Cancel order</button>
+          }
+          <a routerLink="/contact" class="btn btn-secondary">Need help? Contact us</a>
+        </div>
+      </aside>
+    </div>
+  } @else if (error()) {
+    <div class="missing panel">
+      <i class="fas fa-circle-exclamation"></i>
+      <h2>Order not found</h2>
+      <p>{{ error() }}</p>
+      <a routerLink="/orders" class="btn btn-primary">Back to my orders</a>
+    </div>
+  } @else {
+    <p class="note">Loading your order...</p>
+  }
+</div>

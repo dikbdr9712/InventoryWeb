@@ -1,0 +1,104 @@
+:host {
+  display: block;
+}
+
+.sb {
+  background: #0b3d2e;
+  border-bottom: 1px solid #072a20;
+}
+
+.sb-inner {
+  display: flex;
+  align-items: stretch;
+  max-width: 1240px;
+  height: 44px;
+  margin: 0 auto;
+  padding: 0 16px;
+  overflow-x: auto;          /* a long list scrolls sideways instead of wrapping */
+  scrollbar-width: none;
+}
+
+.sb-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.sb-tag {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding-right: 16px;
+  margin-right: 4px;
+  color: var(--saffron);
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Tools that belong together sit together, with a thin line between groups */
+.sb-group {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+}
+
+.sb-group + .sb-group {
+  margin-left: 6px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.sb-group a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: #cfe0d9;
+  font-size: 0.92rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.sb-group a i {
+  color: #8fb5a6;
+  font-size: 0.85rem;
+}
+
+.sb-group a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  text-decoration: none;
+}
+
+.sb-group a:hover i {
+  color: #fff;
+}
+
+.sb-group a.active {
+  color: #fff;
+  font-weight: 700;
+}
+
+.sb-group a.active i {
+  color: var(--saffron);
+}
+
+.sb-group a.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--saffron);
+}
+
+/* On phones and tablets the same tools live in the slide-in menu */
+@media (max-width: 991px) {
+  :host {
+    display: none;
+  }
+}

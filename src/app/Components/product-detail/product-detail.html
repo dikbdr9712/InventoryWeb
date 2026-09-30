@@ -1,0 +1,109 @@
+<div class="page">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a routerLink="/products"><i class="fas fa-arrow-left"></i> All products</a>
+  </nav>
+
+  @if (item(); as item) {
+    <div class="detail">
+      <!-- Photo -->
+      <div class="picture panel">
+        <img [src]="image(item)" [alt]="item.itemName" (error)="onImageError($event)" />
+        @if (discount(item) !== null) {
+          <span class="off">{{ discount(item) }}% off</span>
+        }
+      </div>
+
+      <!-- Information -->
+      <div class="info">
+        @if (item.category) {
+          <span class="category">{{ item.category }}</span>
+        }
+        <h1>{{ item.itemName }}</h1>
+
+        <div class="price-row">
+          <strong class="price">
+            @if (item.sellingPrice != null) {
+              Nu. {{ item.sellingPrice | number: '1.2-2' }}
+            } @else {
+              Price on request
+            }
+          </strong>
+          @if (discount(item) !== null) {
+            <s class="mrp">Nu. {{ item.mrp | number: '1.2-2' }}</s>
+          }
+        </div>
+        @if (savings() > 0) {
+          <p class="savings">You save Nu. {{ savings() | number: '1.2-2' }}</p>
+        }
+
+        <p class="status">
+          <span class="pill" [class]="'pill ' + stockClass(item)">{{ stockText(item) }}</span>
+        </p>
+
+        @if (item.description) {
+          <p class="description">{{ item.description }}</p>
+        }
+
+        <!-- Buy -->
+        <div class="buy">
+          <div class="stepper" [class.disabled]="isOut(item)">
+            <button type="button" (click)="changeQuantity(-1)" [disabled]="isOut(item) || quantity() <= 1" aria-label="One less">
+              <i class="fas fa-minus"></i>
+            </button>
+            <input #qty type="number" min="1" [max]="maxQuantity()" [value]="quantity()" [disabled]="isOut(item)"
+                   (change)="onQuantityInput(qty)" aria-label="Quantity" />
+            <button type="button" (click)="changeQuantity(1)" [disabled]="isOut(item) || quantity() >= maxQuantity()" aria-label="One more">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-lg add" [disabled]="isOut(item)" (click)="addToCart(item)">
+            <i class="fas fa-bag-shopping"></i> {{ isOut(item) ? 'Out of stock' : 'Add to cart' }}
+          </button>
+        </div>
+
+        <div class="secondary-actions">
+          @if (!isOut(item)) {
+            <a class="btn btn-secondary" routerLink="/payment" [queryParams]="{ itemId: item.itemId }">
+              Buy now, skip the cart
+            </a>
+          }
+          @if (auth.canManageItems()) {
+            <a class="btn btn-outline-secondary" [routerLink]="['/products/edit', item.itemId]">
+              <i class="fas fa-pen"></i> Edit item
+            </a>
+          }
+        </div>
+
+        <!-- Facts -->
+        <dl class="facts">
+          @if (item.sku) {
+            <div><dt>Item code</dt><dd>{{ item.sku }}</dd></div>
+          }
+          @if (item.uom) {
+            <div><dt>Sold by</dt><dd>{{ item.uom }}</dd></div>
+          }
+          @if (item.category) {
+            <div><dt>Category</dt><dd>{{ item.category }}</dd></div>
+          }
+          @if (item.barcode) {
+            <div><dt>Barcode</dt><dd>{{ item.barcode }}</dd></div>
+          }
+        </dl>
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="missing panel">
+      <i class="fas fa-circle-exclamation"></i>
+      <h2>Product not found</h2>
+      <p>{{ error() }}</p>
+      <a routerLink="/products" class="btn btn-primary">Back to products</a>
+    </div>
+  } @else {
+    <div class="detail" aria-hidden="true">
+      <div class="picture panel"></div>
+      <div class="info"><div class="line"></div><div class="line short"></div></div>
+    </div>
+  }
+</div>
+

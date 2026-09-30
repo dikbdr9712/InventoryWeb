@@ -1,0 +1,303 @@
+/* Global design system. Loaded AFTER styles.css so it wins over the old rules. */
+
+:root {
+  --ink: #17211f;
+  --muted: #5d6b68;
+  --line: #dfe5e3;
+  --wash: #f3f5f4;
+  --paper: #ffffff;
+  --green: #0b6b4f;
+  --green-deep: #084f3a;
+  --green-soft: #e3f1ec;
+  --saffron: #e2a012;
+  --saffron-soft: #fdf3d7;
+  --red: #b42318;
+  --red-soft: #fdecea;
+  --blue: #1d5fa8;
+  --blue-soft: #e6f0fa;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(23, 33, 31, 0.05), 0 6px 18px rgba(23, 33, 31, 0.06);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--wash);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--green);
+}
+
+a:hover {
+  color: var(--green-deep);
+}
+
+:focus-visible {
+  outline: 3px solid #7ab8a4;
+  outline-offset: 2px;
+}
+
+/* ---------- Page shell: use on the outer div of any page ---------- */
+.page {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 28px 16px 56px;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 22px;
+}
+
+.page-head h1,
+.page-head h2 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.page-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.panel {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+}
+
+.btn-primary,
+.btn-success {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.btn-primary:hover,
+.btn-success:hover,
+.btn-primary:focus,
+.btn-success:focus,
+.btn-primary:not(:disabled):not(.disabled):active,
+.btn-success:not(:disabled):not(.disabled):active {
+  background: var(--green-deep);
+  border-color: var(--green-deep);
+  color: #fff;
+}
+
+.btn-outline-primary {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.btn-outline-primary:hover {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.btn-secondary:hover {
+  background: var(--wash);
+  border-color: #c9d2cf;
+  color: var(--ink);
+}
+
+.btn-outline-secondary {
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary.active {
+  background: var(--green-soft);
+  border-color: var(--green);
+  color: var(--green-deep);
+}
+
+.btn-danger {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+.btn-outline-danger {
+  color: var(--red);
+  border-color: #e7b9b4;
+}
+
+.btn-outline-danger:hover {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+/* ---------- Forms ---------- */
+.form-control,
+.custom-select {
+  border: 1px solid #cfd8d5;
+  border-radius: 8px;
+  min-height: 42px;
+}
+
+.form-control:focus,
+.custom-select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 4px var(--green-soft);
+}
+
+label {
+  font-weight: 600;
+}
+
+/* ---------- Cards, tables, badges, alerts ---------- */
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.card-header {
+  background: var(--wash);
+  border-bottom: 1px solid var(--line);
+}
+
+.table {
+  color: var(--ink);
+}
+
+.table thead th {
+  background: var(--wash);
+  border-top: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.table td,
+.table th {
+  border-color: var(--line);
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background: var(--green-soft);
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.35em 0.7em;
+  font-weight: 600;
+}
+
+.alert {
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+}
+
+.alert-danger {
+  background: var(--red-soft);
+  border-color: #f0c2bd;
+  color: var(--red);
+}
+
+.alert-info {
+  background: var(--blue-soft);
+  border-color: #c4dbf1;
+  color: var(--blue);
+}
+
+.alert-warning {
+  background: var(--saffron-soft);
+  border-color: #f1d98f;
+  color: #7a5200;
+}
+
+/* ---------- Status pills: reuse anywhere ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pill-wait { background: var(--saffron-soft); color: #7a5200; }
+.pill-info { background: var(--blue-soft); color: var(--blue); }
+.pill-ok   { background: var(--green-soft); color: var(--green-deep); }
+.pill-bad  { background: var(--red-soft); color: var(--red); }
+.pill-mute { background: var(--wash); color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* ---------- Segmented control (tabs / toggles): reuse anywhere ---------- */
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.seg button {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.seg button:hover {
+  color: var(--ink);
+}
+
+.seg button.on {
+  background: var(--green);
+  color: #fff;
+}

@@ -1,0 +1,31 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Customer reviews</h1>
+      <p>What people say about shopping with us.</p>
+    </div>
+    <a routerLink="/contact" class="btn btn-outline-primary">Share your feedback</a>
+  </div>
+
+  <div class="reviews">
+    @for (review of reviews; track $index) {
+      <article class="panel review">
+        <header>
+          <span class="photo">
+            <i class="fas fa-user"></i>
+            <img [src]="review.photo" alt="" loading="lazy" (error)="hide($event)" />
+          </span>
+          <div>
+            <span class="stars" [attr.aria-label]="review.rating + ' out of 5 stars'">
+              @for (star of stars(review.rating); track $index) {
+                <i class="fa-star" [class]="star === 'full' ? 'fas fa-star' : star === 'half' ? 'fas fa-star-half-stroke' : 'far fa-star'"></i>
+              }
+            </span>
+            <strong>{{ review.rating }} out of 5</strong>
+          </div>
+        </header>
+        <p>{{ review.text }}</p>
+      </article>
+    }
+  </div>
+</div>

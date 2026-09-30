@@ -1,0 +1,82 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Sales dashboard</h1>
+      <p>Showing {{ periodLabel().toLowerCase() }}</p>
+    </div>
+
+    <div class="seg" role="tablist" aria-label="Time period">
+      @for (p of periods; track p.value) {
+        <button type="button" role="tab" [attr.aria-selected]="period() === p.value"
+                [class.on]="period() === p.value" (click)="onPeriodChange(p.value)">{{ p.label }}</button>
+      }
+    </div>
+  </div>
+
+  @if (period() === 'custom') {
+    <div class="range panel">
+      <label>From <input type="date" class="form-control" [(ngModel)]="startDate" name="startDate" /></label>
+      <label>To <input type="date" class="form-control" [(ngModel)]="endDate" name="endDate" /></label>
+      <button type="button" class="btn btn-primary" (click)="apply()">Show sales</button>
+    </div>
+  }
+
+  <!-- One connected strip instead of four separate boxes -->
+  @if (summary(); as s) {
+    <section class="strip panel" aria-label="Summary">
+      <div class="strip-main">
+        <span class="strip-label">Total sales</span>
+        <strong>Nu. {{ s.totalSales | number: '1.2-2' }}</strong>
+      </div>
+      <div>
+        <span class="strip-label">Orders</span>
+        <strong>{{ s.totalOrders }}</strong>
+      </div>
+      <div>
+        <span class="strip-label">Average order</span>
+        <strong>Nu. {{ (s.totalOrders ? s.totalSales / s.totalOrders : 0) | number: '1.0-0' }}</strong>
+      </div>
+      <div>
+        <span class="strip-label">Tax collected</span>
+        <strong>Nu. {{ s.totalTax | number: '1.2-2' }}</strong>
+      </div>
+      <div>
+        <span class="strip-label">Discount given</span>
+        <strong class="minus">Nu. {{ s.totalDiscount | number: '1.2-2' }}</strong>
+      </div>
+    </section>
+  }
+
+  <section class="panel table-panel">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th class="num">Total sales</th>
+            <th class="num">Orders</th>
+            <th class="num">Tax</th>
+            <th class="num">Discount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr><td colspan="5" class="empty">Loading sales...</td></tr>
+          } @else {
+            @for (row of rows(); track $index) {
+              <tr>
+                <td>{{ row.date | date: 'EEE, d MMM y' }}</td>
+                <td class="num strong">Nu. {{ row.totalSales | number: '1.2-2' }}</td>
+                <td class="num">{{ row.totalOrders }}</td>
+                <td class="num">Nu. {{ row.totalTax | number: '1.2-2' }}</td>
+                <td class="num">Nu. {{ row.totalDiscount | number: '1.2-2' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="empty">No sales in this period. Try a wider range.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

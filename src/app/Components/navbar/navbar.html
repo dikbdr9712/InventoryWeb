@@ -1,0 +1,99 @@
+<header class="nb">
+  <div class="nb-bar">
+    <button type="button" class="nb-burger" (click)="openDrawer()" aria-label="Open menu">
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <a routerLink="/" class="nb-brand" (click)="closeAll()" aria-label="DK/Phar home">
+      <img src="Images/website-logo.png" alt="" />
+      <span class="nb-brand-text">DK/Phar <small>Inventory</small></span>
+    </a>
+
+    <nav class="nb-links" aria-label="Main">
+      @for (link of mainLinks; track link.path) {
+        <a [routerLink]="link.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: link.exact }">{{ link.label }}</a>
+      }
+    </nav>
+
+    <div class="nb-actions">
+      <!-- Cart -->
+      <a routerLink="/cart" class="nb-cart" (click)="closeAll()" [attr.aria-label]="'Cart, ' + cart.count() + ' items'">
+        <i class="fas fa-bag-shopping"></i>
+        @if (cart.count() > 0) {
+          <span class="nb-count">{{ cart.count() }}</span>
+        }
+      </a>
+
+      <!-- Account -->
+      @if (auth.isLoggedIn()) {
+        <div class="nb-menu">
+          <button type="button" class="nb-avatar" (click)="toggle('account')" [attr.aria-expanded]="openMenu() === 'account'"
+                  aria-label="Account menu">{{ initials() }}</button>
+          @if (openMenu() === 'account') {
+            <div class="nb-panel" role="menu">
+              <div class="nb-who">
+                <span class="nb-avatar nb-avatar-lg">{{ initials() }}</span>
+                <div>
+                  <strong>{{ auth.name() }}</strong>
+                  <span>{{ auth.email() }}</span>
+                  @if (roleLabel()) {
+                    <em>{{ roleLabel() }}</em>
+                  }
+                </div>
+              </div>
+              <a class="nb-item" role="menuitem" routerLink="/profile" (click)="closeAll()"><i class="fas fa-user"></i> My profile</a>
+              <a class="nb-item" role="menuitem" routerLink="/orders" (click)="closeAll()"><i class="fas fa-receipt"></i> My orders</a>
+              <button type="button" class="nb-item nb-out" role="menuitem" (click)="signOut()">
+                <i class="fas fa-arrow-right-from-bracket"></i> Sign out
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <a routerLink="/login" class="nb-signin" (click)="closeAll()">Sign in</a>
+      }
+    </div>
+  </div>
+</header>
+
+<!-- Slide-in menu for phones and tablets -->
+<div class="nb-scrim" [class.show]="drawerOpen()" (click)="closeDrawer()"></div>
+<aside class="nb-drawer" [class.open]="drawerOpen()" aria-label="Menu">
+  <div class="nb-drawer-head">
+    <a routerLink="/" class="nb-brand" (click)="closeAll()">
+      <img src="Images/website-logo.png" alt="" />
+      <span class="nb-brand-text">DK/Phar <small>Inventory</small></span>
+    </a>
+    <button type="button" class="nb-burger" (click)="closeDrawer()" aria-label="Close menu">
+      <i class="fas fa-xmark"></i>
+    </button>
+  </div>
+
+  <nav class="nb-drawer-links" aria-label="Main">
+    @for (link of mainLinks; track link.path) {
+      <a [routerLink]="link.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: link.exact }" (click)="closeAll()">{{ link.label }}</a>
+    }
+  </nav>
+
+  @if (visibleGroups().length > 0) {
+    <div class="nb-drawer-manage">
+      @for (group of visibleGroups(); track group.title) {
+        <p class="nb-group">{{ group.title }}</p>
+        @for (item of group.items; track item.path) {
+          <a class="nb-item" [routerLink]="item.path" (click)="closeAll()">
+            <i class="fas" [class]="'fas ' + item.icon"></i> {{ item.label }}
+          </a>
+        }
+      }
+    </div>
+  }
+
+  <div class="nb-drawer-foot">
+    @if (auth.isLoggedIn()) {
+      <a class="nb-item" routerLink="/profile" (click)="closeAll()"><i class="fas fa-user"></i> My profile</a>
+      <button type="button" class="nb-item nb-out" (click)="signOut()"><i class="fas fa-arrow-right-from-bracket"></i> Sign out</button>
+    } @else {
+      <a routerLink="/login" class="nb-signin nb-signin-block" (click)="closeAll()">Sign in</a>
+    }
+  </div>
+</aside>

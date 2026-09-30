@@ -1,0 +1,23 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Our services</h1>
+      <p>Everything we offer, from browsing to your front door.</p>
+    </div>
+  </div>
+
+  <div class="cards">
+    @for (service of services; track service.title) {
+      <article class="panel service">
+        <span class="icon"><i class="fas" [class]="'fas ' + service.icon"></i></span>
+        <h2>{{ service.title }}</h2>
+        <ul>
+          @for (point of service.points; track point) {
+            <li>{{ point }}</li>
+          }
+        </ul>
+        <a [routerLink]="service.link" class="btn btn-outline-primary">{{ service.button }}</a>
+      </article>
+    }
+  </div>
+</div>

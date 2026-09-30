@@ -1,0 +1,128 @@
+/* Complete replacement. */
+
+.search {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.search i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search input {
+  padding-left: 40px;
+}
+
+.msg {
+  margin-bottom: 14px;
+  padding: 18px 20px;
+}
+
+.msg header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--green-deep);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.who a {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+}
+
+time {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.text {
+  margin: 14px 0;
+  max-width: 75ch;
+  line-height: 1.6;
+  white-space: pre-line; /* keep the line breaks the customer typed */
+  word-break: break-word;
+}
+
+.msg footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px 14px;
+}
+
+.ref {
+  margin-right: auto;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--saffron-soft);
+  color: #7a5200;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ref:hover {
+  background: #f9e7b0;
+  color: #5c3f00;
+}
+
+.empty {
+  padding: 52px 20px;
+  text-align: center;
+}
+
+.empty i {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 2.2rem;
+}
+
+.empty h2 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+}
+
+.empty p {
+  margin: 0;
+  color: var(--muted);
+}
+
+@media (max-width: 520px) {
+  .msg header {
+    flex-wrap: wrap;
+  }
+
+  time {
+    width: 100%;
+    padding-left: 52px;
+  }
+}

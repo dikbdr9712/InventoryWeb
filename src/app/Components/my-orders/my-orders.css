@@ -1,0 +1,227 @@
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.seg button {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.seg button.on {
+  background: var(--green);
+  color: #fff;
+}
+
+.note {
+  color: var(--muted);
+}
+
+/* Order card */
+.order {
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.order-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.when {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Progress track */
+.track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 18px 20px 6px;
+  list-style: none;
+}
+
+.track li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.track li::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: -50%;
+  right: 50%;
+  height: 3px;
+  background: var(--line);
+}
+
+.track li:first-child::before {
+  display: none;
+}
+
+.track .dot {
+  position: relative;
+  z-index: 1;
+  width: 15px;
+  height: 15px;
+  border: 3px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.track li.done,
+.track li.now {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.track li.done::before,
+.track li.now::before {
+  background: var(--green);
+}
+
+.track li.done .dot {
+  border-color: var(--green);
+  background: var(--green);
+}
+
+.track li.now .dot {
+  border-color: var(--saffron);
+  background: #fff;
+  box-shadow: 0 0 0 4px var(--saffron-soft);
+}
+
+/* Items */
+.items {
+  margin: 0;
+  padding: 8px 20px;
+  list-style: none;
+}
+
+.items li {
+  display: grid;
+  grid-template-columns: 48px 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.items li:last-child {
+  border-bottom: 0;
+}
+
+.items img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: var(--wash);
+  object-fit: contain;
+}
+
+.item-name {
+  font-weight: 600;
+}
+
+.item-qty {
+  color: var(--muted);
+}
+
+.item-total {
+  min-width: 110px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Footer of the card */
+.order-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--wash);
+}
+
+.order-total {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.order-total span {
+  color: var(--muted);
+}
+
+.order-total strong {
+  font-size: 1.3rem;
+}
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Empty state */
+.empty {
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.empty i {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 2.2rem;
+}
+
+.empty h2 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+}
+
+.empty p {
+  margin: 0 0 18px;
+  color: var(--muted);
+}
+
+@media (max-width: 560px) {
+  .items li {
+    grid-template-columns: 48px 1fr auto;
+  }
+
+  .item-qty {
+    display: none;
+  }
+
+  .order-head {
+    align-items: flex-start;
+  }
+}

@@ -1,0 +1,43 @@
+<div class="toasts" aria-live="polite" aria-atomic="false">
+  @for (t of toastService.toasts(); track t.id) {
+    <div class="toast-item" [class]="'toast-item ' + t.kind" [attr.role]="t.kind === 'error' ? 'alert' : 'status'">
+      <i class="fas" [class]="'fas ' + (t.kind === 'success' ? 'fa-circle-check' : t.kind === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info')"></i>
+      <span class="toast-text">{{ t.message }}</span>
+      @if (t.action) {
+        <a [routerLink]="t.action.link" (click)="toastService.dismiss(t.id)">{{ t.action.label }}</a>
+      }
+      <button type="button" (click)="toastService.dismiss(t.id)" aria-label="Dismiss message">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+  }
+</div>
+
+@if (confirm.current(); as c) {
+  <div class="dlg-scrim" (click)="confirm.answer(false)"></div>
+  <div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlg-title" aria-describedby="dlg-msg">
+    <h2 id="dlg-title">{{ c.title }}</h2>
+    <p id="dlg-msg">{{ c.message }}</p>
+
+    @if (c.prompt; as p) {
+      <label class="dlg-label" for="dlg-text">{{ p.label }}</label>
+      <textarea #promptBox id="dlg-text" rows="4" class="form-control" [placeholder]="p.placeholder"
+                [value]="confirm.text()" (input)="confirm.setText(promptBox.value)"></textarea>
+      @if (p.templates.length > 0) {
+        <div class="dlg-templates" aria-label="Quick messages">
+          @for (t of p.templates; track t) {
+            <button type="button" (click)="confirm.setText(t)">{{ t }}</button>
+          }
+        </div>
+      }
+    }
+
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-secondary" (click)="confirm.answer(false)">{{ c.cancelLabel }}</button>
+      <button #okButton type="button" [class]="c.danger ? 'btn btn-danger' : 'btn btn-primary'"
+              [disabled]="!!c.prompt && !confirm.text().trim()" (click)="confirm.answer(true)">
+        {{ c.confirmLabel }}
+      </button>
+    </div>
+  </div>
+}

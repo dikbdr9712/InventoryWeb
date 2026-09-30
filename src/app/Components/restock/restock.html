@@ -1,0 +1,230 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Restock</h1>
+      <p>Record stock that arrived from a supplier.</p>
+    </div>
+    <a routerLink="/products" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Products</a>
+  </div>
+
+  @if (lastAdded(); as added) {
+    <div class="added" role="status">
+      <i class="fas fa-circle-check"></i>
+      <div class="added-text">
+        <strong>Stock added: {{ added.quantity }} x {{ added.name }}</strong>
+        <span>
+          Total cost Nu. {{ added.total | number: '1.2-2' }}
+          @if (added.stock !== null) {
+            . Now in stock: {{ added.stock }}
+          }
+        </span>
+      </div>
+      <a routerLink="/products" class="btn btn-outline-primary btn-sm">View products</a>
+      <button type="button" class="added-close" (click)="lastAdded.set(null)" aria-label="Dismiss">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+  }
+
+  <form class="rs" (ngSubmit)="submit()" novalidate>
+    <div class="rs-main">
+      <!-- ============ Step 1 ============ -->
+      <section class="panel step">
+        <h2><span class="num">1</span> Which item?</h2>
+
+        @if (selected(); as item) {
+          <div class="picked">
+            @if (item.image) {
+              <img [src]="item.image" [alt]="item.itemName" (error)="onImageError($event)" />
+            }
+            <div class="picked-info">
+              <strong>{{ item.itemName }}</strong>
+              <span>
+                Code {{ item.sku }}
+                @if (item.stock !== undefined && item.stock !== null) {
+                  , {{ item.stock }} in stock now
+                }
+              </span>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="changeItem()">Change</button>
+          </div>
+        } @else if (isNewItem()) {
+          <div class="new">
+            <p class="new-note">
+              <i class="fas fa-circle-plus"></i>
+              This item is new. Fill in its details, and it will be created with this delivery.
+              <button type="button" class="link" (click)="changeItem()">Search again</button>
+            </p>
+
+            <div class="two">
+              <div class="field">
+                <label for="newSku">Code (SKU)</label>
+                <input id="newSku" name="newSku" type="text" class="form-control"
+                       [class.is-invalid]="submitted() && errors().sku" [(ngModel)]="newItem.sku" />
+                @if (submitted() && errors().sku) {
+                  <p class="err">{{ errors().sku }}</p>
+                }
+              </div>
+              <div class="field">
+                <label for="newItemName">Name</label>
+                <input id="newItemName" name="newItemName" type="text" class="form-control"
+                       [class.is-invalid]="submitted() && errors().name" [(ngModel)]="newItem.itemName" />
+                @if (submitted() && errors().name) {
+                  <p class="err">{{ errors().name }}</p>
+                }
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="newDescription">Description</label>
+              <textarea id="newDescription" name="newDescription" rows="2" class="form-control" [(ngModel)]="newItem.description"></textarea>
+            </div>
+
+            <div class="two">
+              <div class="field">
+                <label for="newUom">Sold by</label>
+                <select id="newUom" name="newUom" class="custom-select" [(ngModel)]="newItem.uom">
+                  <option value="nbr">nbr</option>
+                  <option value="kg">kg</option>
+                  <option value="liter">liter</option>
+                  <option value="box">box</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="newPricePerUnit">Selling price (Nu.)</label>
+                <input id="newPricePerUnit" name="newPricePerUnit" type="number" min="0" step="0.01" class="form-control"
+                       [(ngModel)]="newItem.pricePerUnit" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div class="field">
+                <label for="newBarcode">Barcode</label>
+                <input id="newBarcode" name="newBarcode" type="text" class="form-control" [(ngModel)]="newItem.barcode" />
+              </div>
+              <div class="field">
+                <label for="newSupplierItemCode">Supplier item code</label>
+                <input id="newSupplierItemCode" name="newSupplierItemCode" type="text" class="form-control"
+                       [(ngModel)]="newItem.supplierItemCode" />
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="search" #searchWrap>
+            <i class="fas fa-magnifying-glass"></i>
+            <input #searchBox name="itemSearch" type="search" class="form-control" autocomplete="off"
+                   placeholder="Search by code or name"
+                   [class.is-invalid]="submitted() && errors().item"
+                   [ngModel]="searchText" (ngModelChange)="onSearch($event)" aria-label="Search for an item" />
+
+            @if (showSuggestions()) {
+              <ul class="suggest">
+                @for (item of suggestions(); track item.itemId) {
+                  <li>
+                    <button type="button" (click)="pick(item)">
+                      <strong>{{ item.itemName }}</strong>
+                      <span>{{ item.sku }}</span>
+                    </button>
+                  </li>
+                }
+                @if (noMatchTerm()) {
+                  <li>
+                    <button type="button" class="add-new" (click)="startNewItem(noMatchTerm())">
+                      <i class="fas fa-plus"></i> Add "{{ noMatchTerm() }}" as a new item
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+          @if (submitted() && errors().item) {
+            <p class="err">{{ errors().item }}</p>
+          } @else {
+            <p class="hint">Type at least two letters. Not in the list? You can add it as a new item.</p>
+          }
+        }
+      </section>
+
+      <!-- ============ Step 2 ============ -->
+      <section class="panel step">
+        <h2><span class="num">2</span> What arrived?</h2>
+
+        <div class="two">
+          <div class="field">
+            <label for="quantity">Quantity</label>
+            <input id="quantity" name="quantity" type="number" min="1" step="1" class="form-control"
+                   [class.is-invalid]="submitted() && errors().quantity" [(ngModel)]="purchase.quantity" />
+            @if (submitted() && errors().quantity) {
+              <p class="err">{{ errors().quantity }}</p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="unitPrice">Cost of one (Nu.)</label>
+            <input id="unitPrice" name="unitPrice" type="number" min="0" step="0.01" class="form-control"
+                   [class.is-invalid]="submitted() && errors().price" [(ngModel)]="purchase.unitPrice" />
+            @if (submitted() && errors().price) {
+              <p class="err">{{ errors().price }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="supplier">Supplier</label>
+          <input id="supplier" name="supplier" type="text" class="form-control" placeholder="e.g. Tech Imports Co."
+                 [class.is-invalid]="submitted() && errors().supplier" [(ngModel)]="purchase.supplier" />
+          @if (submitted() && errors().supplier) {
+            <p class="err">{{ errors().supplier }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="notes">Notes <span class="opt">(optional)</span></label>
+          <textarea id="notes" name="notes" rows="2" class="form-control"
+                    placeholder="Invoice number, condition on arrival, anything worth remembering" [(ngModel)]="purchase.notes"></textarea>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ Summary ============ -->
+    <aside class="panel summary" aria-label="Delivery summary">
+      <h2>This delivery</h2>
+
+      <dl>
+        <div>
+          <dt>Item</dt>
+          <dd>{{ itemLabel() || 'Not chosen yet' }}</dd>
+        </div>
+        <div>
+          <dt>Quantity</dt>
+          <dd>{{ quantityValue || 'None' }}</dd>
+        </div>
+        <div>
+          <dt>Cost of one</dt>
+          <dd>
+            @if (purchase.unitPrice != null) {
+              Nu. {{ purchase.unitPrice | number: '1.2-2' }}
+            } @else {
+              Not entered
+            }
+          </dd>
+        </div>
+      </dl>
+
+      <div class="total">
+        <span>Total cost</span>
+        <strong>Nu. {{ totalCost | number: '1.2-2' }}</strong>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" [disabled]="saving() || justSaved()">
+        @if (saving()) {
+          <span class="spinner-border spinner-border-sm" role="status"></span> Saving...
+        } @else if (justSaved()) {
+          <i class="fas fa-check"></i> Added
+        } @else {
+          <i class="fas fa-boxes-stacked"></i> Add to stock
+        }
+      </button>
+    </aside>
+  </form>
+</div>

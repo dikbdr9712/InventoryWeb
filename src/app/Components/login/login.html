@@ -1,0 +1,44 @@
+<app-auth-layout title="Sign in" subtitle="Welcome back. Enter your details to continue.">
+  <form (ngSubmit)="submit()" novalidate>
+    @if (formError()) {
+      <div class="alert alert-danger" role="alert">{{ formError() }}</div>
+    }
+
+    <div class="auth-field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" class="form-control" autocomplete="username"
+             [class.is-invalid]="submitted() && errors().email" [(ngModel)]="email" />
+      @if (submitted() && errors().email) {
+        <p class="auth-err">{{ errors().email }}</p>
+      }
+    </div>
+
+    <div class="auth-field">
+      <label for="password">Password</label>
+      <div class="pw">
+        <input id="password" name="password" class="form-control" autocomplete="current-password"
+               [type]="showPassword() ? 'text' : 'password'"
+               [class.is-invalid]="submitted() && errors().password" [(ngModel)]="password" />
+        <button type="button" (click)="showPassword.set(!showPassword())" [attr.aria-pressed]="showPassword()">
+          {{ showPassword() ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      @if (submitted() && errors().password) {
+        <p class="auth-err">{{ errors().password }}</p>
+      }
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg auth-submit" [disabled]="loading()">
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm" role="status"></span> Signing in...
+      } @else {
+        Sign in
+      }
+    </button>
+
+    <p class="auth-alt">
+      New here?
+      <a routerLink="/signup" [queryParams]="returnUrl ? { returnUrl: returnUrl } : {}">Create an account</a>
+    </p>
+  </form>
+</app-auth-layout>

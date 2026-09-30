@@ -1,0 +1,24 @@
+<div class="auth">
+  <div class="auth-card">
+    <aside class="auth-brand">
+      <a routerLink="/" class="auth-logo">
+        <img src="Images/website-logo.png" alt="" />
+        <span>DK/Phar<br />Inventory</span>
+      </a>
+      <h2>Shop with us, the easy way.</h2>
+      <ul>
+        @for (point of points; track point) {
+          <li><i class="fas fa-check"></i> {{ point }}</li>
+        }
+      </ul>
+    </aside>
+
+    <section class="auth-panel">
+      <h1>{{ title() }}</h1>
+      @if (subtitle()) {
+        <p class="auth-sub">{{ subtitle() }}</p>
+      }
+      <ng-content />
+    </section>
+  </div>
+</div>

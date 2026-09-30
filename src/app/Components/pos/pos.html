@@ -1,0 +1,239 @@
+<div class="container mt-4">
+  <h2>🛒 Point of Sale (Counter Sales)</h2>
+
+  <!-- Customer info -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <input type="text" id="customerName" class="form-control" placeholder="Customer Name (Optional)" [(ngModel)]="customerName" />
+    </div>
+    <div class="col-md-6">
+      <input type="text" id="customerPhone" class="form-control" placeholder="Phone (Optional)" [(ngModel)]="customerPhone" />
+    </div>
+  </div>
+
+  <!-- Item search -->
+  <div class="mb-3 search-container" #searchWrap>
+    <div class="input-group">
+      <input #searchInput type="text" id="itemSearch" class="form-control" autocomplete="off"
+             placeholder="🔍 Search item by name or code..."
+             [value]="searchTerm()" (input)="onSearch(searchInput.value)" (keydown)="onSearchKey($event)" />
+      @if (searchTerm()) {
+        <button type="button" id="clearSearchBtn" class="clear-search-btn" title="Clear search" (click)="clearSearch()">
+          <i class="fas fa-times"></i>
+        </button>
+      }
+    </div>
+
+    @if (showResults()) {
+      <ul id="searchResults" class="list-group mt-1">
+        @for (product of matches(); track product.itemId; let i = $index) {
+          <li class="list-group-item d-flex justify-content-between align-items-center"
+              [class.active]="i === highlighted()"
+              (click)="pick(product)" (mouseenter)="highlighted.set(i)">
+            <span>{{ product.itemName }} ({{ product.itemCode || 'No Code' }})</span>
+            <span class="badge badge-primary">MRP Nu. {{ product.mrp | number: '1.2-2' }}</span>
+          </li>
+        } @empty {
+          <li class="list-group-item empty-state">No items found matching "{{ searchTerm() }}"</li>
+        }
+      </ul>
+    }
+  </div>
+
+  <!-- Payment method + taxes -->
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <label for="paymentMethod">Payment Method</label>
+      <select id="paymentMethod" class="form-control" [ngModel]="paymentMethod()" (ngModelChange)="onPaymentMethodChange($event)">
+        <option value="BANK_TRANSFER">Bank Transfer</option>
+        <option value="CARD">Card</option>
+        <option value="UPI">UPI</option>
+        <option value="CASH">Cash</option>
+      </select>
+    </div>
+    <div class="col-md-8">
+      <label>Taxes &amp; Discounts</label>
+      <div class="d-flex align-items-start flex-wrap">
+        <div id="taxBuilder" class="d-flex flex-wrap align-items-center mr-2">
+          @for (tax of taxes(); track $index; let i = $index) {
+            <div class="input-group input-group-sm mb-1 mr-2 tax-row">
+              <select #typeSelect class="form-control tax-type" (change)="setTaxType(i, typeSelect.value)">
+                @for (type of taxTypes; track type.value) {
+                  <option [value]="type.value" [selected]="type.value === tax.type">{{ type.label }}</option>
+                }
+              </select>
+              <input #rateInput type="number" class="form-control tax-rate" min="0" max="100" step="0.1"
+                     placeholder="Rate %" [value]="tax.rate" (input)="setTaxRate(i, rateInput.value)" />
+              <div class="input-group-append">
+                <button class="btn btn-outline-danger" type="button" (click)="removeTax(i)">×</button>
+              </div>
+            </div>
+          }
+        </div>
+        <button type="button" id="addTaxBtn" class="btn btn-outline-secondary btn-sm" (click)="addTax()">+ Add Tax</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart -->
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Qty</th>
+        <th>MRP</th>
+        <th>Discount %</th>
+        <th>Total</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="cartItems">
+      @for (line of cart(); track line.itemId) {
+        <tr>
+          <td>{{ line.itemName }}</td>
+          <td><input #qty type="number" min="1" class="small-input" [value]="line.quantity" (change)="setQuantity(line, qty)" /></td>
+          <td>Nu. {{ line.mrp | number: '1.2-2' }}</td>
+          <td><input #disc type="number" min="0" max="100" step="0.1" class="small-input" placeholder="%"
+                     [value]="line.discountPercent" (change)="setDiscount(line, disc)" /></td>
+          <td>Nu. {{ lineTotal(line) | number: '1.2-2' }}</td>
+          <td><button class="btn btn-sm btn-danger" (click)="removeLine(line)">✕</button></td>
+        </tr>
+      } @empty {
+        <tr><td colspan="6" class="text-center text-muted">Search for an item above to start a sale.</td></tr>
+      }
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4" class="text-right"><strong>Subtotal:</strong></td>
+        <td>Nu. {{ totals().subtotal | number: '1.2-2' }}</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td colspan="4" class="text-right"><strong>Discount (-):</strong></td>
+        <td>Nu. {{ totals().discount | number: '1.2-2' }}</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td colspan="4" class="text-right"><strong>Tax (+):</strong></td>
+        <td>Nu. {{ totals().tax | number: '1.2-2' }}</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td colspan="4" class="text-right"><strong>Total:</strong></td>
+        <td><strong>Nu. {{ totals().total | number: '1.2-2' }}</strong></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- Cash change calculator -->
+  @if (paymentMethod() === 'CASH') {
+    <div id="cashChangeSection" class="mb-3">
+      <div class="row">
+        <div class="col-md-6">
+          <label for="amountReceived">Amount Received (Nu.)</label>
+          <input #amountInput type="number" id="amountReceived" class="form-control" min="0" step="0.01"
+                 placeholder="Enter amount received"
+                 [value]="amountReceived() ?? ''" (input)="onAmountInput(amountInput.value)" />
+        </div>
+        <div class="col-md-6">
+          <label for="changeAmount">Change to Return (Nu.)</label>
+          <input type="text" id="changeAmount" class="form-control" readonly placeholder="Auto-calculated" [value]="changeText()" />
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="d-flex justify-content-between mb-3">
+    <button id="completeSale" class="btn btn-success btn-lg" [disabled]="processing()" (click)="completeSale()">
+      @if (processing()) {
+        <span class="spinner-border spinner-border-sm mr-2" role="status"></span> Processing...
+      } @else {
+        ✅ Complete Sale
+      }
+    </button>
+    @if (invoice()) {
+      <button id="printInvoice" class="btn btn-outline-primary btn-lg" (click)="showInvoice.set(true)">🖨️ Last Invoice</button>
+    }
+  </div>
+</div>
+
+<!-- Invoice modal (Angular opens/closes it, no Bootstrap JS needed) -->
+@if (showInvoice()) {
+  @if (invoice(); as inv) {
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" (click)="closeInvoice()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-content">
+        <div class="modal-body">
+          <button type="button" class="close" aria-label="Close" (click)="closeInvoice()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+
+          <!-- Everything inside #invoiceEl goes into the PDF / print -->
+          <div id="invoicePreview" #invoiceEl>
+            <div class="invoice-header">
+              <h4>DP Inventory System</h4>
+              <p><strong>INVOICE</strong> @if (inv.orderId) { #{{ inv.orderId }} }</p>
+              <p><strong>Date:</strong> {{ inv.date | date: 'medium' }}</p>
+              @if (inv.customerName) {
+                <p><strong>Customer:</strong> {{ inv.customerName }}</p>
+              }
+              @if (inv.customerPhone) {
+                <p><strong>Phone:</strong> {{ inv.customerPhone }}</p>
+              }
+            </div>
+
+            <table class="table table-borderless mb-2">
+              <thead><tr><th>Item</th><th>Qty</th><th>MRP</th><th>Total</th></tr></thead>
+              <tbody>
+                @for (l of inv.lines; track $index) {
+                  <tr>
+                    <td>{{ l.name }}</td>
+                    <td>{{ l.qty }}</td>
+                    <td>Nu. {{ l.mrp | number: '1.2-2' }}</td>
+                    <td>Nu. {{ l.total | number: '1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+
+            <table class="table table-borderless mb-0">
+              <tbody>
+                <tr class="summary-row">
+                  <td colspan="3"><strong>Subtotal:</strong></td>
+                  <td><strong>Nu. {{ inv.subtotal | number: '1.2-2' }}</strong></td>
+                </tr>
+                <tr class="summary-row">
+                  <td colspan="3"><strong>Discount (-):</strong></td>
+                  <td><strong>- Nu. {{ inv.discount | number: '1.2-2' }}</strong></td>
+                </tr>
+                @for (t of inv.taxLines; track $index) {
+                  <tr class="summary-row">
+                    <td colspan="3">{{ t.label }}:</td>
+                    <td>+ Nu. {{ t.amount | number: '1.2-2' }}</td>
+                  </tr>
+                }
+                <tr class="summary-row">
+                  <td colspan="3"><strong>Grand Total:</strong></td>
+                  <td><strong>Nu. {{ inv.total | number: '1.2-2' }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="footer-note">
+              Payment Method: {{ inv.paymentMethod }}<br />
+              Thank you for shopping with us!
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeInvoice()">Close</button>
+          <button type="button" class="btn btn-outline-primary" (click)="printInvoice()">🖨️ Print</button>
+          <button type="button" id="downloadInvoice" class="btn btn-primary" (click)="downloadPdf()">📥 Download PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show"></div>
+  }
+}

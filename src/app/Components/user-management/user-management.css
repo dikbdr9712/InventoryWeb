@@ -1,0 +1,349 @@
+/* Complete replacement: this page no longer uses your old user.css. */
+
+.note {
+  color: var(--muted);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 18px;
+}
+
+.search {
+  position: relative;
+  flex: 1 1 280px;
+}
+
+.search i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search input {
+  padding-left: 40px;
+}
+
+.table-panel {
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  padding: 14px 18px;
+}
+
+/* Person */
+.person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.person > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--green-deep);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.email {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.you {
+  align-self: flex-start;
+  margin: 2px 0;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--saffron-soft);
+  color: #7a5200;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Role labels */
+.role {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.role.admin { background: var(--saffron-soft); color: #7a5200; }
+.role.manager { background: var(--blue-soft); color: var(--blue); }
+.role.controller { background: var(--green-soft); color: var(--green-deep); }
+.role.user { background: var(--wash); color: var(--muted); }
+
+.change {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.change select {
+  width: auto;
+  min-width: 140px;
+}
+
+.locked {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.empty {
+  padding: 36px 18px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Who can do what */
+.legend {
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.legend summary {
+  padding: 16px 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.legend .table {
+  border-top: 1px solid var(--line);
+}
+
+.legend .tick {
+  text-align: center;
+}
+
+.yes {
+  color: var(--green);
+}
+
+.no {
+  color: var(--muted);
+}
+
+.legend-note {
+  margin: 0;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Denied and signed-out states */
+.state {
+  max-width: 520px;
+  margin: 24px auto;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.state i {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 2.2rem;
+}
+
+.state h2 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+}
+
+.state p {
+  margin: 0 0 18px;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .table th,
+  .table td {
+    padding: 12px;
+  }
+
+  .change {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ---------- Add a user ---------- */
+.add {
+  margin-bottom: 20px;
+  padding: 22px;
+}
+
+.add h2 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+}
+
+.add .field {
+  margin-bottom: 16px;
+}
+
+.add .field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+}
+
+.add .two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.add .is-invalid {
+  border-color: var(--red);
+}
+
+.add .err {
+  margin: 6px 0 0;
+  color: var(--red);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.add .hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.pw-row {
+  display: flex;
+  gap: 8px;
+}
+
+.pw-row .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* The account that was just created */
+.created {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  border: 1px solid #a9d6c3;
+  border-radius: var(--radius);
+  background: var(--green-soft);
+}
+
+.created > i {
+  margin-top: 2px;
+  color: var(--green);
+  font-size: 1.5rem;
+}
+
+.created-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.created-text strong {
+  color: var(--green-deep);
+}
+
+.pw-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0;
+}
+
+.pw-line code {
+  padding: 5px 12px;
+  border: 1px solid #a9d6c3;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  user-select: all;
+}
+
+.created .copy {
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--green);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.created .copy:hover {
+  border-color: var(--green);
+}
+
+.created .warn {
+  color: #7a5200;
+  font-size: 0.9rem;
+}
+
+.created-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.created-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .add .two {
+    grid-template-columns: 1fr;
+  }
+
+  .pw-row {
+    flex-wrap: wrap;
+  }
+
+  .pw-row .form-control {
+    flex: 1 1 100%;
+  }
+}

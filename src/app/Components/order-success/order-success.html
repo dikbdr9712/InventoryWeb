@@ -1,0 +1,40 @@
+<div class="page done">
+  <div class="card-done panel">
+    <span class="tick"><i class="fas fa-check"></i></span>
+
+    <h1>
+      @if (firstName) {
+        Thank you, {{ firstName }}!
+      } @else {
+        Thank you!
+      }
+    </h1>
+    <p class="lead">
+      Your order
+      @if (orderId) {
+        <strong>#{{ orderId }}</strong>
+      }
+      has been placed.
+    </p>
+
+    <ol class="next">
+      @for (step of steps; track step.title; let i = $index) {
+        <li>
+          <span class="n">{{ i + 1 }}</span>
+          <div>
+            <strong>{{ step.title }}</strong>
+            <span>{{ step.text }}</span>
+          </div>
+        </li>
+      }
+    </ol>
+
+    <div class="buttons">
+      @if (orderId) {
+        <a [routerLink]="['/orders', orderId]" class="btn btn-primary">View this order</a>
+      }
+      <a routerLink="/orders" class="btn btn-secondary">All my orders</a>
+      <a routerLink="/products" class="btn btn-outline-secondary">Keep shopping</a>
+    </div>
+  </div>
+</div>

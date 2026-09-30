@@ -1,0 +1,242 @@
+<div class="page">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a routerLink="/products"><i class="fas fa-arrow-left"></i> All products</a>
+  </nav>
+
+  <div class="page-head">
+    <div>
+      <h1>{{ isEdit ? 'Edit product' : 'Add a product' }}</h1>
+      <p>{{ isEdit ? 'Change the details customers and staff see.' : 'Fill in the details. You can change them later.' }}</p>
+    </div>
+  </div>
+
+  @if (created(); as done) {
+    <section class="created panel" role="status">
+      <span class="tick"><i class="fas fa-check"></i></span>
+      <h2>{{ done.name }} was added</h2>
+      <p>
+        It sells for Nu. {{ done.price | number: '1.2-2' }} and starts with {{ done.stock }} in stock.
+        Customers can see it in the shop now.
+      </p>
+      <div class="created-actions">
+        <button type="button" class="btn btn-primary" (click)="addAnother()">
+          <i class="fas fa-plus"></i> Add another product
+        </button>
+        <a routerLink="/products" class="btn btn-secondary">View all products</a>
+      </div>
+    </section>
+  } @else if (loaded()) {
+    <form class="pf" (ngSubmit)="save()" novalidate>
+      <div class="pf-main">
+        <!-- ======== Basic details ======== -->
+        <section class="panel sec">
+          <h2>Basic details</h2>
+
+          <div class="field">
+            <label for="itemName">Product name</label>
+            <input id="itemName" name="itemName" type="text" class="form-control"
+                   [class.is-invalid]="submitted() && errors().name" [(ngModel)]="model.itemName" />
+            @if (submitted() && errors().name) {
+              <p class="err">{{ errors().name }}</p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="3" class="form-control"
+                      placeholder="What is it, and what should a customer know?" [(ngModel)]="model.description"></textarea>
+          </div>
+
+          @if (!isEdit) {
+            <div class="field">
+              <label for="category">Category</label>
+              <input id="category" name="category" type="text" class="form-control" list="categories"
+                     placeholder="Pick one or type a new one" [class.is-invalid]="submitted() && errors().category"
+                     [(ngModel)]="model.category" />
+              <datalist id="categories">
+                @for (name of categories(); track name) {
+                  <option [value]="name"></option>
+                }
+              </datalist>
+              @if (submitted() && errors().category) {
+                <p class="err">{{ errors().category }}</p>
+              }
+            </div>
+          } @else if (model.category) {
+            <p class="static"><span>Category</span> <strong>{{ model.category }}</strong></p>
+          }
+        </section>
+
+        <!-- ======== Pricing ======== -->
+        <section class="panel sec">
+          <h2>Pricing</h2>
+
+          @if (!isEdit) {
+            <div class="field">
+              <label for="costPrice">Cost price (Nu.)</label>
+              <input id="costPrice" name="costPrice" type="number" min="0" step="0.01" class="form-control"
+                     placeholder="What you pay for one" [class.is-invalid]="submitted() && errors().cost"
+                     [(ngModel)]="model.costPrice" />
+              @if (submitted() && errors().cost) {
+                <p class="err">{{ errors().cost }}</p>
+              }
+            </div>
+          } @else {
+            <p class="static">
+              <span>Cost price</span>
+              <strong>
+                @if (costPriceValue > 0) {
+                  Nu. {{ costPriceValue | number: '1.2-2' }}
+                } @else {
+                  Not set
+                }
+              </strong>
+            </p>
+          }
+
+          <div class="field">
+            <span class="label">How do you want to set the selling price?</span>
+            <div class="seg" role="group" aria-label="Pricing method">
+              <button type="button" [class.on]="!isMarkup" (click)="setMethod('sellingPrice')">Type the price</button>
+              <button type="button" [class.on]="isMarkup" (click)="setMethod('markupPercent')">Add a markup %</button>
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="field">
+              <label for="pricingInput">{{ isMarkup ? 'Markup (%)' : 'Selling price (Nu.)' }}</label>
+              <input id="pricingInput" name="pricingInput" type="number" class="form-control"
+                     [step]="isMarkup ? 0.1 : 0.01" [placeholder]="isMarkup ? 'e.g. 25 for 25%' : 'e.g. 50.00'"
+                     [class.is-invalid]="submitted() && errors().price" [(ngModel)]="model.pricingInput" />
+              @if (submitted() && errors().price) {
+                <p class="err">{{ errors().price }}</p>
+              }
+            </div>
+
+            <div class="field">
+              <label for="mrp">MRP (Nu.)</label>
+              <input id="mrp" name="mrp" type="number" min="0" step="0.01" class="form-control"
+                     placeholder="Leave empty for no discount" [(ngModel)]="model.mrp" />
+              <p class="hint">The printed price. If it is above the selling price, the discount shows on the shop.</p>
+            </div>
+          </div>
+
+          @if (preview; as p) {
+            <dl class="preview" aria-label="Price preview">
+              <div>
+                <dt>Customers pay</dt>
+                <dd>Nu. {{ p.selling | number: '1.2-2' }}</dd>
+              </div>
+              <div>
+                <dt>Discount shown</dt>
+                <dd>{{ p.discount > 0 ? p.discount + '% off' : 'None' }}</dd>
+              </div>
+              <div>
+                <dt>Profit on each</dt>
+                <dd [class.loss]="p.profit !== null && p.profit < 0">
+                  @if (p.profit === null) {
+                    Add a cost price
+                  } @else {
+                    Nu. {{ p.profit | number: '1.2-2' }} ({{ p.margin }}%)
+                  }
+                </dd>
+              </div>
+            </dl>
+          }
+        </section>
+
+        <!-- ======== Stock and codes ======== -->
+        <section class="panel sec">
+          <h2>Stock and codes</h2>
+
+          <div class="two">
+            <div class="field">
+              <label for="quantity">{{ isEdit ? 'Stock in hand' : 'Opening stock' }}</label>
+              <input id="quantity" name="quantity" type="number" min="0" step="1" class="form-control"
+                     [class.is-invalid]="submitted() && errors().stock" [(ngModel)]="model.quantity" />
+              @if (submitted() && errors().stock) {
+                <p class="err">{{ errors().stock }}</p>
+              } @else if (isEdit) {
+                <p class="hint">This replaces the stock count. To record a delivery, use <a routerLink="/restock">Restock</a> instead.</p>
+              }
+            </div>
+
+            <div class="field">
+              <label for="lowStockThreshold">Warn me when stock reaches</label>
+              <input id="lowStockThreshold" name="lowStockThreshold" type="number" min="0" step="1" class="form-control"
+                     [(ngModel)]="model.lowStockThreshold" />
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="field">
+              <label for="uom">Sold by</label>
+              <select id="uom" name="uom" class="custom-select" [(ngModel)]="model.uom">
+                @for (u of uomOptions; track u) {
+                  <option [value]="u">{{ u }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="barcode">Barcode</label>
+              <input id="barcode" name="barcode" type="text" class="form-control" [(ngModel)]="model.barcode" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="supplierItemCode">Supplier item code</label>
+            <input id="supplierItemCode" name="supplierItemCode" type="text" class="form-control" [(ngModel)]="model.supplierItemCode" />
+          </div>
+        </section>
+      </div>
+
+      <!-- ======== Side: photo and save ======== -->
+      <aside class="pf-side">
+        <section class="panel sec">
+          <h2>Photo</h2>
+
+          <div class="photo">
+            <img [src]="imageUrl()" alt="Product photo preview" />
+          </div>
+
+          <input #file id="imageFile" name="imageFile" type="file" accept="image/*" class="sr-only" (change)="onFileSelected($event)" />
+          <div class="photo-actions">
+            <label for="imageFile" class="btn btn-outline-secondary btn-sm">
+              <i class="fas fa-image"></i> {{ selectedFile ? 'Choose another' : 'Choose a photo' }}
+            </label>
+            @if (selectedFile) {
+              <button type="button" class="btn btn-link btn-sm" (click)="removeNewImage(file)">Remove</button>
+            }
+          </div>
+
+          @if (fileError()) {
+            <p class="err">{{ fileError() }}</p>
+          } @else {
+            <p class="hint">JPG or PNG, under 2 MB. A square photo on a plain background looks best.</p>
+          }
+        </section>
+
+        <section class="panel sec save">
+          <button type="submit" class="btn btn-primary btn-lg" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm" role="status"></span> Saving...
+            } @else {
+              <i class="fas fa-check"></i> {{ isEdit ? 'Save changes' : 'Add product' }}
+            }
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="goBack()">Cancel</button>
+        </section>
+      </aside>
+    </form>
+  } @else if (loadError()) {
+    <div class="missing panel">
+      <i class="fas fa-circle-exclamation"></i>
+      <h2>Product not found</h2>
+      <p>{{ loadError() }}</p>
+      <a routerLink="/products" class="btn btn-primary">Back to products</a>
+    </div>
+  } @else {
+    <p class="note">Loading the product...</p>
+  }
+</div>

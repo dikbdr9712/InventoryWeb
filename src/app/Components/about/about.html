@@ -1,0 +1,51 @@
+<div class="page">
+  <section class="intro">
+    <div class="intro-text">
+      <h1>About us</h1>
+      <p>
+        We connect people with natural products they can trust, and with sellers who care
+        about the same things they do.
+      </p>
+      <a routerLink="/contact" class="btn btn-primary">Get in touch</a>
+    </div>
+    <img class="intro-art" src="Images/Group-removebg-preview.png" alt="" (error)="hide($event)" />
+  </section>
+
+  <section class="pillars">
+    <article class="panel pillar">
+      <span class="icon"><i class="fas fa-bullseye"></i></span>
+      <h2>Our mission</h2>
+      <p>
+        Our mission is to connect consumers with trustworthy sellers who share our commitment to natural and
+        sustainable living. We strive to support local businesses and artisans who produce these products with
+        love and care.
+      </p>
+    </article>
+
+    <article class="panel pillar">
+      <span class="icon"><i class="fas fa-seedling"></i></span>
+      <h2>Our vision</h2>
+      <p>
+        Our vision is to create exceptional nature-inspired products that harmonize with your well-being and the
+        environment. We believe in the transformative power of nature and aim to bring its inherent goodness into
+        your daily life.
+      </p>
+    </article>
+  </section>
+
+  <section class="team">
+    <h2>Meet the team</h2>
+    <div class="people">
+      @for (person of team; track person.name) {
+        <article class="person">
+          <span class="photo">
+            <span class="fallback">{{ initials(person.name) }}</span>
+            <img [src]="person.photo" [alt]="person.name" loading="lazy" (error)="hide($event)" />
+          </span>
+          <h3>{{ person.name }}</h3>
+          <span>{{ person.role }}</span>
+        </article>
+      }
+    </div>
+  </section>
+</div>
