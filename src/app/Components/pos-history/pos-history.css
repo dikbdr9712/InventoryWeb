@@ -171,3 +171,33 @@ tr.open > td {
   font-size: 0.9rem;
   font-weight: 600;
 }
+
+
+/* two buttons in the last cell */
+.act .btn + .btn {
+  margin-left: 6px;
+}
+
+
+/* what was refunded, under the total */
+.refund-tag {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--red-soft);
+  color: var(--red);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.refund-tag.full {
+  background: var(--wash);
+  color: var(--muted);
+}
+
+.strip-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+}

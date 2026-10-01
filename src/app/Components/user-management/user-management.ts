@@ -38,6 +38,7 @@ const PERMISSION_LABELS: Record<Permission, string> = {
   'pos.use': 'Use the point of sale',
   'reports.view': 'See the sales dashboard',
   'messages.view': 'Read customer messages',
+  'sales.return': 'Take items back from a sale and refund',
   'users.manage': 'Manage users and roles'
 };
 

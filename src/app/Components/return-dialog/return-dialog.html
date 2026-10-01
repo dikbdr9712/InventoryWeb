@@ -1,0 +1,242 @@
+<div class="rd-scrim"></div>
+
+<div #dialog class="rd-dialog" role="dialog" aria-modal="true" aria-labelledby="rd-title" tabindex="-1">
+  <header class="rd-head">
+    <div class="rd-head-text">
+      <h2 id="rd-title">{{ done() ? 'Return recorded' : 'Take items back' }}</h2>
+      <p>From sale #{{ orderId() }}</p>
+    </div>
+    <button type="button" class="rd-x" (click)="close()" [disabled]="saving()" aria-label="Close">
+      <i class="fas fa-xmark"></i>
+    </button>
+  </header>
+
+  <div class="rd-body">
+    @if (loading()) {
+      <p class="rd-note">Loading the sale...</p>
+    } @else if (loadError()) {
+      <div class="rd-alert bad" role="alert"><i class="fas fa-circle-exclamation"></i><span>{{ loadError() }}</span></div>
+    } @else if (done(); as d) {
+
+      <!-- ============ Done: what to give back, and the credit note ============ -->
+      <div class="rd-done" role="status">
+        <span class="rd-tick"><i class="fas fa-check"></i></span>
+        <h3>Give the customer Nu. {{ d.refundAmount | number: '1.2-2' }}</h3>
+        <p>
+          {{ d.refundMethod === 'CASH' ? 'In cash.' : 'Back to the way they paid.' }}
+          Return #{{ d.returnId }} is saved@if (restockedCount(d) > 0) {, and {{ restockedCount(d) }}
+          {{ restockedCount(d) === 1 ? 'item' : 'items' }} went back in stock}.
+        </p>
+      </div>
+
+      <!-- The credit note: shown here, printed on A4, and as a narrow receipt -->
+      <div #creditNote class="sheet">
+        <div class="sheet-top">
+          <div class="brand">
+            <img src="Images/website-logo.png" alt="" />
+            <div>
+              <div class="brand-name">{{ shop.name }}</div>
+              <div class="brand-meta">{{ shop.address }}</div>
+              <div class="brand-meta">Phone {{ shop.phone }}</div>
+            </div>
+          </div>
+          <div class="doc">
+            <div class="doc-title">CREDIT NOTE</div>
+            <div class="doc-no">#{{ d.returnId }}</div>
+            <div class="doc-date">{{ d.createdAt | date: 'd MMM y, h:mm a' }}</div>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div>
+            <div class="meta-label">For sale</div>
+            <div class="meta-value">#{{ d.orderId }}</div>
+            <div class="meta-sub">{{ reasonLabel(d.reason) }}</div>
+          </div>
+          <div>
+            <div class="meta-label">Refund</div>
+            <div class="meta-value">{{ d.refundMethod === 'CASH' ? 'Cash' : 'Original payment method' }}</div>
+            @if (d.createdBy) {
+              <div class="meta-sub">Handled by {{ d.createdBy }}</div>
+            }
+          </div>
+        </div>
+
+        <table class="items">
+          <thead>
+            <tr><th>Item</th><th class="num">Qty</th><th class="num">Refund each</th><th class="num">Refund</th></tr>
+          </thead>
+          <tbody>
+            @for (i of d.items; track i.orderItemId) {
+              <tr>
+                <td>{{ nameOf(i) }}</td>
+                <td class="num">{{ i.quantity }}</td>
+                <td class="num">{{ i.unitRefund | number: '1.2-2' }}</td>
+                <td class="num strong">{{ i.unitRefund * i.quantity | number: '1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <div class="grand-row"><span>Total refund</span><span>Nu. {{ d.refundAmount | number: '1.2-2' }}</span></div>
+        </div>
+
+        @if (d.note) {
+          <div class="sheet-note">Note: {{ d.note }}</div>
+        }
+        <div class="sheet-foot">Thank you</div>
+      </div>
+
+      <div #creditReceipt class="receipt-print">
+        <div class="r-center">
+          <strong class="r-shop">{{ shop.name }}</strong>
+          <div>{{ shop.address }}</div>
+          <div>Phone {{ shop.phone }}</div>
+        </div>
+        <div class="r-rule"></div>
+        <div class="r-center"><strong>CREDIT NOTE #{{ d.returnId }}</strong></div>
+        <div>{{ d.createdAt | date: 'd MMM y, h:mm a' }}</div>
+        <div>For sale #{{ d.orderId }}</div>
+        <div>{{ reasonLabel(d.reason) }}</div>
+        <div class="r-rule"></div>
+        @for (i of d.items; track i.orderItemId) {
+          <div class="r-item">
+            <div class="r-name">{{ nameOf(i) }}</div>
+            <div class="r-row"><span>{{ i.quantity }} x {{ i.unitRefund | number: '1.2-2' }}</span><span>{{ i.unitRefund * i.quantity | number: '1.2-2' }}</span></div>
+          </div>
+        }
+        <div class="r-rule"></div>
+        <div class="r-row r-total"><span>REFUND</span><span>Nu. {{ d.refundAmount | number: '1.2-2' }}</span></div>
+        <div>{{ d.refundMethod === 'CASH' ? 'Paid back in cash' : 'Back to the original payment method' }}</div>
+        <div class="r-rule"></div>
+        <div class="r-center">Thank you</div>
+      </div>
+
+    } @else if (data(); as sale) {
+      @if (!sale.eligible) {
+        <div class="rd-alert warn" role="alert"><i class="fas fa-ban"></i><span>{{ sale.message }}</span></div>
+      } @else if (nothingLeft()) {
+        <div class="rd-alert info">
+          <i class="fas fa-circle-info"></i>
+          <span>Everything on this sale has already been returned. Refunded so far: Nu. {{ sale.refundedSoFar | number: '1.2-2' }}.</span>
+        </div>
+      } @else {
+
+        <!-- ============ The form ============ -->
+        <p class="rd-meta">
+          <span><i class="fas fa-clock"></i> {{ sale.daysLeft }} {{ sale.daysLeft === 1 ? 'day' : 'days' }} left to return</span>
+          @if (sale.refundedSoFar > 0) {
+            <span>Already refunded Nu. {{ sale.refundedSoFar | number: '1.2-2' }}</span>
+          }
+        </p>
+
+        <div class="rd-lines">
+          <div class="rd-lines-head" aria-hidden="true"><span>Item</span><span>Bring back</span><span class="r">Refund</span></div>
+
+          @for (line of lines(); track line.orderItemId) {
+            <div class="rd-line" [class.is-done]="line.quantityLeft === 0">
+              <div class="rd-item">
+                <img [src]="imageOf(line)" alt="" (error)="onImageError($event)" />
+                <div>
+                  <strong>{{ nameOf(line) }}</strong>
+                  <span>Bought {{ line.quantitySold }}@if (line.quantityReturned > 0) {, already returned {{ line.quantityReturned }}}</span>
+                  <span>Nu. {{ line.unitRefund | number: '1.2-2' }} back for each</span>
+                </div>
+              </div>
+
+              <div class="rd-qty">
+                @if (line.quantityLeft === 0) {
+                  <span class="rd-fully">Fully returned</span>
+                } @else {
+                  <div class="rd-stepper">
+                    <button type="button" (click)="change(line, -1)" [disabled]="quantityOf(line) <= 0" aria-label="One less">-</button>
+                    <span>{{ quantityOf(line) }}</span>
+                    <button type="button" (click)="change(line, 1)" [disabled]="quantityOf(line) >= line.quantityLeft" aria-label="One more">+</button>
+                  </div>
+                  <label class="rd-stock">
+                    <input type="checkbox" [checked]="restock()[line.orderItemId] ?? true" [disabled]="quantityOf(line) === 0"
+                           (change)="toggleRestock(line)" />
+                    Put back in stock
+                  </label>
+                }
+              </div>
+
+              <div class="rd-amount">Nu. {{ lineTotal(line) | number: '1.2-2' }}</div>
+            </div>
+          }
+        </div>
+
+        <div class="rd-lines-foot">
+          <button type="button" class="rd-link" (click)="returnEverything()">Take back everything that is left</button>
+          @if (submitted() && errors().items) {
+            <p class="rd-err">{{ errors().items }}</p>
+          }
+        </div>
+
+        <div class="rd-field">
+          <label for="rd-reason">Why is it coming back?</label>
+          <select #reasonBox id="rd-reason" class="custom-select" [class.is-invalid]="submitted() && errors().reason"
+                  (change)="setReason(reasonBox.value)">
+            <option value="">Choose a reason</option>
+            @for (r of reasons; track r.value) {
+              <option [value]="r.value" [selected]="reason() === r.value">{{ r.label }}</option>
+            }
+          </select>
+          @if (submitted() && errors().reason) {
+            <p class="rd-err">{{ errors().reason }}</p>
+          }
+        </div>
+
+        <div class="rd-field">
+          <span class="rd-label">How is the money given back?</span>
+          <div class="rd-methods" role="radiogroup" aria-label="How the money is given back">
+            <button type="button" role="radio" [attr.aria-checked]="refundMethod() === 'CASH'" [class.on]="refundMethod() === 'CASH'"
+                    (click)="refundMethod.set('CASH')">
+              <i class="fas fa-money-bill-wave"></i><span><strong>Cash</strong><small>Hand it over now</small></span>
+            </button>
+            <button type="button" role="radio" [attr.aria-checked]="refundMethod() === 'ORIGINAL'" [class.on]="refundMethod() === 'ORIGINAL'"
+                    (click)="refundMethod.set('ORIGINAL')">
+              <i class="fas fa-rotate-left"></i><span><strong>Original payment method</strong><small>Back to the way they paid</small></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="rd-field">
+          <label for="rd-note">Note <span class="rd-opt">(optional)</span></label>
+          <textarea #noteBox id="rd-note" rows="2" maxlength="255" class="form-control"
+                    placeholder="For example: box opened, or scratch on the screen" [value]="note()"
+                    (input)="note.set(noteBox.value)"></textarea>
+        </div>
+      }
+    }
+  </div>
+
+  <footer class="rd-foot">
+    @if (done()) {
+      <div class="rd-actions">
+        <button type="button" class="btn btn-outline-secondary" (click)="print('receipt')"><i class="fas fa-receipt"></i> Print receipt</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="print('a4')"><i class="fas fa-print"></i> Print A4</button>
+      </div>
+      <button type="button" class="btn btn-primary btn-lg" (click)="close()">Done</button>
+    } @else if (showForm()) {
+      <div class="rd-total">
+        <span>{{ count() }} {{ count() === 1 ? 'item' : 'items' }} to refund</span>
+        <strong>Nu. {{ total() | number: '1.2-2' }}</strong>
+      </div>
+      <div class="rd-actions">
+        <button type="button" class="btn btn-secondary" (click)="close()" [disabled]="saving()">Cancel</button>
+        <button type="button" class="btn btn-danger btn-lg" (click)="submit()" [disabled]="saving()">
+          @if (saving()) {
+            <span class="spinner-border spinner-border-sm" role="status"></span> Saving...
+          } @else {
+            <i class="fas fa-rotate-left"></i> Give money back
+          }
+        </button>
+      </div>
+    } @else {
+      <span></span>
+      <button type="button" class="btn btn-primary" (click)="close()">Close</button>
+    }
+  </footer>
+</div>

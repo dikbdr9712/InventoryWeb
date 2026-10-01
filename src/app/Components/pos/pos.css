@@ -1318,7 +1318,7 @@ kbd {
   display: none;
 }
 
-@container ticket (min-width: 540px) {
+@container items (min-width: 540px) {
   .lines-head,
   .line {
     display: grid;

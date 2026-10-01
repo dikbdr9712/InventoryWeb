@@ -4,6 +4,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { PosService } from '../../services/pos';
 import { OrderService } from '../../services/order';
 import { ToastService } from '../../services/toast';
+import { AuthService } from '../../services/auth';
+import { ReturnDialog } from '../return-dialog/return-dialog';
+import { ReturnService, SaleRefund } from '../../services/return';
 import { Order, OrderItem } from '../../models/models';
 import { errorText } from '../../utils/http-error';
 
@@ -11,7 +14,7 @@ type Range = 'today' | 'week' | 'month' | 'all' | 'custom';
 
 @Component({
   selector: 'app-pos-history',
-  imports: [DatePipe, DecimalPipe],
+  imports: [DatePipe, DecimalPipe, ReturnDialog],
   templateUrl: './pos-history.html',
   styleUrl: './pos-history.css'
 })
@@ -19,6 +22,14 @@ export class PosHistory implements OnInit {
   private posService = inject(PosService);
   private orderService = inject(OrderService);
   private toasts = inject(ToastService);
+  private returnService = inject(ReturnService);
+
+  // refunds already given, by sale number
+  refunds = signal<Record<number, SaleRefund>>({});
+  auth = inject(AuthService);
+
+  // the sale whose Return window is open
+  returnOrderId = signal<number | null>(null);
 
   ranges: { value: Range; label: string }[] = [
     { value: 'today', label: 'Today' },
@@ -70,11 +81,38 @@ export class PosHistory implements OnInit {
 
   summary = computed(() => {
     const list = this.visible();
-    const total = list.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-    return { count: list.length, total, average: list.length ? total / list.length : 0 };
+    const gross = list.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+    const refunded = list.reduce((sum, s) => sum + (this.refunds()[s.orderId]?.refundedAmount ?? 0), 0);
+    const total = Math.round((gross - refunded) * 100) / 100; // net sales
+    return { count: list.length, gross, refunded, total, average: list.length ? total / list.length : 0 };
   });
 
+  private loadRefunds() {
+    this.returnService.summary().subscribe({
+      next: rows => {
+        const bySale: Record<number, SaleRefund> = {};
+        for (const row of rows) bySale[row.orderId] = row;
+        this.refunds.set(bySale);
+      },
+      error: () => { /* the list still works without the tags */ }
+    });
+  }
+
+  refundOf(orderId: number): SaleRefund | undefined {
+    return this.refunds()[orderId];
+  }
+
+  isFullyReturned(orderId: number): boolean {
+    return this.refunds()[orderId]?.fullyReturned === true;
+  }
+
+  onReturned() {
+    this.toasts.success('Return recorded.');
+    this.loadRefunds(); // the tag and the totals update straight away
+  }
+
   ngOnInit() {
+    this.loadRefunds();
     this.posService.history().subscribe({
       next: sales => {
         this.sales.set(sales);

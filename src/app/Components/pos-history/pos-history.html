@@ -36,8 +36,11 @@
   } @else {
     <section class="strip panel" aria-label="Summary">
       <div class="strip-main">
-        <span class="label">Sales {{ rangeLabel() }}</span>
+        <span class="label">{{ summary().refunded > 0 ? 'Net sales' : 'Sales' }} {{ rangeLabel() }}</span>
         <strong>Nu. {{ summary().total | number: '1.2-2' }}</strong>
+        @if (summary().refunded > 0) {
+          <span class="strip-sub">Sales Nu. {{ summary().gross | number: '1.2-2' }}, refunds - Nu. {{ summary().refunded | number: '1.2-2' }}</span>
+        }
       </div>
       <div>
         <span class="label">Number of sales</span>
@@ -75,12 +78,24 @@
                 <td>{{ sale.customerName || 'Walk-in customer' }}</td>
                 <td>{{ sale.createdAt | date: 'd MMM y, h:mm a' }}</td>
                 <td>{{ paymentLabel(sale.paymentMethod) || 'Not recorded' }}</td>
-                <td class="num strong">Nu. {{ sale.totalAmount | number: '1.2-2' }}</td>
+                <td class="num strong">
+                  Nu. {{ sale.totalAmount | number: '1.2-2' }}
+                  @if (refundOf(sale.orderId); as refund) {
+                    <span class="refund-tag" [class.full]="refund.fullyReturned">
+                      {{ refund.fullyReturned ? 'Fully returned' : 'Refunded Nu. ' + (refund.refundedAmount | number: '1.2-2') }}
+                    </span>
+                  }
+                </td>
                 <td class="act">
                   <button type="button" class="btn btn-outline-secondary btn-sm" (click)="toggle(sale.orderId)"
                           [attr.aria-expanded]="openOrderId() === sale.orderId">
                     {{ openOrderId() === sale.orderId ? 'Hide items' : 'View items' }}
                   </button>
+                  @if (auth.can('sales.return') && !isFullyReturned(sale.orderId)) {
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="returnOrderId.set(sale.orderId)">
+                      <i class="fas fa-rotate-left"></i> Return
+                    </button>
+                  }
                 </td>
               </tr>
 
@@ -126,3 +141,8 @@
     </section>
   }
 </div>
+
+
+@if (returnOrderId(); as returnId) {
+  <app-return-dialog [orderId]="returnId" (closed)="returnOrderId.set(null)" (returned)="onReturned()" />
+}

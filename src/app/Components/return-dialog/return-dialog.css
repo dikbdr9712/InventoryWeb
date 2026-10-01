@@ -1,0 +1,625 @@
+/* The Return dialog: a fixed frame, so the header and the buttons are always in view and only the middle scrolls. */
+
+.rd-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  background: rgba(23, 33, 31, 0.55);
+}
+
+.rd-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1260;
+  display: flex;
+  flex-direction: column;
+  width: min(760px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  transform: translate(-50%, -50%);
+  border-radius: 14px;
+  background: #f3f5f4;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  outline: none;
+  color: #17211f;
+}
+
+.rd-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 14px 22px;
+  border-bottom: 1px solid #dfe5e3;
+  background: #fff;
+}
+
+.rd-head-text h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.rd-head-text p {
+  margin: 0;
+  color: #5d6b68;
+  font-size: 0.9rem;
+}
+
+.rd-x {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #5d6b68;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.rd-x:hover:not(:disabled) {
+  background: #eef1ef;
+  color: #17211f;
+}
+
+.rd-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+
+.rd-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 22px;
+  border-top: 1px solid #dfe5e3;
+  background: #fff;
+}
+
+.rd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rd-total {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.rd-total span {
+  color: #5d6b68;
+  font-size: 0.85rem;
+}
+
+.rd-total strong {
+  font-size: 1.5rem;
+  color: #084f3a;
+  white-space: nowrap;
+}
+
+.rd-note {
+  margin: 0;
+  color: #5d6b68;
+}
+
+/* messages */
+.rd-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid;
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.rd-alert i {
+  margin-top: 3px;
+}
+
+.rd-alert.warn { border-color: #f1d98f; background: #fff4d6; color: #5c3f00; }
+.rd-alert.bad { border-color: #f0c2bd; background: #fdecea; color: #7a1a12; }
+.rd-alert.info { border-color: #bcd3f3; background: #eaf2fe; color: #1d4f91; }
+
+.rd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0 0 12px;
+  color: #5d6b68;
+  font-size: 0.9rem;
+}
+
+.rd-meta i {
+  margin-right: 5px;
+}
+
+/* the items */
+.rd-lines {
+  border: 1px solid #dfe5e3;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.rd-lines-head {
+  display: none;
+}
+
+.rd-line {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 14px;
+  border-top: 1px solid #eef1ef;
+}
+
+.rd-line:first-of-type {
+  border-top: 0;
+}
+
+.rd-line.is-done {
+  background: #f8faf9;
+  color: #7a8784;
+}
+
+.rd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rd-item img {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  background: #f3f5f4;
+  object-fit: contain;
+}
+
+.rd-item > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rd-item span {
+  color: #5d6b68;
+  font-size: 0.85rem;
+}
+
+.rd-qty {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.rd-stepper {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid #cfd8d5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.rd-stepper button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: #f3f5f4;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rd-stepper button:hover:not(:disabled) {
+  background: #e3f1ec;
+}
+
+.rd-stepper button:disabled {
+  color: #a5b0ad;
+  cursor: default;
+}
+
+.rd-stepper span {
+  min-width: 44px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.rd-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: #5d6b68;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.rd-stock input {
+  width: 17px;
+  height: 17px;
+  accent-color: #0b6b4f;
+}
+
+.rd-fully {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #eef1ef;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.rd-amount {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rd-lines-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 14px;
+  margin: 10px 0 4px;
+}
+
+.rd-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #0b6b4f;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* the fields */
+.rd-field {
+  margin-top: 16px;
+}
+
+.rd-field label,
+.rd-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.rd-opt {
+  color: #5d6b68;
+  font-weight: 400;
+}
+
+.is-invalid {
+  border-color: #b42318;
+}
+
+.rd-err {
+  margin: 6px 0 0;
+  color: #b42318;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.rd-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.rd-methods button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px solid #dfe5e3;
+  border-radius: 10px;
+  background: #fff;
+  color: #17211f;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rd-methods button i {
+  width: 24px;
+  color: #5d6b68;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.rd-methods button span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.rd-methods button small {
+  color: #5d6b68;
+}
+
+.rd-methods button.on {
+  border-color: #0b6b4f;
+  background: #e3f1ec;
+}
+
+.rd-methods button.on i {
+  color: #0b6b4f;
+}
+
+/* after the return */
+.rd-done {
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.rd-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: #0b6b4f;
+  box-shadow: 0 0 0 8px #e3f1ec;
+  color: #fff;
+  font-size: 1.5rem;
+}
+
+.rd-done h3 {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+}
+
+.rd-done p {
+  max-width: 52ch;
+  margin: 0 auto;
+  color: #5d6b68;
+  line-height: 1.5;
+}
+
+/* ---------- the credit note (plain colours, so it prints and looks the same everywhere) ---------- */
+.sheet {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 30px 34px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  color: #17211f;
+  font-size: 0.95rem;
+}
+
+.sheet-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  gap: 14px;
+}
+
+.brand img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.brand-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.brand-meta {
+  color: #5d6b68;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.doc {
+  flex: none;
+  text-align: right;
+}
+
+.doc-title {
+  color: #b42318;
+  white-space: nowrap;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+
+.doc-no {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.doc-date {
+  color: #5d6b68;
+  font-size: 0.88rem;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0;
+  padding: 14px 0;
+  border-top: 1px solid #dfe5e3;
+  border-bottom: 1px solid #dfe5e3;
+}
+
+.meta-label {
+  margin-bottom: 4px;
+  color: #5d6b68;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.meta-value {
+  font-weight: 700;
+}
+
+.meta-sub {
+  color: #5d6b68;
+  font-size: 0.88rem;
+}
+
+.sheet .items {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* the columns share the width, so the table can never be wider than the page */
+}
+
+.sheet .items th:nth-child(2) { width: 52px; }
+.sheet .items th:nth-child(3) { width: 118px; }
+.sheet .items th:nth-child(4) { width: 118px; }
+
+.sheet .items th {
+  padding: 8px;
+  border-bottom: 2px solid #b42318;
+  color: #5d6b68;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.sheet .items td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #eef1ef;
+}
+
+.sheet .items .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sheet .items .strong {
+  font-weight: 700;
+}
+
+.totals {
+  width: 300px;
+  margin: 16px 0 0 auto;
+}
+
+.totals .grand-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 8px;
+  border-top: 2px solid #17211f;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.sheet-note {
+  margin-top: 14px;
+  color: #5d6b68;
+  font-size: 0.9rem;
+}
+
+.sheet-foot {
+  margin-top: 26px;
+  padding-top: 12px;
+  border-top: 1px dashed #b9c6c2;
+  color: #5d6b68;
+  text-align: center;
+}
+
+/* the narrow receipt: hidden on screen, used when printing on a receipt printer */
+.receipt-print {
+  display: none;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.receipt-print .r-center { text-align: center; }
+.receipt-print .r-shop { display: block; font-size: 14px; }
+.receipt-print .r-rule { margin: 6px 0; border-top: 1px dashed #000; }
+.receipt-print .r-row { display: flex; justify-content: space-between; gap: 8px; }
+.receipt-print .r-item { margin-bottom: 4px; }
+.receipt-print .r-name { font-weight: 700; }
+.receipt-print .r-total { font-size: 14px; font-weight: 700; }
+
+/* wider windows: the item list becomes columns */
+@media (min-width: 640px) {
+  .rd-lines-head,
+  .rd-line {
+    display: grid;
+    grid-template-columns: minmax(170px, 1fr) 190px 156px;
+    align-items: center;
+    column-gap: 14px;
+  }
+
+  .rd-lines-head {
+    padding: 8px 14px;
+    border-bottom: 1px solid #eef1ef;
+    color: #5d6b68;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .rd-lines-head .r {
+    text-align: right;
+  }
+
+  .rd-amount {
+    text-align: right;
+    padding-right: 2px;
+  }
+
+  .rd-qty {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .rd-body {
+    padding: 14px;
+  }
+
+  .rd-methods {
+    grid-template-columns: 1fr;
+  }
+
+  .sheet {
+    padding: 18px 14px;
+  }
+
+  .sheet-top,
+  .meta {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .doc {
+    text-align: left;
+  }
+
+  .totals {
+    width: 100%;
+  }
+}
