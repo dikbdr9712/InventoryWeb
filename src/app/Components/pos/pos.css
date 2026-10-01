@@ -1,213 +1,1891 @@
-/* Enhanced Search Results */
-#searchResults {
-  border: 1px solid #ddd;
-  border-top: none;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  z-index: 1000;
-  background: white;
+/* Point of sale: catalog on the left, sale ticket on the right.
+   This file replaces your old pos.css completely. */
+
+:host {
+  --ink: #17211f;
+  --muted: #5d6b68;
+  --line: #dfe5e3;
+  --wash: #f3f5f4;
+  --paper: #ffffff;
+  --green: #0b6b4f;
+  --green-deep: #084f3a;
+  --green-soft: #e3f1ec;
+  --red: #b42318;
+  --red-soft: #fdecea;
+  --amber-soft: #fff4d6;
+  --radius: 10px;
+
+  display: block;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
-#searchResults .list-group-item {
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-  padding: 10px 15px;
-  font-size: 14px;
+.pos {
+  padding: 16px 20px 32px;
+  background: var(--wash);
+  min-height: 100%;
 }
 
-#searchResults .list-group-item:hover {
-  background-color: #f8f9fa;
-  transform: translateX(2px);
-  border-left: 3px solid #0d6efd;
+button,
+input,
+select {
+  font: inherit;
 }
 
-#searchResults .list-group-item:focus {
-  outline: 2px solid #0d6efd;
-  background-color: #e9ecef;
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #7ab8a4;
+  outline-offset: 2px;
 }
 
-/* Clear button inside search field */
-.search-container {
+/* ---------- Top bar ---------- */
+.pos-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-bottom: 14px;
+}
+
+.pos-title h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.pos-title h1 i {
+  color: var(--green);
+  margin-right: 6px;
+}
+
+.pos-title p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.pos-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 24px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 600 0.75rem/1.4 inherit;
+  text-align: center;
+}
+
+/* ---------- Two-panel layout ---------- */
+.pos-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 18px;
+  align-items: start;
+}
+
+/* ---------- Catalog ---------- */
+.catalog {
+  min-width: 0;
+}
+
+.search {
   position: relative;
 }
 
-.clear-search-btn {
+.search input {
+  width: 100%;
+  height: 52px;
+  padding: 0 46px 0 46px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-size: 1.05rem;
+}
+
+.search input:focus {
+  border-color: var(--green);
+  outline: none;
+  box-shadow: 0 0 0 4px var(--green-soft);
+}
+
+.search-icon {
   position: absolute;
-  right: 10px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #6c757d;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 0;
-  z-index: 10;
+  color: var(--muted);
+  pointer-events: none;
 }
 
-.clear-search-btn:hover {
-  color: #dc3545;
-}
-
-/* Cart Table Styling */
-#cartItems td {
-  vertical-align: middle;
-}
-
-#cartItems input[type="number"] {
-  text-align: center;
-  font-weight: bold;
-}
-
-/* Cash change section */
-#cashChangeSection {
-  background: #f8f9fa;
-  padding: 15px;
+.search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border: 0;
   border-radius: 8px;
-  margin-top: 15px;
-  border: 1px solid #ddd;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
 }
 
-#cashChangeSection .form-control {
-  font-size: 1rem;
+.search-clear:hover {
+  background: var(--wash);
+  color: var(--ink);
 }
 
-/* Tax builder */
-#taxBuilder .input-group {
-  margin-right: 8px;
-  margin-bottom: 8px;
+.catalog-note {
+  margin: 10px 2px 12px;
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
-/* Complete Sale Button */
-#completeSale {
-  width: 100%;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  padding: 12px;
-  font-size: 18px;
-  margin-top: 20px;
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
 }
 
-/* Empty state */
-.empty-state {
-  text-align: center;
-  padding: 20px;
-  color: #6c757d;
-  font-style: italic;
-}
-
-/* COMPACT INVOICE PREVIEW */
-.modal-dialog{
+.tile {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.tile:hover:not(:disabled) {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--green-soft);
+}
+
+.tile:active:not(:disabled) {
+  background: var(--green-soft);
+}
+
+.tile-out {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tile-photo {
   position: relative;
-}
-#invoiceModal{
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-#invoicePreview {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  padding: 12px 16px;
-  width: 400px;
-  margin: 0 auto;
-  border-radius: 4px;
-  align-items: center;
-
-}
-.modal-body {
-  padding: 12px 16px !important;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  
-}
-.modal-content {
-  display: flex;
-  flex-direction: column;
-  width: 410px;
+  display: block;
+  aspect-ratio: 1 / 1;
+  border-radius: 7px;
+  background: var(--wash);
+  overflow: hidden;
 }
 
-#invoicePreview h4 {
-  font-size: 1.1rem;
-  margin: 6px 0 10px;
-  text-align: center;
-}
-
-#invoicePreview .invoice-header {
-  text-align: center;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #0d6efd;
-  margin-bottom: 16px; 
-  width: 90%;
-  align-items: center;
-}
-
-.invoice-header h4,
-.invoice-header p {
-  margin: 4px 0;
-  font-size: 0.95rem;
-}
-
-#invoicePreview .invoice-header p {
-  margin: 4px 0;
-  font-size: 0.875rem;
-}
-
-#invoicePreview table {
+.tile-photo img {
   width: 100%;
-  border-collapse: collapse;
-  margin: 8px 0;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tile-off {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.tile-name {
+  margin-top: 4px;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.5em;
+}
+
+.tile-price {
+  font-weight: 700;
+  color: var(--green-deep);
+}
+
+.tile-stock {
+  color: var(--muted);
   font-size: 0.82rem;
 }
 
-#invoicePreview th,
-#invoicePreview td {
-  padding: 6px 4px;
-  text-align: left;
-}
-
-#invoicePreview th {
-  font-weight: 600;
-  background-color: #f8f9fa;
-  font-size: 0.85rem;
-}
-
-#invoicePreview .total-row td {
-  font-weight: bold;
-  background-color: #f1f3f5;
-}
-
-#invoicePreview .summary-row td:first-child {
+.tile-stock.low {
+  color: var(--red);
   font-weight: 600;
 }
-#invoicePreview .summary-row td:last-child {
+
+.tiles-empty {
+  grid-column: 1 / -1;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.tiles-empty i {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+/* ---------- Sale ticket ---------- */
+.ticket {
+  position: sticky;
+  top: 84px; /* below the sticky header */
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  padding: 16px 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: 0 6px 20px rgba(23, 33, 31, 0.08);
+}
+
+.ticket-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px dashed var(--line);
+}
+
+.ticket-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
   font-weight: 700;
+}
+
+.ticket-count {
+  flex: 1;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.link-btn {
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--green);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.link-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.link-btn:disabled {
+  color: var(--muted);
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Customer */
+.customer {
+  margin: 10px 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.customer summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.92rem;
+}
+
+.customer summary::-webkit-details-marker {
+  display: none;
+}
+
+.customer summary i {
+  color: var(--muted);
+}
+
+.customer-hint {
+  margin-left: auto;
+  color: var(--green);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.customer[open] .customer-hint {
+  display: none;
+}
+
+.customer-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.customer-fields input {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  min-width: 0;
+}
+
+/* Lines */
+.lines {
+  min-height: 110px;
+  max-height: 34vh;
+  overflow-y: auto;
+  margin: 6px -4px 0;
+  padding: 0 4px;
+}
+
+.line {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.line-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.line-name {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.line-total {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.line-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.stepper button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  background: var(--wash);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.stepper button:hover {
+  background: var(--green-soft);
+}
+
+.stepper input {
+  width: 48px;
+  height: 38px;
+  border: 0;
+  text-align: center;
+  font-weight: 600;
+  -moz-appearance: textfield;
+}
+
+.stepper input::-webkit-outer-spin-button,
+.stepper input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.line-mrp {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.line-disc {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.line-disc input {
+  width: 56px;
+  height: 34px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
   text-align: right;
 }
 
-#invoicePreview .footer-note {
+.line-remove {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.line-remove:hover {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.lines-empty {
+  padding: 26px 12px;
   text-align: center;
-  margin-top: 16px;
-  font-size: 0.8rem;
-  color: #555;
-  font-style: italic;
+  color: var(--muted);
 }
 
-.modal-body {
-  padding: 12px 16px !important;
+.lines-empty i {
+  font-size: 1.8rem;
+  margin-bottom: 6px;
 }
-.modal-footer{
-  padding: 8px 16px !important;
+
+.lines-empty p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+/* Taxes */
+.taxes {
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 0;
+  border-bottom: 2px dashed var(--line);
 }
 
-@media (min-width: 768px) {
-  .modal-dialog {
-    max-width: 600px;
+.tax {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tax select {
+  height: 34px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--paper);
+}
+
+.tax input {
+  width: 58px;
+  height: 34px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  text-align: right;
+}
+
+.tax-pct {
+  color: var(--muted);
+}
+
+/* Totals */
+.sums {
+  margin: 10px 0 0;
+}
+
+.sums div {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  color: var(--muted);
+}
+
+.sums dt,
+.sums dd {
+  margin: 0;
+  font-weight: 400;
+}
+
+.sums .minus {
+  color: var(--red);
+}
+
+.grand {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--green-soft);
+}
+
+.grand span {
+  font-weight: 600;
+}
+
+.grand strong {
+  font-size: 1.9rem;
+  line-height: 1;
+  color: var(--green-deep);
+}
+
+/* Payment */
+.pay {
+  margin-top: 14px;
+}
+
+.pay-methods {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.pay-methods button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.pay-methods button i {
+  font-size: 1.1rem;
+}
+
+.pay-methods button:hover {
+  border-color: var(--green);
+}
+
+.pay-methods button.on {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+  font-weight: 600;
+}
+
+.cash {
+  margin-top: 12px;
+}
+
+.cash label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cash-row {
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cash-row:focus-within {
+  border-color: var(--green);
+}
+
+.cash-nu {
+  padding: 0 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.cash-row input {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  border: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.cash-row input:focus-visible {
+  outline: none;
+}
+
+.cash-quick {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.cash-quick button {
+  flex: 1;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--wash);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cash-quick button:hover:not(:disabled) {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.cash-quick button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cash-result {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+}
+
+.cash-result strong {
+  font-size: 1.25rem;
+}
+
+.cash-result.ok {
+  background: var(--green-soft);
+  color: var(--green-deep);
+}
+
+.cash-result.short {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+/* Actions */
+.complete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 56px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--green);
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.complete:hover:not(:disabled) {
+  background: var(--green-deep);
+}
+
+.complete:disabled {
+  background: #9db8af;
+  cursor: not-allowed;
+}
+
+.complete-key {
+  padding: 1px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.last-invoice {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.last-invoice:hover {
+  border-color: var(--green);
+}
+
+/* ---------- Ticket layout: items scroll, total and button never do ---------- */
+.ticket {
+  height: calc(100vh - 96px);
+  max-height: 820px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.ticket-top {
+  flex: none;
+  padding: 14px 16px 6px;
+}
+
+.ticket-top .ticket-head {
+  padding-bottom: 8px;
+}
+
+.lines {
+  flex: 1 1 auto;
+  min-height: 96px;
+  max-height: none;
+  margin: 0;
+  padding: 0 16px;
+}
+
+.ticket-foot {
+  flex: none;
+  padding: 10px 16px 14px;
+  border-top: 2px dashed var(--line);
+  background: var(--paper);
+}
+
+.ticket-foot .grand {
+  margin-top: 0;
+}
+
+/* Customer and tax options, folded away */
+.options {
+  margin-top: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.options summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.options summary::-webkit-details-marker {
+  display: none;
+}
+
+.options summary i {
+  color: var(--muted);
+}
+
+.options-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.options[open] .customer-hint {
+  display: none;
+}
+
+.options-body {
+  max-height: 34vh;
+  padding: 0 12px 12px;
+  overflow-y: auto;
+}
+
+.options-body .customer-fields {
+  padding: 0 0 6px;
+}
+
+.options-body .taxes {
+  border-bottom: 0;
+  padding: 6px 0 0;
+}
+
+/* How the total is worked out, folded away */
+.breakdown {
+  margin: 6px 0 8px;
+}
+
+.breakdown summary {
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.breakdown .sums {
+  margin-top: 6px;
+}
+
+/* Tighter payment and cash sections so everything fits a laptop screen */
+.pay {
+  margin-top: 8px;
+}
+
+.pay-methods button {
+  padding: 6px 2px;
+  font-size: 0.78rem;
+}
+
+.pay-methods button i {
+  font-size: 1rem;
+}
+
+.cash {
+  margin-top: 8px;
+}
+
+.cash label {
+  margin-bottom: 2px;
+  font-size: 0.85rem;
+}
+
+.cash-row input {
+  height: 40px;
+}
+
+.cash-quick {
+  margin-top: 6px;
+}
+
+.cash-quick button {
+  height: 34px;
+}
+
+.cash-result {
+  margin-top: 6px;
+  padding: 6px 10px;
+}
+
+.cash-result strong {
+  font-size: 1.1rem;
+}
+
+.complete {
+  height: 52px;
+  margin-top: 10px;
+}
+
+.last-invoice {
+  margin-top: 6px;
+  padding: 7px;
+}
+
+/* Category chips and the price the customer pays on each tile */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chips button {
+  padding: 5px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chips button:hover {
+  border-color: var(--green);
+}
+
+.chips button.on {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+  font-weight: 600;
+}
+
+.tile-price s {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+/* A tighter page header leaves more room for the till */
+.pos {
+  padding-top: 10px;
+}
+
+.pos-top {
+  margin-bottom: 8px;
+}
+
+.pos-title h1 {
+  font-size: 1.3rem;
+}
+
+/* Customer phone and the "who is this?" answer */
+.phone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 6px;
+}
+
+.phone label {
+  flex: none;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.phone label i {
+  margin-right: 4px;
+}
+
+.phone input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  letter-spacing: 0.04em;
+}
+
+.phone input.is-invalid {
+  border-color: var(--red);
+}
+
+.phone-err {
+  margin: 0 0 6px;
+  color: var(--red);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.lookup {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+.lookup.wait {
+  padding: 0 2px;
+  color: var(--muted);
+}
+
+.lookup.known {
+  background: var(--green-soft);
+  color: var(--green-deep);
+}
+
+.lookup.known span {
+  color: var(--ink);
+}
+
+.lookup.fresh {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.options-body .customer-fields {
+  grid-template-columns: 1fr;
+}
+
+/* ---------- Ticket: the list scrolls, the total and the button never do ---------- */
+.ticket {
+  padding: 0;
+  overflow: hidden;
+}
+
+.ticket-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 14px 16px 16px;
+  overflow-y: auto;
+}
+
+.ticket-top {
+  padding: 0;
+}
+
+.ticket-scroll .lines {
+  flex: none;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.ticket-bar {
+  flex: none;
+  padding: 12px 16px 14px;
+  border-top: 2px dashed var(--line);
+  background: var(--paper);
+  box-shadow: 0 -10px 18px -14px rgba(23, 33, 31, 0.3);
+}
+
+.ticket-bar .grand {
+  margin: 0 0 10px;
+}
+
+.ticket-bar .complete {
+  height: 56px;
+  margin-top: 0;
+}
+
+/* Bigger, easier item rows */
+.line {
+  padding: 14px 0;
+}
+
+.line-name {
+  font-size: 1rem;
+}
+
+.line-controls {
+  gap: 10px 14px;
+}
+
+.stepper button {
+  width: 42px;
+  height: 42px;
+}
+
+.stepper input {
+  width: 56px;
+  height: 42px;
+  font-size: 1.05rem;
+}
+
+.line-disc {
+  margin-left: 0;
+  gap: 6px;
+}
+
+.line-disc .dl {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.line-disc input {
+  width: 78px;
+  height: 40px;
+  font-size: 1rem;
+}
+
+.line-remove {
+  width: 40px;
+  height: 40px;
+  margin-left: auto;
+}
+
+/* A discount on the whole sale */
+.extra {
+  margin: 14px 0 8px;
+  padding: 12px 14px;
+  border: 1px dashed #b9c6c2;
+  border-radius: 10px;
+  background: var(--wash);
+}
+
+.extra.on {
+  border-style: solid;
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.extra-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.extra-head i {
+  margin-right: 6px;
+  color: var(--green);
+}
+
+.mode {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.mode button {
+  padding: 4px 14px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mode button.on {
+  background: var(--green);
+  color: #fff;
+}
+
+.extra-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.extra-input input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #cfd8d5;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.extra-result {
+  color: var(--red);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.extra-error {
+  margin: 6px 0 0;
+  color: var(--red);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.sums {
+  margin-top: 12px;
+}
+
+.reload {
+  margin-left: 10px;
+  padding: 0;
+}
+
+/* Desktop: the till fills the window, so nothing needs the page to scroll.
+   The product tiles scroll on their own, and so does the ticket's list. */
+@media (min-width: 992px) {
+  .pos {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 108px); /* the header (64px) and the staff bar (44px) */
+    min-height: 540px;
+    padding-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .pos-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) 440px;
+    align-items: stretch;
+  }
+
+  .catalog {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .tiles {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: start;
+    padding: 2px 4px 12px 2px;
+    overflow-y: auto;
+  }
+
+  .ticket {
+    position: static;
+    height: 100%;
+    max-height: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .pos-body {
+    grid-template-columns: minmax(0, 1fr) 480px;
+  }
+}
+
+/* ---------- Name and phone side by side ---------- */
+.cust-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 2px 0 8px;
+}
+
+.cust-row .phone,
+.cust-row .cname {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  margin: 0;
+}
+
+.cust-row label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cust-row label i {
+  margin-right: 4px;
+}
+
+.cust-row input {
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.cust-row .phone input {
+  letter-spacing: 0.04em;
+}
+
+.cust-row .phone input.is-invalid {
+  border-color: var(--red);
+}
+
+/* The sale's items as a list: a header row is shown once the panel is wide enough */
+.lines {
+  min-height: 140px;
+}
+
+.lines-head {
+  display: none;
+}
+
+.ticket {
+  container-name: ticket;
+  container-type: inline-size;
+}
+
+.line-mrp .each {
+  display: none;
+}
+
+@container ticket (min-width: 540px) {
+  .lines-head,
+  .line {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) 114px 88px 142px 34px;
+    column-gap: 8px;
+    align-items: center;
+  }
+
+  /* the unit price sits small under the item name */
+  .line {
+    grid-template-areas:
+      'name  qty  disc total rm'
+      'price qty  disc total rm';
+    padding: 10px 0;
+  }
+
+  .lines-head {
+    padding: 0 0 6px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .lines-head .r {
+    text-align: right;
+  }
+
+  /* the two inner rows dissolve, so their contents become columns */
+  .line-main,
+  .line-controls {
+    display: contents;
+  }
+
+  .line-name { grid-area: name; align-self: end; }
+  .line-mrp { grid-area: price; align-self: start; color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+  .stepper { grid-area: qty; }
+  .line-disc { grid-area: disc; }
+  .line-total { grid-area: total; text-align: right; white-space: nowrap; }
+  .line-remove { grid-area: rm; margin-left: 0; }
+
+  .stepper button {
+    width: 34px;
+    height: 38px;
+  }
+
+  .stepper input {
+    width: 46px;
+    height: 38px;
+  }
+
+  .line-disc input {
+    width: 64px;
+    height: 38px;
+  }
+
+  .line-disc .dl,
+  .line-mrp .times {
+    display: none;
+  }
+
+  .line-mrp .each {
+    display: inline;
+  }
+}
+
+/* The sale panel is HALF the screen on a desktop */
+@media (min-width: 992px) {
+  .pos-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* ---------- Invoice dialog: header and buttons stay put, only the paper scrolls ---------- */
+.inv-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  background: rgba(23, 33, 31, 0.55);
+}
+
+.inv-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1260;
+  display: flex;
+  flex-direction: column;
+  width: min(820px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  transform: translate(-50%, -50%);
+  border-radius: 14px;
+  background: #eef1ef;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  outline: none;
+}
+
+.inv-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px 14px 20px;
+  border-bottom: 1px solid #dfe5e3;
+  background: #fff;
+}
+
+.inv-tick {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #0b6b4f;
+  color: #fff;
+}
+
+.inv-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.inv-head-text h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.inv-head-text p {
+  margin: 0;
+  color: #5d6b68;
+  font-size: 0.9rem;
+}
+
+.inv-change {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 4px 14px;
+  border-radius: 10px;
+  background: #e3f1ec;
+  color: #084f3a;
+  line-height: 1.2;
+}
+
+.inv-change span {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.inv-change strong {
+  font-size: 1.15rem;
+}
+
+.inv-x {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #5d6b68;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.inv-x:hover {
+  background: #eef1ef;
+  color: #17211f;
+}
+
+.inv-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.inv-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 20px;
+  border-top: 1px solid #dfe5e3;
+  background: #fff;
+}
+
+.inv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.new-sale {
+  min-width: 150px;
+}
+
+/* ---------- The A4 invoice (plain colours, so it prints and saves as PDF the same) ---------- */
+.sheet {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 36px 40px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  color: #17211f;
+  font-size: 0.95rem;
+}
+
+.sheet-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  gap: 14px;
+}
+
+.brand img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.brand-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.brand-meta {
+  color: #5d6b68;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.doc {
+  text-align: right;
+}
+
+.doc-title {
+  color: #084f3a;
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+
+.doc-no {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.doc-date {
+  color: #5d6b68;
+  font-size: 0.88rem;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 22px 0 20px;
+  padding: 16px 0;
+  border-top: 1px solid #dfe5e3;
+  border-bottom: 1px solid #dfe5e3;
+}
+
+.meta-label {
+  margin-bottom: 4px;
+  color: #5d6b68;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.meta-value {
+  font-weight: 700;
+}
+
+.meta-sub {
+  color: #5d6b68;
+  font-size: 0.88rem;
+}
+
+.sheet .items {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sheet .items th {
+  padding: 8px;
+  border-bottom: 2px solid #0b6b4f;
+  color: #5d6b68;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.sheet .items td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #eef1ef;
+}
+
+.sheet .items .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sheet .items .strong {
+  font-weight: 700;
+}
+
+.totals {
+  width: 300px;
+  margin: 16px 0 0 auto;
+}
+
+.totals > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  color: #5d6b68;
+}
+
+.totals .grand-row {
+  margin-top: 8px;
+  padding: 10px 8px;
+  border-top: 2px solid #17211f;
+  color: #17211f;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.sheet-foot {
+  margin-top: 30px;
+  padding-top: 14px;
+  border-top: 1px dashed #b9c6c2;
+  color: #5d6b68;
+  text-align: center;
+}
+
+/* ---------- The narrow receipt: hidden on screen, used when printing on a receipt printer ---------- */
+.receipt-print {
+  display: none;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.receipt-print .r-center {
+  text-align: center;
+}
+
+.receipt-print .r-shop {
+  display: block;
+  font-size: 14px;
+}
+
+.receipt-print .r-rule {
+  margin: 6px 0;
+  border-top: 1px dashed #000;
+}
+
+.receipt-print .r-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.receipt-print .r-item {
+  margin-bottom: 4px;
+}
+
+.receipt-print .r-name {
+  font-weight: 700;
+}
+
+.receipt-print .r-total {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Tablets and phones: the page itself scrolls, the ticket just flows */
+@media (max-width: 600px) {
+  .inv-head {
+    flex-wrap: wrap;
+  }
+
+  .inv-body {
+    padding: 10px;
+  }
+
+  .sheet {
+    padding: 20px 16px;
+  }
+
+  .sheet-top,
+  .meta {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .doc {
+    text-align: left;
+  }
+
+  .totals {
+    width: 100%;
+  }
+
+  .new-sale {
+    flex: 1;
+  }
+}
+
+@media (max-width: 991px) {
+  .ticket-scroll {
+    overflow: visible;
+  }
+
+  .ticket-bar {
+    box-shadow: none;
+  }
+}
+
+/* On tablets and phones the ticket flows down the page like before */
+@media (max-width: 991px) {
+  .ticket {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .lines {
+    overflow: visible;
+  }
+
+  .options-body {
+    max-height: none;
+  }
+}
+
+/* ---------- Invoice (this is what gets printed and saved as PDF) ---------- */
+#invoicePreview {
+  padding: 24px;
+  background: #fff;
+  color: #111;
+}
+
+.invoice-header {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px dashed #ccc;
+  text-align: center;
+}
+
+.invoice-header p {
+  margin: 2px 0;
+}
+
+.summary-row td {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  text-align: right;
+}
+
+.footer-note {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 2px dashed #ccc;
+  text-align: center;
+  color: #555;
+}
+
+/* ---------- Tablets and phones ---------- */
+@media (max-width: 991px) {
+  .pos-body {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket {
+    position: static;
+    max-height: none;
+  }
+
+  .lines {
+    max-height: none;
+  }
+
+  .pos-keys {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .pos {
+    padding: 12px 10px 24px;
+  }
+
+  .tiles {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .customer-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile {
+    transition: none;
+  }
+}
+
+/* Buttons in the top bar */
+.pos-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pos-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+  text-decoration: none;
+}
+
+.pos-exit {
+  color: var(--red);
+}
+
+/* Full screen: the header and staff bar are hidden, so the till can use the whole window */
+@media (min-width: 992px) {
+  .pos.full {
+    height: 100vh;
+  }
+}
+
+/* The shortcut hints take room a short window needs more */
+@media (max-width: 1500px) {
+  .pos-keys {
+    display: none;
   }
 }

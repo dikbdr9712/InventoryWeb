@@ -1,239 +1,499 @@
-<div class="container mt-4">
-  <h2>🛒 Point of Sale (Counter Sales)</h2>
-
-  <!-- Customer info -->
-  <div class="row mb-3">
-    <div class="col-md-6">
-      <input type="text" id="customerName" class="form-control" placeholder="Customer Name (Optional)" [(ngModel)]="customerName" />
+<div class="pos" [class.full]="fullScreen()">
+  <!-- Top bar -->
+  <header class="pos-top">
+    <div class="pos-title">
+      <h1><i class="fas fa-cash-register"></i> Point of sale</h1>
+      <p>{{ today | date: 'EEEE, d MMMM y' }}, cashier {{ auth.name() || 'unknown' }}</p>
     </div>
-    <div class="col-md-6">
-      <input type="text" id="customerPhone" class="form-control" placeholder="Phone (Optional)" [(ngModel)]="customerPhone" />
+    <div class="pos-actions">
+      <a routerLink="/pos-history" class="pos-btn"><i class="fas fa-clock-rotate-left"></i> Sales history</a>
+      <button type="button" class="pos-btn" (click)="toggleFullScreen()">
+        <i [class]="fullScreen() ? 'fas fa-bars' : 'fas fa-expand'"></i>
+        {{ fullScreen() ? 'Show menu' : 'Full screen' }}
+      </button>
+      <a routerLink="/" class="pos-btn pos-exit"><i class="fas fa-arrow-right-from-bracket"></i> Exit POS</a>
     </div>
-  </div>
-
-  <!-- Item search -->
-  <div class="mb-3 search-container" #searchWrap>
-    <div class="input-group">
-      <input #searchInput type="text" id="itemSearch" class="form-control" autocomplete="off"
-             placeholder="🔍 Search item by name or code..."
-             [value]="searchTerm()" (input)="onSearch(searchInput.value)" (keydown)="onSearchKey($event)" />
-      @if (searchTerm()) {
-        <button type="button" id="clearSearchBtn" class="clear-search-btn" title="Clear search" (click)="clearSearch()">
-          <i class="fas fa-times"></i>
-        </button>
-      }
+    <div class="pos-keys" aria-label="Keyboard shortcuts">
+      <span><kbd>F2</kbd> search</span>
+      <span><kbd>Enter</kbd> add first match</span>
+      <span><kbd>F9</kbd> complete sale</span>
+      <span><kbd>Esc</kbd> clear search</span>
     </div>
+  </header>
 
-    @if (showResults()) {
-      <ul id="searchResults" class="list-group mt-1">
-        @for (product of matches(); track product.itemId; let i = $index) {
-          <li class="list-group-item d-flex justify-content-between align-items-center"
-              [class.active]="i === highlighted()"
-              (click)="pick(product)" (mouseenter)="highlighted.set(i)">
-            <span>{{ product.itemName }} ({{ product.itemCode || 'No Code' }})</span>
-            <span class="badge badge-primary">MRP Nu. {{ product.mrp | number: '1.2-2' }}</span>
-          </li>
-        } @empty {
-          <li class="list-group-item empty-state">No items found matching "{{ searchTerm() }}"</li>
+  <div class="pos-body">
+    <!-- ============ LEFT: catalog ============ -->
+    <section class="catalog" aria-label="Products">
+      <div class="search">
+        <i class="fas fa-magnifying-glass search-icon"></i>
+        <input #searchInput type="text" autocomplete="off"
+               placeholder="Search by name, code or category, or scan a barcode"
+               [value]="searchTerm()" (input)="onSearch(searchInput.value)" (keydown.enter)="onSearchEnter($event)" />
+        @if (searchTerm()) {
+          <button type="button" class="search-clear" title="Clear search (Esc)" (click)="clearSearch()">
+            <i class="fas fa-xmark"></i>
+          </button>
         }
-      </ul>
-    }
-  </div>
+      </div>
 
-  <!-- Payment method + taxes -->
-  <div class="row mb-3">
-    <div class="col-md-4">
-      <label for="paymentMethod">Payment Method</label>
-      <select id="paymentMethod" class="form-control" [ngModel]="paymentMethod()" (ngModelChange)="onPaymentMethodChange($event)">
-        <option value="BANK_TRANSFER">Bank Transfer</option>
-        <option value="CARD">Card</option>
-        <option value="UPI">UPI</option>
-        <option value="CASH">Cash</option>
-      </select>
-    </div>
-    <div class="col-md-8">
-      <label>Taxes &amp; Discounts</label>
-      <div class="d-flex align-items-start flex-wrap">
-        <div id="taxBuilder" class="d-flex flex-wrap align-items-center mr-2">
-          @for (tax of taxes(); track $index; let i = $index) {
-            <div class="input-group input-group-sm mb-1 mr-2 tax-row">
-              <select #typeSelect class="form-control tax-type" (change)="setTaxType(i, typeSelect.value)">
-                @for (type of taxTypes; track type.value) {
-                  <option [value]="type.value" [selected]="type.value === tax.type">{{ type.label }}</option>
-                }
-              </select>
-              <input #rateInput type="number" class="form-control tax-rate" min="0" max="100" step="0.1"
-                     placeholder="Rate %" [value]="tax.rate" (input)="setTaxRate(i, rateInput.value)" />
-              <div class="input-group-append">
-                <button class="btn btn-outline-danger" type="button" (click)="removeTax(i)">×</button>
-              </div>
-            </div>
+      @if (categories().length > 1) {
+        <div class="chips" role="group" aria-label="Filter by category">
+          <button type="button" [class.on]="category() === ''" (click)="category.set('')">All</button>
+          @for (name of categories(); track name) {
+            <button type="button" [class.on]="category() === name" (click)="category.set(name)">{{ name }}</button>
           }
         </div>
-        <button type="button" id="addTaxBtn" class="btn btn-outline-secondary btn-sm" (click)="addTax()">+ Add Tax</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Cart -->
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Qty</th>
-        <th>MRP</th>
-        <th>Discount %</th>
-        <th>Total</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="cartItems">
-      @for (line of cart(); track line.itemId) {
-        <tr>
-          <td>{{ line.itemName }}</td>
-          <td><input #qty type="number" min="1" class="small-input" [value]="line.quantity" (change)="setQuantity(line, qty)" /></td>
-          <td>Nu. {{ line.mrp | number: '1.2-2' }}</td>
-          <td><input #disc type="number" min="0" max="100" step="0.1" class="small-input" placeholder="%"
-                     [value]="line.discountPercent" (change)="setDiscount(line, disc)" /></td>
-          <td>Nu. {{ lineTotal(line) | number: '1.2-2' }}</td>
-          <td><button class="btn btn-sm btn-danger" (click)="removeLine(line)">✕</button></td>
-        </tr>
-      } @empty {
-        <tr><td colspan="6" class="text-center text-muted">Search for an item above to start a sale.</td></tr>
       }
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="4" class="text-right"><strong>Subtotal:</strong></td>
-        <td>Nu. {{ totals().subtotal | number: '1.2-2' }}</td>
-        <td></td>
-      </tr>
-      <tr>
-        <td colspan="4" class="text-right"><strong>Discount (-):</strong></td>
-        <td>Nu. {{ totals().discount | number: '1.2-2' }}</td>
-        <td></td>
-      </tr>
-      <tr>
-        <td colspan="4" class="text-right"><strong>Tax (+):</strong></td>
-        <td>Nu. {{ totals().tax | number: '1.2-2' }}</td>
-        <td></td>
-      </tr>
-      <tr>
-        <td colspan="4" class="text-right"><strong>Total:</strong></td>
-        <td><strong>Nu. {{ totals().total | number: '1.2-2' }}</strong></td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
 
-  <!-- Cash change calculator -->
-  @if (paymentMethod() === 'CASH') {
-    <div id="cashChangeSection" class="mb-3">
-      <div class="row">
-        <div class="col-md-6">
-          <label for="amountReceived">Amount Received (Nu.)</label>
-          <input #amountInput type="number" id="amountReceived" class="form-control" min="0" step="0.01"
-                 placeholder="Enter amount received"
-                 [value]="amountReceived() ?? ''" (input)="onAmountInput(amountInput.value)" />
-        </div>
-        <div class="col-md-6">
-          <label for="changeAmount">Change to Return (Nu.)</label>
-          <input type="text" id="changeAmount" class="form-control" readonly placeholder="Auto-calculated" [value]="changeText()" />
-        </div>
+      <p class="catalog-note">
+        @if (loadingProducts()) {
+          Loading products...
+        } @else if (matches().length > visibleProducts().length) {
+          Showing {{ visibleProducts().length }} of {{ matches().length }} products. Type to narrow the list.
+        } @else {
+          {{ matches().length }} {{ matches().length === 1 ? 'product' : 'products' }}
+        }
+        <button type="button" class="link-btn reload" (click)="reloadProducts()" [disabled]="loadingProducts()">
+          <i class="fas fa-rotate"></i> Reload
+        </button>
+      </p>
+
+      <div class="tiles">
+        @for (p of visibleProducts(); track p.itemId) {
+          <button type="button" class="tile" [class.tile-out]="isOut(p)" [disabled]="isOut(p)" (click)="addProduct(p)">
+            <span class="tile-photo">
+              <img [src]="p.image" [alt]="p.itemName" loading="lazy" (error)="onTileImageError($event)" />
+              @if (discountOf(p) > 0) {
+                <span class="tile-off">{{ discountOf(p) | number: '1.0-1' }}% off</span>
+              }
+            </span>
+            <span class="tile-name">{{ p.itemName }}</span>
+            <span class="tile-price">
+              Nu. {{ unitPrice(p) | number: '1.2-2' }}
+              @if (discountOf(p) > 0) {
+                <s>{{ p.mrp | number: '1.2-2' }}</s>
+              }
+            </span>
+            <span class="tile-stock" [class.low]="p.stock !== null && p.stock > 0 && p.stock <= 5">
+              @if (p.stock === null) {
+                {{ p.itemCode || 'No code' }}
+              } @else if (p.stock <= 0) {
+                Out of stock
+              } @else {
+                {{ p.stock }} in stock
+              }
+            </span>
+          </button>
+        } @empty {
+          @if (!loadingProducts()) {
+            <div class="tiles-empty">
+              <i class="fas fa-box-open"></i>
+              <p>No product matches "{{ searchTerm() }}". Check the spelling or try the item code.</p>
+            </div>
+          }
+        }
       </div>
-    </div>
-  }
+    </section>
 
-  <div class="d-flex justify-content-between mb-3">
-    <button id="completeSale" class="btn btn-success btn-lg" [disabled]="processing()" (click)="completeSale()">
-      @if (processing()) {
-        <span class="spinner-border spinner-border-sm mr-2" role="status"></span> Processing...
-      } @else {
-        ✅ Complete Sale
+    <!-- ============ RIGHT: the sale ticket ============ -->
+    <aside class="ticket" aria-label="Current sale">
+      <!-- Everything in here scrolls when the window is short -->
+      <div class="ticket-scroll">
+      <div class="ticket-top">
+      <div class="ticket-head">
+        <h2>Current sale</h2>
+        <span class="ticket-count">{{ itemCount() }} {{ itemCount() === 1 ? 'item' : 'items' }}</span>
+        <button type="button" class="link-btn" (click)="clearSale()" [disabled]="cart().length === 0">Clear</button>
+      </div>
+
+
+        <!-- The customer's phone: out in the open, because it is how we recognise them next time -->
+        <div class="cust-row">
+          <div class="phone">
+            <label for="customerPhone"><i class="fas fa-phone"></i> Customer phone</label>
+            <input #phoneBox id="customerPhone" type="tel" inputmode="numeric" autocomplete="off"
+                   placeholder="8 digits, so we remember them"
+                   [class.is-invalid]="phoneTouched() && phoneProblem()"
+                   [value]="customerPhone" (input)="onPhoneInput(phoneBox)" (blur)="phoneTouched.set(true)" />
+          </div>
+          <div class="cname">
+            <label for="customerName"><i class="fas fa-user"></i> Customer name</label>
+            <input id="customerName" name="customerName" type="text" autocomplete="off" placeholder="Optional"
+                   [(ngModel)]="customerName" />
+          </div>
+        </div>
+
+        @if (phoneTouched() && phoneProblem()) {
+          <p class="phone-err">{{ phoneProblem() }}</p>
+        }
+
+        @switch (lookupState()) {
+          @case ('loading') {
+            <p class="lookup wait">Looking up this number...</p>
+          }
+          @case ('known') {
+            @if (customerInfo(); as c) {
+              <div class="lookup known" role="status">
+                <strong><i class="fas fa-user-check"></i> Returning customer@if (c.name) {: {{ c.name }}}</strong>
+                <span>
+                  {{ c.visits }} {{ c.visits === 1 ? 'visit' : 'visits' }}, Nu. {{ c.totalSpent | number: '1.2-2' }} spent
+                  @if (c.lastVisit) {
+                    , last here {{ c.lastVisit | date: 'd MMM y' }}
+                  }
+                </span>
+              </div>
+            }
+          }
+          @case ('new') {
+            <div class="lookup fresh" role="status">New customer. No earlier sales for this number yet.</div>
+          }
+        }
+
+        <details class="options">
+          <summary>
+            <i class="fas fa-percent"></i>
+            <span class="options-text">Tax: {{ taxSummary() }}</span>
+            <span class="customer-hint">change</span>
+          </summary>
+          <div class="options-body">
+      <!-- Taxes -->
+      <div class="taxes">
+        @for (tax of taxes(); track $index; let i = $index) {
+          <div class="tax">
+            <select #typeSelect (change)="setTaxType(i, typeSelect.value)" aria-label="Tax type">
+              @for (type of taxTypes; track type.value) {
+                <option [value]="type.value" [selected]="type.value === tax.type">{{ type.label }}</option>
+              }
+            </select>
+            <input #rateInput type="number" min="0" max="100" step="0.1" [value]="tax.rate"
+                   (input)="setTaxRate(i, rateInput.value)" aria-label="Tax rate percent" />
+            <span class="tax-pct">%</span>
+            <button type="button" class="line-remove" (click)="removeTax(i)" title="Remove tax" aria-label="Remove tax">
+              <i class="fas fa-xmark"></i>
+            </button>
+          </div>
+        }
+        <button type="button" class="link-btn" (click)="addTax()"><i class="fas fa-plus"></i> Add tax</button>
+      </div>
+
+
+          </div>
+        </details>
+      </div>
+
+
+      <!-- Lines -->
+      <div class="lines">
+        @if (cart().length > 0) {
+          <div class="lines-head" aria-hidden="true">
+            <span>Item</span><span>Qty</span><span>Discount</span><span class="r">Total</span><span></span>
+          </div>
+        }
+        @for (line of cart(); track line.itemId) {
+          <div class="line">
+            <div class="line-main">
+              <span class="line-name">{{ line.itemName }}</span>
+              <span class="line-total">Nu. {{ lineTotal(line) | number: '1.2-2' }}</span>
+            </div>
+            <div class="line-controls">
+              <div class="stepper">
+                <button type="button" (click)="changeQty(line, -1)" aria-label="One less">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <input #qty type="number" min="1" [value]="line.quantity" (change)="onQtyInput(line, qty)" aria-label="Quantity" />
+                <button type="button" (click)="changeQty(line, 1)" aria-label="One more">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <span class="line-mrp"><span class="times">x </span>Nu. {{ line.mrp | number: '1.2-2' }}<span class="each"> each</span></span>
+              <label class="line-disc">
+                <span class="dl">Discount</span>
+                <input #disc type="number" min="0" max="100" step="0.1" [value]="line.discountPercent | number: '1.0-2'"
+                       (change)="onDiscountInput(line, disc)" aria-label="Discount percent" />
+                <span>%</span>
+              </label>
+              <button type="button" class="line-remove" (click)="removeLine(line)" title="Remove item" aria-label="Remove item">
+                <i class="fas fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="lines-empty">
+            <i class="fas fa-basket-shopping"></i>
+            <p>The sale is empty. Tap a product or scan a barcode to add it.</p>
+          </div>
+        }
+      </div>
+
+
+
+      <!-- A discount on the whole sale -->
+      <div class="extra" [class.on]="totals().extraDiscount > 0">
+        <div class="extra-head">
+          <span><i class="fas fa-tags"></i> Discount on the whole sale</span>
+          <div class="mode" role="group" aria-label="Type of discount">
+            <button type="button" [class.on]="saleDiscountMode() === 'percent'" (click)="saleDiscountMode.set('percent')">%</button>
+            <button type="button" [class.on]="saleDiscountMode() === 'amount'" (click)="saleDiscountMode.set('amount')">Nu.</button>
+          </div>
+        </div>
+        <div class="extra-input">
+          <input #saleDisc type="number" min="0" step="any" inputmode="decimal" aria-label="Discount on the whole sale"
+                 [placeholder]="saleDiscountMode() === 'percent' ? 'For example 5, for 5% off' : 'For example 500, to take Nu. 500 off'"
+                 [value]="saleDiscountValue() ?? ''" [disabled]="cart().length === 0" (input)="onSaleDiscountInput(saleDisc)" />
+          @if (totals().extraDiscount > 0 && !totals().extraTooLarge) {
+            <span class="extra-result">- Nu. {{ totals().extraDiscount | number: '1.2-2' }}</span>
+          }
+        </div>
+        @if (totals().extraTooLarge) {
+          <p class="extra-error">That is more than the whole sale.</p>
+        }
+      </div>
+
+      <dl class="sums">
+        <div><dt>Subtotal</dt><dd>Nu. {{ totals().subtotal | number: '1.2-2' }}</dd></div>
+        <div><dt>Discounts</dt><dd class="minus">- Nu. {{ totals().discount | number: '1.2-2' }}</dd></div>
+        <div><dt>Tax ({{ taxSummary() }})</dt><dd>Nu. {{ totals().tax | number: '1.2-2' }}</dd></div>
+      </dl>
+
+      <!-- Payment -->
+      <div class="pay">
+        <div class="pay-methods" role="radiogroup" aria-label="Payment method">
+          @for (m of paymentMethods; track m.value) {
+            <button type="button" role="radio" [attr.aria-checked]="paymentMethod() === m.value"
+                    [class.on]="paymentMethod() === m.value" (click)="choosePayment(m.value)">
+              <i class="fas" [class]="'fas ' + m.icon"></i>
+              <span>{{ m.label }}</span>
+            </button>
+          }
+        </div>
+
+        @if (paymentMethod() === 'CASH') {
+          <div class="cash">
+            <label for="amountReceived">Cash received</label>
+            <div class="cash-row">
+              <span class="cash-nu">Nu.</span>
+              <input #amountInput id="amountReceived" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00"
+                     [value]="amountReceived() ?? ''" (input)="onAmountInput(amountInput)" (keydown.enter)="$event.preventDefault(); completeSale()" />
+            </div>
+            <div class="cash-quick">
+              <button type="button" (click)="setExact()" [disabled]="cart().length === 0">Exact</button>
+              @for (amount of quickAmounts; track amount) {
+                <button type="button" (click)="setReceived(amount)">{{ amount }}</button>
+              }
+            </div>
+            @if (cashState(); as state) {
+              <div class="cash-result" [class.ok]="state.ok" [class.short]="!state.ok">
+                @if (state.ok) {
+                  <span>Change to give back</span>
+                  <strong>Nu. {{ state.amount | number: '1.2-2' }}</strong>
+                } @else {
+                  <span>Still to collect</span>
+                  <strong>Nu. {{ state.amount | number: '1.2-2' }}</strong>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+
+      </div>
+
+      <!-- Always in view: the total and the button -->
+      <div class="ticket-bar">
+      <div class="grand">
+        <span>Total</span>
+        <strong>Nu. {{ totals().total | number: '1.2-2' }}</strong>
+      </div>
+
+      <!-- Actions -->
+      <button type="button" class="complete" [disabled]="processing() || cart().length === 0" (click)="completeSale()">
+        @if (processing()) {
+          <span class="spinner-border spinner-border-sm" role="status"></span> Saving sale...
+        } @else {
+          <i class="fas fa-check"></i> Complete sale
+          <span class="complete-key">F9</span>
+        }
+      </button>
+      @if (invoice()) {
+        <button type="button" class="last-invoice" (click)="showInvoice.set(true)">
+          <i class="fas fa-receipt"></i> Show last invoice
+        </button>
       }
-    </button>
-    @if (invoice()) {
-      <button id="printInvoice" class="btn btn-outline-primary btn-lg" (click)="showInvoice.set(true)">🖨️ Last Invoice</button>
-    }
+
+
+      </div>
+    </aside>
   </div>
 </div>
 
-<!-- Invoice modal (Angular opens/closes it, no Bootstrap JS needed) -->
+<!-- Invoice dialog: the header and the buttons stay in view, only the paper scrolls -->
 @if (showInvoice()) {
   @if (invoice(); as inv) {
-  <div class="modal fade show d-block" tabindex="-1" role="dialog" (click)="closeInvoice()">
-    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
-      <div class="modal-content">
-        <div class="modal-body">
-          <button type="button" class="close" aria-label="Close" (click)="closeInvoice()">
-            <span aria-hidden="true">&times;</span>
-          </button>
+    <div class="inv-scrim" (click)="closeInvoice()"></div>
 
-          <!-- Everything inside #invoiceEl goes into the PDF / print -->
-          <div id="invoicePreview" #invoiceEl>
-            <div class="invoice-header">
-              <h4>DP Inventory System</h4>
-              <p><strong>INVOICE</strong> @if (inv.orderId) { #{{ inv.orderId }} }</p>
-              <p><strong>Date:</strong> {{ inv.date | date: 'medium' }}</p>
-              @if (inv.customerName) {
-                <p><strong>Customer:</strong> {{ inv.customerName }}</p>
-              }
-              @if (inv.customerPhone) {
-                <p><strong>Phone:</strong> {{ inv.customerPhone }}</p>
-              }
+    <div #invoiceDialog class="inv-dialog" role="dialog" aria-modal="true" aria-labelledby="inv-title" tabindex="-1">
+      <header class="inv-head">
+        <span class="inv-tick"><i class="fas fa-check"></i></span>
+        <div class="inv-head-text">
+          <h2 id="inv-title">Sale #{{ inv.orderId }} completed</h2>
+          <p>
+            Total Nu. {{ inv.total | number: '1.2-2' }}, paid by {{ methodLabel(inv.paymentMethod) }}
+          </p>
+        </div>
+        @if (inv.change !== null && inv.change > 0) {
+          <div class="inv-change">
+            <span>Give back</span>
+            <strong>Nu. {{ inv.change | number: '1.2-2' }}</strong>
+          </div>
+        }
+        <button type="button" class="inv-x" (click)="closeInvoice()" aria-label="Close">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </header>
+
+      <div class="inv-body">
+        <!-- The A4 invoice: this is what you see, print on A4, and save as PDF -->
+        <div #invoiceEl class="sheet">
+          <div class="sheet-top">
+            <div class="brand">
+              <img src="Images/website-logo.png" alt="" />
+              <div>
+                <div class="brand-name">{{ shop.name }}</div>
+                <div class="brand-meta">{{ shop.address }}</div>
+                <div class="brand-meta">Phone {{ shop.phone }}</div>
+                <div class="brand-meta">{{ shop.email }}</div>
+              </div>
             </div>
-
-            <table class="table table-borderless mb-2">
-              <thead><tr><th>Item</th><th>Qty</th><th>MRP</th><th>Total</th></tr></thead>
-              <tbody>
-                @for (l of inv.lines; track $index) {
-                  <tr>
-                    <td>{{ l.name }}</td>
-                    <td>{{ l.qty }}</td>
-                    <td>Nu. {{ l.mrp | number: '1.2-2' }}</td>
-                    <td>Nu. {{ l.total | number: '1.2-2' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-
-            <table class="table table-borderless mb-0">
-              <tbody>
-                <tr class="summary-row">
-                  <td colspan="3"><strong>Subtotal:</strong></td>
-                  <td><strong>Nu. {{ inv.subtotal | number: '1.2-2' }}</strong></td>
-                </tr>
-                <tr class="summary-row">
-                  <td colspan="3"><strong>Discount (-):</strong></td>
-                  <td><strong>- Nu. {{ inv.discount | number: '1.2-2' }}</strong></td>
-                </tr>
-                @for (t of inv.taxLines; track $index) {
-                  <tr class="summary-row">
-                    <td colspan="3">{{ t.label }}:</td>
-                    <td>+ Nu. {{ t.amount | number: '1.2-2' }}</td>
-                  </tr>
-                }
-                <tr class="summary-row">
-                  <td colspan="3"><strong>Grand Total:</strong></td>
-                  <td><strong>Nu. {{ inv.total | number: '1.2-2' }}</strong></td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div class="footer-note">
-              Payment Method: {{ inv.paymentMethod }}<br />
-              Thank you for shopping with us!
+            <div class="doc">
+              <div class="doc-title">INVOICE</div>
+              <div class="doc-no">#{{ inv.orderId }}</div>
+              <div class="doc-date">{{ inv.date | date: 'd MMM y, h:mm a' }}</div>
             </div>
           </div>
+
+          <div class="meta">
+            <div>
+              <div class="meta-label">Billed to</div>
+              <div class="meta-value">{{ inv.customerName || 'Walk-in customer' }}</div>
+              @if (inv.customerPhone) {
+                <div class="meta-sub">{{ inv.customerPhone }}</div>
+              }
+            </div>
+            <div>
+              <div class="meta-label">Payment</div>
+              <div class="meta-value">{{ methodLabel(inv.paymentMethod) }}</div>
+              @if (inv.cashReceived !== null) {
+                <div class="meta-sub">
+                  Received Nu. {{ inv.cashReceived | number: '1.2-2' }}
+                  @if (inv.change !== null && inv.change > 0) {
+                    , change Nu. {{ inv.change | number: '1.2-2' }}
+                  }
+                </div>
+              }
+              @if (inv.cashier) {
+                <div class="meta-sub">Served by {{ inv.cashier }}</div>
+              }
+            </div>
+          </div>
+
+          <table class="items">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="num">Qty</th>
+                <th class="num">MRP</th>
+                <th class="num">Discount</th>
+                <th class="num">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of inv.lines; track $index) {
+                <tr>
+                  <td>{{ l.name }}</td>
+                  <td class="num">{{ l.qty }}</td>
+                  <td class="num">{{ l.mrp | number: '1.2-2' }}</td>
+                  <td class="num">{{ l.discountPercent > 0 ? (l.discountPercent | number: '1.0-2') + '%' : '-' }}</td>
+                  <td class="num strong">{{ l.total | number: '1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div><span>Subtotal</span><span>Nu. {{ inv.subtotal | number: '1.2-2' }}</span></div>
+            <div><span>Discount</span><span>- Nu. {{ inv.discount | number: '1.2-2' }}</span></div>
+            @for (t of inv.taxLines; track $index) {
+              <div><span>{{ t.label }}</span><span>Nu. {{ t.amount | number: '1.2-2' }}</span></div>
+            }
+            <div class="grand-row"><span>Grand total</span><span>Nu. {{ inv.total | number: '1.2-2' }}</span></div>
+          </div>
+
+          <div class="sheet-foot">Thank you for shopping with us!</div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeInvoice()">Close</button>
-          <button type="button" class="btn btn-outline-primary" (click)="printInvoice()">🖨️ Print</button>
-          <button type="button" id="downloadInvoice" class="btn btn-primary" (click)="downloadPdf()">📥 Download PDF</button>
+
+        <!-- The narrow receipt for a receipt printer. Hidden on screen, used only when printing. -->
+        <div #receiptEl class="receipt-print">
+          <div class="r-center">
+            <strong class="r-shop">{{ shop.name }}</strong>
+            <div>{{ shop.address }}</div>
+            <div>Phone {{ shop.phone }}</div>
+          </div>
+          <div class="r-rule"></div>
+          <div class="r-row"><span>Invoice #{{ inv.orderId }}</span></div>
+          <div>{{ inv.date | date: 'd MMM y, h:mm a' }}</div>
+          @if (inv.cashier) {
+            <div>Served by {{ inv.cashier }}</div>
+          }
+          @if (inv.customerName || inv.customerPhone) {
+            <div>Customer: {{ inv.customerName || 'Walk-in' }}@if (inv.customerPhone) {, {{ inv.customerPhone }}}</div>
+          }
+          <div class="r-rule"></div>
+          @for (l of inv.lines; track $index) {
+            <div class="r-item">
+              <div class="r-name">{{ l.name }}</div>
+              <div class="r-row">
+                <span>{{ l.qty }} x {{ unitNet(l) | number: '1.2-2' }}</span>
+                <span>{{ l.total | number: '1.2-2' }}</span>
+              </div>
+            </div>
+          }
+          <div class="r-rule"></div>
+          <div class="r-row"><span>Subtotal</span><span>{{ inv.subtotal | number: '1.2-2' }}</span></div>
+          <div class="r-row"><span>Discount</span><span>-{{ inv.discount | number: '1.2-2' }}</span></div>
+          @for (t of inv.taxLines; track $index) {
+            <div class="r-row"><span>{{ t.label }}</span><span>{{ t.amount | number: '1.2-2' }}</span></div>
+          }
+          <div class="r-row r-total"><span>TOTAL</span><span>Nu. {{ inv.total | number: '1.2-2' }}</span></div>
+          <div class="r-rule"></div>
+          <div class="r-row"><span>Paid by</span><span>{{ methodLabel(inv.paymentMethod) }}</span></div>
+          @if (inv.cashReceived !== null) {
+            <div class="r-row"><span>Cash received</span><span>{{ inv.cashReceived | number: '1.2-2' }}</span></div>
+            @if (inv.change !== null && inv.change > 0) {
+              <div class="r-row"><span>Change</span><span>{{ inv.change | number: '1.2-2' }}</span></div>
+            }
+          }
+          <div class="r-rule"></div>
+          <div class="r-center">Thank you for shopping with us!</div>
         </div>
       </div>
+
+      <footer class="inv-foot">
+        <div class="inv-actions">
+          <button type="button" class="btn btn-outline-secondary" (click)="printInvoice('receipt')">
+            <i class="fas fa-receipt"></i> Print receipt
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="printInvoice('a4')">
+            <i class="fas fa-print"></i> Print A4 invoice
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="downloadPdf()">
+            <i class="fas fa-file-pdf"></i> Download PDF
+          </button>
+        </div>
+        <button type="button" class="btn btn-primary btn-lg new-sale" (click)="closeInvoice()">
+          <i class="fas fa-plus"></i> New sale
+        </button>
+      </footer>
     </div>
-  </div>
-  <div class="modal-backdrop fade show"></div>
   }
 }

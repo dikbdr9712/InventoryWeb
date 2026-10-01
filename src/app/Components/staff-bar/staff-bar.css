@@ -10,12 +10,12 @@
 .sb-inner {
   display: flex;
   align-items: stretch;
-  max-width: 1240px;
+  max-width: none;
   height: 44px;
-  margin: 0 auto;
-  padding: 0 16px;
+  margin: 0;
+  padding: 0 20px;
   overflow-x: auto;          /* a long list scrolls sideways instead of wrapping */
-  scrollbar-width: none;
+  scrollbar-width: thin;
 }
 
 .sb-inner::-webkit-scrollbar {
@@ -100,5 +100,17 @@
 @media (max-width: 991px) {
   :host {
     display: none;
+  }
+}
+
+/* On medium screens drop the small icons so every tool fits (nothing hides off the right edge) */
+@media (max-width: 1500px) {
+  .sb-group a i {
+    display: none;
+  }
+
+  .sb-group a {
+    padding: 0 10px;
+    font-size: 0.9rem;
   }
 }

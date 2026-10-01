@@ -424,3 +424,9 @@ footer {
   }
 }
 
+@media print {
+  body.printing-invoice * { visibility: hidden; }
+  body.printing-invoice #invoicePreview,
+  body.printing-invoice #invoicePreview * { visibility: visible; }
+  body.printing-invoice #invoicePreview { position: fixed; top: 0; left: 0; width: 100%; }
+}
