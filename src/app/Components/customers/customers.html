@@ -1,0 +1,154 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Customers</h1>
+      <p>Everyone who buys from us, online and at the counter. Counter customers appear when they give a phone number.</p>
+    </div>
+  </div>
+
+  <!-- at a glance -->
+  <div class="stats">
+    <div class="stat"><span>Customers</span><strong>{{ totals().customers }}</strong></div>
+    <div class="stat"><span>With an online account</span><strong>{{ totals().withAccount }}</strong></div>
+    <div class="stat"><span>Counter only</span><strong>{{ totals().counterOnly }}</strong></div>
+    <div class="stat accent"><span>Spent with us</span><strong>Nu. {{ totals().spent | number: '1.0-0' }}</strong></div>
+  </div>
+
+  <!-- search, filter, sort -->
+  <div class="toolbar">
+    <div class="search">
+      <i class="fas fa-magnifying-glass"></i>
+      <input class="form-control" type="search" placeholder="Search name, phone or email" aria-label="Search customers"
+             [(ngModel)]="query" (input)="onQuery()" />
+    </div>
+    <div class="seg" role="group" aria-label="Show">
+      <button type="button" [class.on]="kind() === 'all'" (click)="kind.set('all')">All</button>
+      <button type="button" [class.on]="kind() === 'account'" (click)="kind.set('account')">With account</button>
+      <button type="button" [class.on]="kind() === 'counter'" (click)="kind.set('counter')">Counter only</button>
+    </div>
+    <select class="custom-select sort" aria-label="Sort customers" [value]="sortBy()" (change)="sortBy.set($any($event.target).value)">
+      <option value="recent">Last seen first</option>
+      <option value="spent">Spent the most</option>
+      <option value="orders">Most orders</option>
+    </select>
+  </div>
+
+  <div class="layout" [class.with-detail]="selected()">
+    <!-- ============ the list ============ -->
+    <section class="panel list" aria-label="Customer list">
+      @if (loading()) {
+        <p class="muted pad">Loading customers...</p>
+      } @else if (shown().length === 0) {
+        <div class="empty">
+          <i class="fas fa-address-book"></i>
+          <p>{{ query || kind() !== 'all' ? 'No customer matches.' : 'No customers yet. They appear with their first order.' }}</p>
+        </div>
+      } @else {
+        <div class="list-head" aria-hidden="true">
+          <span>Customer</span><span>Phone</span><span class="num">Orders</span><span class="num">Spent</span><span>Last seen</span>
+        </div>
+        <ul class="rows">
+          @for (c of shown(); track c.id) {
+            <li>
+              <button type="button" class="cust" [class.on]="selected()?.customer?.id === c.id" (click)="open(c)">
+                <span class="who">
+                  <span class="avatar" [class.counter]="!c.hasAccount">{{ initials(c.name) }}</span>
+                  <span class="who-text">
+                    <strong>{{ c.name || 'Name not given' }}</strong>
+                    <span class="sub">
+                      @if (c.email) { {{ c.email }} } @else { Counter customer }
+                    </span>
+                  </span>
+                  @if (c.hasAccount) { <span class="tag" title="Shops online with an account">Account</span> }
+                </span>
+                <span class="phone">{{ c.phone || '-' }}</span>
+                <span class="num"><span class="m-label">Orders </span>{{ c.visits }}</span>
+                <span class="num money"><span class="m-label">Spent </span>Nu. {{ c.totalSpent | number: '1.2-2' }}</span>
+                <span class="seen"><span class="m-label">Last seen </span>{{ c.lastSeenAt | date: 'd MMM y' }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ============ one customer ============ -->
+    @if (selected(); as d) {
+      <aside class="panel detail" aria-label="Customer details">
+        <div class="detail-head">
+          <span class="avatar big" [class.counter]="!d.customer.hasAccount">{{ initials(d.customer.name) }}</span>
+          <div class="detail-title">
+            <h2>{{ d.customer.name || 'Name not given' }}</h2>
+            <span class="muted small">
+              Customer since {{ d.customer.createdAt | date: 'd MMM y' }} · first seen {{ sourceLabel(d.customer.firstSource) }}
+            </span>
+          </div>
+          <button type="button" class="close-x" aria-label="Close" (click)="selected.set(null)">×</button>
+        </div>
+
+        <div class="mini">
+          <div><span>Orders</span><strong>{{ d.customer.visits }}</strong></div>
+          <div><span>Spent</span><strong>Nu. {{ d.customer.totalSpent | number: '1.0-0' }}</strong></div>
+          <div><span>Account</span><strong>{{ d.customer.hasAccount ? 'Yes' : 'No' }}</strong></div>
+        </div>
+
+        @if (!editing()) {
+          <dl class="info">
+            <div><dt><i class="fas fa-phone"></i> Phone</dt>
+              <dd>@if (d.customer.phone) { <a [href]="'tel:' + d.customer.phone">{{ d.customer.phone }}</a> } @else { - }</dd></div>
+            <div><dt><i class="fas fa-envelope"></i> Email</dt>
+              <dd>@if (d.customer.email) { <a [href]="'mailto:' + d.customer.email">{{ d.customer.email }}</a> } @else { - }</dd></div>
+            <div><dt><i class="fas fa-location-dot"></i> Address</dt><dd>{{ d.customer.address || '-' }}</dd></div>
+          </dl>
+          @if (d.notes) {
+            <div class="notes"><i class="fas fa-note-sticky"></i><p>{{ d.notes }}</p></div>
+          }
+          @if (canEdit) {
+            <button type="button" class="btn btn-secondary btn-sm" (click)="startEdit(d)"><i class="fas fa-pen"></i> Edit details</button>
+          }
+        } @else {
+          <form class="edit" (ngSubmit)="save(d)">
+            <label>Name<input class="form-control" name="name" [(ngModel)]="form.name" maxlength="120" /></label>
+            <label>Phone<input class="form-control" name="phone" inputmode="numeric" maxlength="8" [(ngModel)]="form.phone" /></label>
+            <label>Email<input class="form-control" name="email" type="email" [(ngModel)]="form.email" [disabled]="d.customer.hasAccount" />
+              @if (d.customer.hasAccount) { <small class="muted">They sign in with this email, so they change it themselves.</small> }
+            </label>
+            <label>Address<input class="form-control" name="address" [(ngModel)]="form.address" maxlength="500" /></label>
+            <label>Staff notes <small class="muted">(the customer never sees these)</small>
+              <textarea class="form-control" name="notes" rows="3" [(ngModel)]="form.notes" maxlength="1000"
+                        placeholder="e.g. Prefers delivery after 5 pm"></textarea>
+            </label>
+            <div class="actions">
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save' }}</button>
+              <button type="button" class="btn btn-secondary btn-sm" (click)="editing.set(false)">Cancel</button>
+            </div>
+          </form>
+        }
+
+        <h3>Order history</h3>
+        <ul class="orders">
+          @for (o of d.orders; track o.orderId) {
+            <li>
+              <span class="o-icon" [class.pos]="o.source === 'POS'">
+                <i class="fas" [class.fa-cash-register]="o.source === 'POS'" [class.fa-globe]="o.source !== 'POS'"></i>
+              </span>
+              <span class="o-main">
+                <strong>#{{ o.orderId }}</strong>
+                <span class="muted small">{{ o.source === 'POS' ? 'Counter' : 'Online' }} · {{ o.createdAt | date: 'd MMM y, h:mm a' }}</span>
+              </span>
+              <span class="o-right">
+                <strong>Nu. {{ o.totalAmount | number: '1.2-2' }}</strong>
+                <span [class]="'pill ' + orderPill(o.orderStatus)">{{ orderLabel(o.orderStatus) }}</span>
+              </span>
+              @if (o.source !== 'POS') {
+                <a class="o-open" [routerLink]="['/orders', o.orderId]" [attr.aria-label]="'Open order ' + o.orderId"><i class="fas fa-chevron-right"></i></a>
+              }
+            </li>
+          } @empty {
+            <li class="muted">No orders yet.</li>
+          }
+        </ul>
+      </aside>
+    }
+  </div>
+</div>

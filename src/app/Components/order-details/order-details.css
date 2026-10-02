@@ -218,3 +218,121 @@
 .notice.refused > i {
   color: var(--red);
 }
+
+/* ---------- Packages (one per seller) ---------- */
+.parcels {
+  margin-bottom: 20px;
+}
+
+.parcels h2 {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+}
+
+.parcel {
+  margin-bottom: 12px;
+  padding: 16px 18px;
+}
+
+.parcel-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.parcel-top > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.parcel .muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.mini-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 14px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.mini-steps li {
+  padding-top: 8px;
+  border-top: 4px solid var(--line);
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.mini-steps li.on {
+  border-color: var(--green);
+  color: var(--green-deep);
+}
+
+.rider {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 12px 0 0;
+}
+
+.rider > i {
+  color: var(--green);
+}
+
+.rider .btn {
+  margin-left: auto;
+}
+
+.code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--saffron-soft);
+}
+
+.code div {
+  display: flex;
+  flex-direction: column;
+}
+
+.code div span {
+  color: #7a5200;
+  font-size: 0.88rem;
+}
+
+.digits {
+  flex: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+}
+
+.done {
+  margin: 10px 0 0;
+}
+
+.done i {
+  color: var(--green);
+}
+
+@media (max-width: 520px) {
+  .code {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

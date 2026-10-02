@@ -4,9 +4,9 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   align-items: center;
   gap: 40px;
-  max-width: 1240px;
+  max-width: var(--site-max);
   margin: 0 auto;
-  padding: 44px 16px 24px;
+  padding: 44px var(--gutter) 24px;
 }
 
 .hero-copy h1 {
@@ -87,17 +87,34 @@
   gap: 6px;
 }
 
+/* each dot is a thin bar, but the button around it is big enough to tap with a finger */
+.banner-dots {
+  gap: 2px;
+}
+
 .banner-dots button {
-  width: 22px;
-  height: 5px;
+  position: relative;
+  width: 30px;
+  height: 24px;
   padding: 0;
   border: 0;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.6);
+  background: none;
   cursor: pointer;
 }
 
-.banner-dots button.on {
+.banner-dots button::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 5px;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.banner-dots button.on::before {
   background: var(--saffron);
 }
 
@@ -285,5 +302,116 @@
 
   .mission {
     padding: 18px;
+  }
+
+  /* why-us cards: icon on the left, so the three fit on a phone screen */
+  .value {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    column-gap: 14px;
+    align-items: start;
+    padding: 16px;
+  }
+
+  .value-icon {
+    grid-row: span 2;
+    margin-bottom: 0;
+  }
+
+  .values {
+    gap: 10px;
+  }
+
+  .featured,
+  .mission {
+    margin-top: 36px;
+  }
+}
+
+@media (max-width: 575px) {
+  .hero {
+    gap: 18px;
+    padding: 20px var(--gutter) 8px;
+  }
+
+  .hero-copy h1 {
+    margin-bottom: 10px;
+    font-size: 1.8rem;
+    line-height: 1.12;
+  }
+
+  .hero-copy p {
+    margin-bottom: 18px;
+    font-size: 1rem;
+  }
+
+  .hero-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .banner {
+    border-radius: 14px;
+  }
+
+  .banner-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .banner-btn.prev { left: 8px; }
+  .banner-btn.next { right: 8px; }
+
+  .section-head h2 {
+    font-size: 1.3rem;
+  }
+
+  /* two products side by side, like the shop page */
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .card-product {
+    gap: 2px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .card-photo {
+    margin-bottom: 6px;
+  }
+
+  .card-off {
+    top: 6px;
+    left: 6px;
+    padding: 1px 7px;
+    font-size: 0.72rem;
+  }
+
+  .card-name {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 0.93rem;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .card-price s {
+    display: block;
+    margin-left: 0;
+    font-size: 0.78rem;
+  }
+
+  .mission {
+    padding: 14px;
+  }
+
+  .mission img {
+    max-height: 200px;
+  }
+
+  .mission blockquote {
+    font-size: 1.15rem;
   }
 }

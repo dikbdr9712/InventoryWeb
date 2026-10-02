@@ -1,0 +1,210 @@
+.tabs {
+  margin-bottom: 20px;
+}
+
+.filter {
+  margin-bottom: 16px;
+}
+
+.count {
+  display: inline-block;
+  min-width: 20px;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--saffron);
+  color: #2b1d00;
+  font-size: 0.75rem;
+  line-height: 20px;
+  text-align: center;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.box {
+  padding: 18px 20px;
+}
+
+.box h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.box h2 i {
+  margin-right: 6px;
+  color: var(--green);
+}
+
+.list {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.list li:last-child {
+  border-bottom: 0;
+}
+
+.how p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Product form */
+#product-form {
+  margin-bottom: 20px;
+}
+
+.product-form {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.photo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.photo img,
+.photo-empty {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.photo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--wash);
+  color: var(--muted);
+}
+
+.photo-empty i {
+  font-size: 1.6rem;
+}
+
+.photo .btn {
+  margin: 0;
+  cursor: pointer;
+}
+
+.check {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Product cards */
+.products {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.product {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.product.off {
+  opacity: 0.65;
+}
+
+.product img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--wash);
+  object-fit: cover;
+}
+
+.product-body {
+  flex: 1;
+  padding: 12px 14px 4px;
+}
+
+.product-body h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.product-body p {
+  margin: 2px 0 6px;
+}
+
+.price {
+  font-weight: 700;
+}
+
+.price small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.product > .btn {
+  margin: 0 14px 14px;
+}
+
+@media (max-width: 760px) {
+  .two {
+    grid-template-columns: 1fr;
+  }
+
+  .product-form {
+    grid-template-columns: 1fr;
+  }
+
+  .photo {
+    max-width: 200px;
+  }
+}
+
+/* pickup point on the map */
+.pickup {
+  margin-bottom: 16px;
+}
+
+.pickup.missing {
+  border-color: #f0d38a;
+  background: linear-gradient(var(--saffron-soft), var(--saffron-soft)) padding-box;
+}
+
+.pickup .muted {
+  margin: 0 0 10px;
+}

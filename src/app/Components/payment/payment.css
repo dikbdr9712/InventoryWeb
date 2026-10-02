@@ -384,3 +384,53 @@
     order: -1;
   }
 }
+
+/* Pay before delivery */
+.prepay {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--green-soft);
+  color: var(--green-deep);
+  line-height: 1.5;
+}
+
+.prepay i {
+  margin-top: 4px;
+}
+
+.fee {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0 0;
+  color: var(--muted);
+}
+
+.fee small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.fee-note,
+.fee-problem {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.fee-note {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.fee-problem {
+  background: var(--red-soft);
+  color: var(--red);
+  font-weight: 600;
+}

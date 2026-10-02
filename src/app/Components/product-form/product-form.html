@@ -65,6 +65,22 @@
           } @else if (model.category) {
             <p class="static"><span>Category</span> <strong>{{ model.category }}</strong></p>
           }
+
+          <fieldset class="sizes">
+            <legend>Delivery size <small>sets the delivery price and which riders can carry it</small></legend>
+            <div class="size-grid">
+              @for (s of sizes; track s.value) {
+                <label class="size" [class.on]="model.deliverySize === s.value">
+                  <input type="radio" name="deliverySize" [value]="s.value" [(ngModel)]="model.deliverySize" />
+                  <i class="fas" [class]="'fas ' + s.icon"></i>
+                  <span class="size-text">
+                    <strong>{{ s.label }} <em>{{ s.vehicle }}</em></strong>
+                    <small>{{ s.hint }}</small>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
         </section>
 
         <!-- ======== Pricing ======== -->

@@ -1,0 +1,414 @@
+<div class="page join">
+  <!-- ============ What it is ============ -->
+  <section class="hero panel">
+    <div class="hero-text">
+      <span class="eyebrow">{{ isSeller ? 'For shopkeepers' : 'For riders and drivers' }}</span>
+      @if (isSeller) {
+        <h1>Sell your products on DK/Phar</h1>
+        <p>Reach customers all over Bhutan. You keep your shop; we bring the orders, collect the payment and deliver.</p>
+      } @else {
+        <h1>Deliver with DK/Phar and earn</h1>
+        <p>Pick up packages from local shops and bring them to customers. Choose the jobs that suit you.</p>
+      }
+      <ul class="perks">
+        @if (isSeller) {
+          <li><i class="fas fa-percent"></i>
+            <span>
+              Only <strong>{{ settings()?.defaultCommissionPercent ?? 3 | number: '1.0-2' }}%</strong> commission on what you sell.
+              No monthly fee.
+            </span>
+          </li>
+          <li><i class="fas fa-building-columns"></i><span>Your money goes straight to <strong>your bank account</strong>.</span></li>
+          <li><i class="fas fa-truck-fast"></i><span>Our drivers <strong>collect from your shop</strong>. You only pack.</span></li>
+        } @else {
+          <li><i class="fas fa-coins"></i>
+            <span>
+              Keep <strong>{{ settings()?.riderSharePercent ?? 80 | number: '1.0-0' }}% of every delivery fee</strong>.
+              Bigger items and longer trips pay more.
+            </span>
+          </li>
+          <li><i class="fas fa-hand-pointer"></i><span><strong>You choose</strong> which jobs to take.</span></li>
+          <li><i class="fas fa-shield-halved"></i><span>Customers <strong>pay before delivery</strong>. You never carry cash.</span></li>
+        }
+      </ul>
+    </div>
+    <div class="hero-icon" aria-hidden="true">
+      <i class="fas" [class.fa-store]="isSeller" [class.fa-motorcycle]="!isSeller"></i>
+    </div>
+  </section>
+
+  <!-- ============ How it works ============ -->
+  <section class="steps">
+    <h2>How it works</h2>
+    <ol>
+      @if (isSeller) {
+        <li><strong>Apply</strong><span>Tell us about your shop and your bank account.</span></li>
+        <li><strong>Add products</strong><span>Once approved, list your products with photos, prices and stock.</span></li>
+        <li><strong>Pack orders</strong><span>When a customer has paid, pack it and mark it ready. A driver collects it.</span></li>
+        <li><strong>Get paid</strong><span>After delivery, your earning (sale minus commission) is paid to your bank.</span></li>
+      } @else {
+        <li><strong>Apply</strong><span>Tell us how you travel and where you deliver.</span></li>
+        <li><strong>Take a job</strong><span>See open jobs with the pickup, the drop-off and what it pays.</span></li>
+        <li><strong>Deliver</strong><span>Collect from the shop, deliver, and enter the customer's 4-digit code.</span></li>
+        <li><strong>Get paid</strong><span>Your delivery earnings are paid to your bank account.</span></li>
+      }
+    </ol>
+  </section>
+
+  <!-- ============ Apply / status ============ -->
+  <section class="panel apply" id="apply">
+    @if (!auth.isLoggedIn()) {
+      <div class="gate">
+        <h2>Step 1: a free account</h2>
+        <p>Sign in or create an account. You come straight back here to fill in the application.</p>
+        <div class="gate-actions">
+          <a class="btn btn-primary" routerLink="/signup" [queryParams]="{ returnUrl: isSeller ? '/sell' : '/deliver' }">Create an account</a>
+          <a class="btn btn-secondary" routerLink="/login" [queryParams]="{ returnUrl: isSeller ? '/sell' : '/deliver' }">I already have one: sign in</a>
+        </div>
+        <p class="small muted">Before you start, have ready: your CID card,
+          {{ isSeller ? 'your trade licence (if your business has one), ' : 'your driving licence, ' }}your bank account number, and a phone camera to photograph them.</p>
+      </div>
+    } @else if (loading()) {
+      <p class="muted">Loading...</p>
+    } @else if (isStaff()) {
+      <div class="gate">
+        <h2>You are signed in with a staff account</h2>
+        <p>Staff accounts cannot become sellers or drivers. Please apply with a separate customer account.</p>
+      </div>
+    } @else if (other() && other()!.status !== 'REJECTED') {
+      <div class="gate">
+        <h2>This account is already a {{ isSeller ? 'delivery driver' : 'seller' }}</h2>
+        <p>One account can be a seller or a driver, not both. Please use another account to apply.</p>
+      </div>
+    } @else if (mine() && !editing()) {
+      @let app = mine()!;
+      <div class="status">
+        <div class="status-top">
+          <h2>Your {{ isSeller ? 'seller' : 'driver' }} application</h2>
+          <span class="pill" [class]="'pill ' + partnerPill(app.status)">{{ partnerLabel(app.status) }}</span>
+        </div>
+
+        @switch (app.status) {
+          @case ('PENDING') {
+            <p>Thank you. We are checking your details and documents, and may call you on {{ app.phone }}. You can still change your application.</p>
+            <button type="button" class="btn btn-secondary" (click)="start()">Edit my application</button>
+          }
+          @case ('APPROVED') {
+            <p>
+              Welcome aboard!
+              {{ isSeller ? 'Add your products and start selling.' : 'Open jobs are waiting for you.' }}
+              @if (isSeller && app.effectiveCommissionPercent != null) {
+                Your commission is <strong>{{ app.effectiveCommissionPercent | number: '1.0-2' }}%</strong>.
+              }
+            </p>
+            <button type="button" class="btn btn-primary" (click)="openHub()">
+              <i class="fas" [class.fa-store]="isSeller" [class.fa-route]="!isSeller"></i>
+              {{ isSeller ? 'Open my shop' : 'Open my deliveries' }}
+            </button>
+          }
+          @case ('REJECTED') {
+            <p>We could not approve this application.</p>
+            @if (app.statusNote) { <p class="note"><strong>Reason:</strong> {{ app.statusNote }}</p> }
+            <button type="button" class="btn btn-primary" (click)="start()">Fix and send again</button>
+          }
+          @case ('SUSPENDED') {
+            <p>Your account is paused.</p>
+            @if (app.statusNote) { <p class="note"><strong>Reason:</strong> {{ app.statusNote }}</p> }
+            <a class="btn btn-secondary" routerLink="/contact">Contact us</a>
+          }
+        }
+
+        @if (app.verification?.termsVersion) {
+          <p class="small muted signed">
+            <i class="fas fa-file-signature"></i>
+            You accepted the <a [routerLink]="termsLink" [queryParams]="{ v: app.verification!.termsVersion }">{{ isSeller ? 'Seller' : 'Driver' }} Agreement, version {{ app.verification!.termsVersion }}</a>
+            on {{ app.verification!.termsAcceptedAt | date: 'd MMM y, h:mm a' }}.
+          </p>
+        }
+      </div>
+    } @else if (!editing()) {
+      <div class="gate">
+        <h2>Ready to apply?</h2>
+        <p>It takes about five minutes: your details, photos of your documents, and the agreement. We check every application before the account is opened.</p>
+        <button type="button" class="btn btn-primary btn-lg" (click)="start()">
+          {{ isSeller ? 'Apply to sell' : 'Apply to deliver' }}
+        </button>
+      </div>
+    } @else {
+      <!-- step indicator -->
+      <ol class="stepper" aria-label="Application steps">
+        <li class="done"><span>✓</span> Account</li>
+        <li [class.on]="step() === 1" [class.done]="step() > 1" (click)="goTo(1)"><span>{{ step() > 1 ? '✓' : '1' }}</span> Details</li>
+        <li [class.on]="step() === 2" [class.done]="step() > 2" (click)="goTo(2)"><span>{{ step() > 2 ? '✓' : '2' }}</span> Documents</li>
+        <li [class.on]="step() === 3"><span>3</span> Agreement</li>
+      </ol>
+
+      @if (formError()) {
+        <div class="alert alert-danger" role="alert">{{ formError() }}</div>
+      }
+
+      <!-- ===== Step 1: details ===== -->
+      @if (step() === 1) {
+        <h2>{{ isSeller ? 'Your shop' : 'About you' }}</h2>
+        <form (ngSubmit)="next()" novalidate>
+          <div class="form-grid">
+            @if (isSeller) {
+              <label>
+                Shop name
+                <input class="form-control" name="shopName" [(ngModel)]="seller.shopName" maxlength="120"
+                       [class.is-invalid]="submitted() && detailErrors()['shopName']" />
+                @if (submitted() && detailErrors()['shopName']) { <span class="err">{{ detailErrors()['shopName'] }}</span> }
+              </label>
+              <label>
+                Shop phone
+                <input class="form-control" name="phone" inputmode="numeric" maxlength="8" [(ngModel)]="seller.phone"
+                       [class.is-invalid]="submitted() && detailErrors()['phone']" />
+                @if (submitted() && detailErrors()['phone']) { <span class="err">{{ detailErrors()['phone'] }}</span> }
+              </label>
+              <label class="full">
+                Pickup address
+                <input class="form-control" name="pickupAddress" [(ngModel)]="seller.pickupAddress" maxlength="500"
+                       placeholder="Building, street or landmark drivers can find"
+                       [class.is-invalid]="submitted() && detailErrors()['pickupAddress']" />
+                @if (submitted() && detailErrors()['pickupAddress']) { <span class="err">{{ detailErrors()['pickupAddress'] }}</span> }
+              </label>
+              <label>
+                Town
+                <input class="form-control" name="town" list="towns" [(ngModel)]="seller.town"
+                       [class.is-invalid]="submitted() && detailErrors()['town']" />
+                @if (submitted() && detailErrors()['town']) { <span class="err">{{ detailErrors()['town'] }}</span> }
+              </label>
+              <label>
+                What you sell <span class="hint">(optional)</span>
+                <input class="form-control" name="description" [(ngModel)]="seller.description" maxlength="500"
+                       placeholder="For example: organic honey, handmade soap" />
+              </label>
+
+              <p class="form-section">Owner and business</p>
+              <label>
+                Owner's CID number
+                <input class="form-control" name="cidNumber" inputmode="numeric" maxlength="11" [(ngModel)]="seller.cidNumber"
+                       [class.is-invalid]="submitted() && detailErrors()['cidNumber']" />
+                @if (submitted() && detailErrors()['cidNumber']) { <span class="err">{{ detailErrors()['cidNumber'] }}</span> }
+                @else { <span class="hint">11 digits, as on the CID card.</span> }
+              </label>
+              <label>
+                Trade licence number <span class="hint">(if registered)</span>
+                <input class="form-control" name="tradeLicenseNumber" maxlength="40" [(ngModel)]="seller.tradeLicenseNumber" />
+              </label>
+              <label>
+                TPN <span class="hint">(taxpayer number, if any)</span>
+                <input class="form-control" name="tpnNumber" maxlength="30" [(ngModel)]="seller.tpnNumber" />
+              </label>
+
+              <p class="form-section">Where we send your money</p>
+              <label>
+                Bank
+                <select class="form-control" name="bankName" [(ngModel)]="seller.bankName">
+                  @for (bank of banks; track bank) { <option [value]="bank">{{ bank }}</option> }
+                </select>
+              </label>
+              <label>
+                Account holder name
+                <input class="form-control" name="bankAccountName" [(ngModel)]="seller.bankAccountName"
+                       [class.is-invalid]="submitted() && detailErrors()['bankAccountName']" />
+                @if (submitted() && detailErrors()['bankAccountName']) { <span class="err">{{ detailErrors()['bankAccountName'] }}</span> }
+              </label>
+              <label class="full">
+                Account number
+                <input class="form-control" name="bankAccountNumber" inputmode="numeric" [(ngModel)]="seller.bankAccountNumber"
+                       [class.is-invalid]="submitted() && detailErrors()['bankAccountNumber']" />
+                @if (submitted() && detailErrors()['bankAccountNumber']) { <span class="err">{{ detailErrors()['bankAccountNumber'] }}</span> }
+                @else { <span class="hint">The account should be in the owner's or the business's name.</span> }
+              </label>
+            } @else {
+              <label>
+                Phone
+                <input class="form-control" name="phone" inputmode="numeric" maxlength="8" [(ngModel)]="rider.phone"
+                       [class.is-invalid]="submitted() && detailErrors()['phone']" />
+                @if (submitted() && detailErrors()['phone']) { <span class="err">{{ detailErrors()['phone'] }}</span> }
+              </label>
+              <label>
+                CID number
+                <input class="form-control" name="cidNumber" inputmode="numeric" maxlength="11" [(ngModel)]="rider.cidNumber"
+                       [class.is-invalid]="submitted() && detailErrors()['cidNumber']" />
+                @if (submitted() && detailErrors()['cidNumber']) { <span class="err">{{ detailErrors()['cidNumber'] }}</span> }
+                @else { <span class="hint">11 digits, as on your CID card.</span> }
+              </label>
+              <label>
+                Town you deliver in
+                <input class="form-control" name="town" list="towns" [(ngModel)]="rider.town"
+                       [class.is-invalid]="submitted() && detailErrors()['town']" />
+                @if (submitted() && detailErrors()['town']) { <span class="err">{{ detailErrors()['town'] }}</span> }
+              </label>
+              <label>
+                How you deliver
+                <select class="form-control" name="vehicleType" [(ngModel)]="rider.vehicleType">
+                  @for (v of vehicles; track v) { <option [value]="v">{{ v }}</option> }
+                </select>
+                <span class="hint">You will see {{ jobsFor(rider.vehicleType) }}.</span>
+              </label>
+
+              @if (needsLicence()) {
+                <p class="form-section">Vehicle and licence</p>
+                <label>
+                  Vehicle number
+                  <input class="form-control" name="vehicleNumber" [(ngModel)]="rider.vehicleNumber" placeholder="BP-1-A1234" />
+                </label>
+                <label>
+                  Driving licence number
+                  <input class="form-control" name="licenseNumber" [(ngModel)]="rider.licenseNumber"
+                         [class.is-invalid]="submitted() && detailErrors()['licenseNumber']" />
+                  @if (submitted() && detailErrors()['licenseNumber']) { <span class="err">{{ detailErrors()['licenseNumber'] }}</span> }
+                </label>
+                <label>
+                  Licence valid until
+                  <input class="form-control" name="licenseExpiry" type="date" [min]="today" [(ngModel)]="rider.licenseExpiry"
+                         [class.is-invalid]="submitted() && detailErrors()['licenseExpiry']" />
+                  @if (submitted() && detailErrors()['licenseExpiry']) { <span class="err">{{ detailErrors()['licenseExpiry'] }}</span> }
+                </label>
+              }
+
+              <p class="form-section">Emergency contact</p>
+              <label>
+                Name
+                <input class="form-control" name="emergencyContactName" [(ngModel)]="rider.emergencyContactName"
+                       placeholder="For example: your parent or partner"
+                       [class.is-invalid]="submitted() && detailErrors()['emergencyContactName']" />
+                @if (submitted() && detailErrors()['emergencyContactName']) { <span class="err">{{ detailErrors()['emergencyContactName'] }}</span> }
+              </label>
+              <label>
+                Their phone
+                <input class="form-control" name="emergencyContactPhone" inputmode="numeric" maxlength="8" [(ngModel)]="rider.emergencyContactPhone"
+                       [class.is-invalid]="submitted() && detailErrors()['emergencyContactPhone']" />
+                @if (submitted() && detailErrors()['emergencyContactPhone']) { <span class="err">{{ detailErrors()['emergencyContactPhone'] }}</span> }
+              </label>
+
+              <p class="form-section">Where we send your earnings</p>
+              <label>
+                Bank
+                <select class="form-control" name="bankName" [(ngModel)]="rider.bankName">
+                  @for (bank of banks; track bank) { <option [value]="bank">{{ bank }}</option> }
+                </select>
+              </label>
+              <label>
+                Account holder name
+                <input class="form-control" name="bankAccountName" [(ngModel)]="rider.bankAccountName"
+                       [class.is-invalid]="submitted() && detailErrors()['bankAccountName']" />
+                @if (submitted() && detailErrors()['bankAccountName']) { <span class="err">{{ detailErrors()['bankAccountName'] }}</span> }
+              </label>
+              <label class="full">
+                Account number
+                <input class="form-control" name="bankAccountNumber" inputmode="numeric" [(ngModel)]="rider.bankAccountNumber"
+                       [class.is-invalid]="submitted() && detailErrors()['bankAccountNumber']" />
+                @if (submitted() && detailErrors()['bankAccountNumber']) { <span class="err">{{ detailErrors()['bankAccountNumber'] }}</span> }
+              </label>
+            }
+          </div>
+
+          <datalist id="towns">
+            @for (town of towns; track town) { <option [value]="town"></option> }
+          </datalist>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Next: documents <i class="fas fa-arrow-right"></i></button>
+            @if (mine()) { <button type="button" class="btn btn-secondary" (click)="editing.set(false)">Cancel</button> }
+          </div>
+        </form>
+      }
+
+      <!-- ===== Step 2: documents ===== -->
+      @if (step() === 2) {
+        <h2>Photos of your documents</h2>
+        <p class="muted">Take a clear photo where every word can be read, or upload a scan. JPG, PNG or PDF, up to 5 MB each.
+          Only DK/Phar staff who check applications can see them.</p>
+
+        <div class="docs">
+          <div class="doc" [class.bad]="submitted() && docErrors()['id']">
+            <div class="doc-head"><i class="fas fa-id-card"></i> <strong>CID card</strong> <span class="req">Required</span></div>
+            @if (idFile(); as f) { <p class="picked"><i class="fas fa-check"></i> {{ f.name }} ({{ size(f) }})</p> }
+            @else if (hasDoc('ID_CARD')) { <p class="picked"><i class="fas fa-check"></i> Already sent. Choose a new file only to replace it.</p> }
+            <label class="btn btn-secondary btn-sm">
+              <input type="file" accept="image/jpeg,image/png,application/pdf" capture="environment" hidden (change)="pick('id', $any($event.target))" />
+              {{ idFile() || hasDoc('ID_CARD') ? 'Choose another file' : 'Take photo or choose file' }}
+            </label>
+            @if (submitted() && docErrors()['id']) { <span class="err">{{ docErrors()['id'] }}</span> }
+          </div>
+
+          @if (needsLicence()) {
+            <div class="doc" [class.bad]="submitted() && docErrors()['licence']">
+              <div class="doc-head"><i class="fas fa-address-card"></i> <strong>Driving licence</strong> <span class="req">Required</span></div>
+              @if (licenceFile(); as f) { <p class="picked"><i class="fas fa-check"></i> {{ f.name }} ({{ size(f) }})</p> }
+              @else if (hasDoc('DRIVING_LICENCE')) { <p class="picked"><i class="fas fa-check"></i> Already sent. Choose a new file only to replace it.</p> }
+              <label class="btn btn-secondary btn-sm">
+                <input type="file" accept="image/jpeg,image/png,application/pdf" capture="environment" hidden (change)="pick('licence', $any($event.target))" />
+                {{ licenceFile() || hasDoc('DRIVING_LICENCE') ? 'Choose another file' : 'Take photo or choose file' }}
+              </label>
+              @if (submitted() && docErrors()['licence']) { <span class="err">{{ docErrors()['licence'] }}</span> }
+            </div>
+          }
+
+          @if (isSeller) {
+            <div class="doc">
+              <div class="doc-head"><i class="fas fa-file-contract"></i> <strong>Trade licence</strong> <span class="opt">If your business has one</span></div>
+              @if (businessFile(); as f) { <p class="picked"><i class="fas fa-check"></i> {{ f.name }} ({{ size(f) }})</p> }
+              @else if (hasDoc('TRADE_LICENCE')) { <p class="picked"><i class="fas fa-check"></i> Already sent.</p> }
+              <label class="btn btn-secondary btn-sm">
+                <input type="file" accept="image/jpeg,image/png,application/pdf" capture="environment" hidden (change)="pick('business', $any($event.target))" />
+                {{ businessFile() || hasDoc('TRADE_LICENCE') ? 'Choose another file' : 'Take photo or choose file' }}
+              </label>
+            </div>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="back()"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="btn btn-primary" (click)="next()">Next: agreement <i class="fas fa-arrow-right"></i></button>
+        </div>
+      }
+
+      <!-- ===== Step 3: agreement ===== -->
+      @if (step() === 3) {
+        @if (terms(); as t) {
+          <h2>{{ t.title }}</h2>
+          <p class="muted">Version {{ t.version }}. Please read it before you agree. You can also
+            <a [routerLink]="termsLink" target="_blank">open it on its own page</a> to print or save it.</p>
+          <div class="terms-box" tabindex="0" aria-label="Agreement text"><app-terms-text [body]="t.body" [hideTitle]="true" /></div>
+
+          <label class="agree" [class.bad]="submitted() && !agreed">
+            <input type="checkbox" name="agreed" [(ngModel)]="agreed" />
+            <span>I have read and agree to the {{ t.title }} (version {{ t.version }}).</span>
+          </label>
+          <label class="agree" [class.bad]="submitted() && !confirmTrue">
+            <input type="checkbox" name="confirmTrue" [(ngModel)]="confirmTrue" />
+            <span>The information and documents I sent are true and belong to me{{ isSeller ? ' or my business' : '' }}.
+              I am at least 18 years old.</span>
+          </label>
+          @if (submitted() && (!agreed || !confirmTrue)) {
+            <p class="err">Tick both boxes to send your application.</p>
+          }
+          <p class="small muted">When you press Send, we record your agreement with the date, time and the device you used.</p>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="back()"><i class="fas fa-arrow-left"></i> Back</button>
+            <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="submit()">
+              @if (saving()) { <span class="spinner-border spinner-border-sm" role="status"></span> Sending... }
+              @else { <i class="fas fa-paper-plane"></i> Agree and send application }
+            </button>
+          </div>
+        } @else if (termsError()) {
+          <div class="alert alert-warning" role="alert">
+            <strong>We could not load the agreement.</strong> {{ termsError() }}
+            Your details and documents are kept on this page; try again in a moment.
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="back()"><i class="fas fa-arrow-left"></i> Back</button>
+            <button type="button" class="btn btn-primary" (click)="loadTerms()"><i class="fas fa-rotate"></i> Try again</button>
+          </div>
+        } @else {
+          <p class="muted">Loading the agreement...</p>
+        }
+      }
+    }
+  </section>
+</div>

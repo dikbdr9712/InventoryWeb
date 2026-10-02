@@ -15,10 +15,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 1240px;
+  max-width: var(--site-max);
   height: 64px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 var(--gutter);
 }
 
 /* Brand */
@@ -198,6 +198,7 @@
 .nb-signin {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   height: 40px;
   padding: 0 18px;
   border-radius: 8px;
@@ -217,6 +218,26 @@
   justify-content: center;
   width: 100%;
   height: 46px;
+}
+
+.nb-signup-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nb-signup-block:hover {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green-deep);
+  text-decoration: none;
 }
 
 /* Dropdown panels */
@@ -396,23 +417,66 @@
   border-bottom: 1px solid var(--line);
 }
 
+.nb-drawer-who {
+  margin: 0;
+  padding: 16px;
+  background: var(--wash);
+}
+
+.nb-guest {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px;
+  background: var(--green-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.nb-guest strong {
+  color: var(--green-deep);
+  font-size: 1.05rem;
+}
+
+.nb-guest span {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 .nb-drawer-links {
   display: flex;
   flex-direction: column;
-  padding: 8px;
+  padding: 4px 8px 8px;
 }
 
-.nb-drawer-links a {
-  padding: 13px 12px;
-  border-radius: 8px;
-  color: var(--ink);
-  font-weight: 500;
-  text-decoration: none;
+/* Bigger touch targets in the drawer */
+.nb-drawer .nb-item {
+  min-height: 46px;
+  padding: 10px 12px;
 }
 
-.nb-drawer-links a.active {
-  background: var(--saffron-soft);
+.nb-drawer .nb-item.active {
+  background: var(--green-soft);
+  color: var(--green-deep);
   font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+.nb-drawer .nb-item.active i {
+  color: var(--green);
+}
+
+.nb-pill {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--saffron);
+  color: #2b1d00;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
 }
 
 .nb-drawer-manage {
@@ -420,9 +484,17 @@
   border-top: 1px solid var(--line);
 }
 
+.nb-drawer .nb-group {
+  margin: 12px 12px 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .nb-drawer-foot {
   margin-top: auto;
-  padding: 8px;
+  padding: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
 }
 
@@ -443,8 +515,37 @@
   }
 }
 
+@media (max-width: 480px) {
+  .nb-bar {
+    height: 58px;
+    padding: 0 10px;
+    gap: 4px;
+  }
+
+  /* Small, quiet sign-in button so the logo has room */
+  .nb-signin {
+    height: 38px;
+    padding: 0 12px;
+    font-size: 0.92rem;
+  }
+}
+
 @media (max-width: 420px) {
   .nb-brand-text small {
     display: none;
   }
+
+  .nb-signin i {
+    display: none;
+  }
+}
+
+/* "My dashboard": the person's own starting page */
+.nb-home {
+  font-weight: 700;
+  color: var(--green-deep);
+}
+
+.nb-home i {
+  color: var(--green);
 }

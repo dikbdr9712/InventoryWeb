@@ -17,6 +17,39 @@
   --blue-soft: #e6f0fa;
   --radius: 12px;
   --shadow: 0 1px 2px rgba(23, 33, 31, 0.05), 0 6px 18px rgba(23, 33, 31, 0.06);
+
+  /* Site width: the header, staff bar, pages and footer all use these, so their edges line up */
+  --site-max: 1240px;
+  --gutter: 16px;
+}
+
+/* Bigger screens (or a zoomed-out browser) get more room and slightly larger text, instead of a thin strip in the middle */
+@media (min-width: 1440px) {
+  :root {
+    --site-max: 1360px;
+    --gutter: 24px;
+  }
+}
+
+@media (min-width: 1800px) {
+  :root {
+    --site-max: 1600px;
+    --gutter: 32px;
+  }
+
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 2400px) {
+  :root {
+    --site-max: 1900px;
+  }
+
+  html {
+    font-size: 18px;
+  }
 }
 
 html {
@@ -52,9 +85,9 @@ a:hover {
 
 /* ---------- Page shell: use on the outer div of any page ---------- */
 .page {
-  max-width: 1140px;
+  max-width: var(--site-max);
   margin: 0 auto;
-  padding: 28px 16px 56px;
+  padding: 28px var(--gutter) 56px;
 }
 
 .page-head {
@@ -300,4 +333,395 @@ label {
 .seg button.on {
   background: var(--green);
   color: #fff;
+}
+
+/* ---------- Marketplace pages (seller, rider, admin): shared pieces ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.stat strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.stat small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.stat.accent {
+  border-color: #b9dccd;
+  background: var(--green-soft);
+}
+
+.stat.accent strong {
+  color: var(--green-deep);
+}
+
+.pkg-list {
+  display: grid;
+  gap: 12px;
+}
+
+.pkg {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.pkg-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.pkg-top h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.pkg-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px 18px;
+  margin: 0 0 12px;
+}
+
+.pkg-meta div {
+  min-width: 0;
+}
+
+.pkg-meta dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pkg-meta dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.pkg-items {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--wash);
+  list-style: none;
+}
+
+.pkg-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.pkg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pkg-money {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--green-deep);
+}
+
+.empty-state {
+  padding: 36px 20px;
+  border: 1px dashed #c9d2cf;
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-state i {
+  display: block;
+  margin-bottom: 8px;
+  color: #9fb3ad;
+  font-size: 1.8rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.form-grid .full {
+  grid-column: 1 / -1;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.form-grid .hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.form-grid .err {
+  color: var(--red);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.form-section {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.table-wrap .table {
+  margin: 0;
+}
+
+.money-in { color: var(--green-deep); font-weight: 700; }
+.money-out { color: var(--red); font-weight: 700; }
+
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat strong {
+    font-size: 1.25rem;
+  }
+
+  .pkg {
+    padding: 14px;
+  }
+
+  .pkg-actions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* =====================================================================
+   Phones and tablets. Almost every size in the app is in rem, so a slightly
+   smaller root size on phones scales text, buttons, icons and spacing together.
+   ===================================================================== */
+@media (max-width: 991px) {
+  .page {
+    padding-top: 22px;
+    padding-bottom: 44px;
+  }
+
+  .page-head h1,
+  .page-head h2 {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 575px) {
+  html {
+    font-size: 15px;
+  }
+
+  /* An iPhone zooms the whole page when you type in a box with text under 16px */
+  :where(input:not([type='checkbox'], [type='radio'], [type='range']), select, textarea),
+  .form-control,
+  .custom-select {
+    font-size: 16px;
+  }
+
+  .page {
+    padding-top: 18px;
+    padding-bottom: 36px;
+  }
+
+  .page-head {
+    margin-bottom: 16px;
+  }
+
+  .page-head h1,
+  .page-head h2 {
+    font-size: 1.45rem;
+    line-height: 1.2;
+  }
+
+  .btn-lg {
+    padding: 0.6rem 1.1rem;
+    font-size: 1.05rem;
+  }
+
+  .panel {
+    border-radius: 10px;
+  }
+}
+
+/* Very narrow phones (320-360px wide) */
+@media (max-width: 360px) {
+  :root {
+    --gutter: 12px;
+  }
+}
+
+/* ---------- Delivery size picker (product forms) ---------- */
+.sizes {
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.sizes legend {
+  margin-bottom: 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.sizes legend small {
+  display: block;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.size-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sizes .size-grid .size {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.sizes .size-grid .size:hover {
+  border-color: #9fcdb9;
+}
+
+.sizes .size-grid .size.on {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.sizes .size-grid .size input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sizes .size-grid .size:focus-within {
+  outline: 3px solid #7ab8a4;
+  outline-offset: 2px;
+}
+
+.sizes .size-grid .size > i {
+  width: 22px;
+  margin-top: 2px;
+  color: var(--green);
+  text-align: center;
+}
+
+.size-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.size-text strong em {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.size-text small {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 480px) {
+  .size-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Size badge (packages and jobs) ---------- */
+.size-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--wash);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.size-badge.LARGE {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.size-badge.BULKY {
+  background: var(--saffron-soft);
+  color: #7a5200;
 }

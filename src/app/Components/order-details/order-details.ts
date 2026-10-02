@@ -4,10 +4,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { OrderService } from '../../services/order';
+import { MarketplaceService } from '../../services/marketplace';
 import { ItemService } from '../../services/item';
 import { ConfirmService } from '../../services/confirm';
 import { ToastService } from '../../services/toast';
-import { Order, OrderItem } from '../../models/models';
+import { Order, OrderItem, OrderPackage } from '../../models/models';
+import { packageLabel, packagePill, packageStage } from '../../utils/package-status';
 import { errorText } from '../../utils/http-error';
 import { orderLabel, orderPill, orderStage, paymentLabel, paymentPill } from '../../utils/order-status';
 import { OrderTracker } from '../order-tracker/order-tracker';
@@ -22,6 +24,7 @@ import { OrderTracker } from '../order-tracker/order-tracker';
 export class OrderDetails implements OnInit {
   private route = inject(ActivatedRoute);
   private orderService = inject(OrderService);
+  private marketplace = inject(MarketplaceService);
   private itemService = inject(ItemService);
   private confirm = inject(ConfirmService);
   private toasts = inject(ToastService);
@@ -30,9 +33,14 @@ export class OrderDetails implements OnInit {
   orderPill = orderPill;
   paymentLabel = paymentLabel;
   paymentPill = paymentPill;
+  packageLabel = packageLabel;
+  packagePill = packagePill;
+  packageStage = packageStage;
+  readonly steps = ['Packed', 'Picked up', 'Delivered'];
 
   order = signal<Order | null>(null);
   items = signal<OrderItem[]>([]);
+  packages = signal<OrderPackage[]>([]); // one per seller (orders placed since the marketplace)
   error = signal('');
   cancelling = signal(false);
 
@@ -41,7 +49,9 @@ export class OrderDetails implements OnInit {
   // The shop asked the customer for something, or refused the payment
   needsInfo = computed(() => (this.order()?.paymentStatus ?? '').toUpperCase() === 'PENDING_INFO');
   paymentRefused = computed(() => ['REJECTED', 'FAILED'].includes((this.order()?.paymentStatus ?? '').toUpperCase()));
-  canCancel = computed(() => (this.order()?.orderStatus ?? '').toUpperCase() === 'PENDING');
+  // Same rule as the server: the customer may cancel until the shop starts working on it
+  canCancel = computed(() => ['CREATED', 'PENDING'].includes((this.order()?.orderStatus ?? '').toUpperCase()));
+  itemsTotal = computed(() => this.items().reduce((sum, i) => sum + this.lineTotal(i), 0));
 
   ngOnInit() {
     this.load();
@@ -61,6 +71,7 @@ export class OrderDetails implements OnInit {
       next: ({ order, items }) => {
         this.order.set(order);
         this.items.set(items);
+        this.marketplace.orderPackages(orderId).subscribe({ next: list => this.packages.set(list), error: () => {} });
       },
       error: () => this.error.set('We could not load this order. Please try again in a moment.')
     });

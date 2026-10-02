@@ -6,6 +6,18 @@
       <p>{{ today | date: 'EEEE, d MMMM y' }}, cashier {{ auth.name() || 'unknown' }}</p>
     </div>
     <div class="pos-actions">
+      @if (shift(); as s) {
+        <button type="button" class="pos-btn drawer-chip" (click)="startClose()" title="Count the drawer and close the shift">
+          <i class="fas fa-cash-register"></i>
+          Drawer open {{ s.openedAt | date: 'h:mm a' }} · {{ s.saleCount }} sales
+          <span class="chip-close">Close</span>
+        </button>
+      }
+      <button type="button" class="pos-btn" (click)="showHeld.set(true)" [disabled]="held().length === 0"
+              title="Sales put aside with Hold, waiting to be finished">
+        <i class="fas fa-pause"></i> Held sales
+        @if (held().length) { <span class="held-count">{{ held().length }}</span> }
+      </button>
       <a routerLink="/pos-history" class="pos-btn"><i class="fas fa-clock-rotate-left"></i> Sales history</a>
       <button type="button" class="pos-btn" (click)="toggleFullScreen()">
         <i [class]="fullScreen() ? 'fas fa-bars' : 'fas fa-expand'"></i>
@@ -96,122 +108,105 @@
     </section>
 
     <!-- ============ RIGHT: the sale ticket ============ -->
-    <aside class="ticket" aria-label="Current sale">
-      <!-- Everything in here scrolls when the window is short -->
-      <div class="ticket-scroll">
-      <div class="ticket-top">
-      <div class="ticket-head">
+    <aside class="ticket t2" [class.open]="saleOpen()" aria-label="Current sale">
+      <!-- head -->
+      <div class="t2-head">
+        <button type="button" class="t2-back" (click)="closeSale()" aria-label="Back to the products">
+          <i class="fas fa-arrow-left"></i>
+        </button>
         <h2>Current sale</h2>
         <span class="ticket-count">{{ itemCount() }} {{ itemCount() === 1 ? 'item' : 'items' }}</span>
-        <button type="button" class="link-btn" (click)="clearSale()" [disabled]="cart().length === 0">Clear</button>
+        <span class="t2-spacer"></span>
+        <button type="button" class="t2-link" (click)="holdSale()" [disabled]="cart().length === 0"
+                title="Put this sale aside (the customer stepped away) and serve the next customer. Bring it back from Held sales.">
+          <i class="fas fa-pause"></i> <span class="t2-link-text">Hold</span>
+        </button>
+        <button type="button" class="t2-link danger" (click)="clearSale()" [disabled]="cart().length === 0"
+                aria-label="Clear the sale" title="Clear the sale">
+          <i class="fas fa-xmark"></i> <span class="t2-link-text">Clear</span>
+        </button>
       </div>
 
+      <!-- customer and tax: one compact row -->
+      <div class="t2-cust">
+        <label class="t2-field" [class.bad]="phoneTouched() && phoneProblem()">
+          <i class="fas fa-phone"></i>
+          <input #phoneBox id="customerPhone" type="tel" inputmode="numeric" autocomplete="off" aria-label="Customer phone"
+                 placeholder="Customer phone (8 digits)"
+                 [value]="customerPhone" (input)="onPhoneInput(phoneBox)" (blur)="phoneTouched.set(true)" />
+        </label>
+        <label class="t2-field">
+          <i class="fas fa-user"></i>
+          <input id="customerName" name="customerName" type="text" autocomplete="off" aria-label="Customer name"
+                 placeholder="Name (optional)" [(ngModel)]="customerName" (ngModelChange)="syncCustomer()" />
+        </label>
+        <button type="button" class="t2-chip" [class.on]="showTaxes()" (click)="showTaxes.set(!showTaxes())"
+                [attr.aria-expanded]="showTaxes()" title="Change the tax on this sale">
+          <i class="fas fa-percent"></i> {{ taxSummary() }} <i class="fas fa-chevron-down caret"></i>
+        </button>
+      </div>
 
-        <!-- The customer's phone: out in the open, because it is how we recognise them next time -->
-        <div class="cust-row">
-          <div class="phone">
-            <label for="customerPhone"><i class="fas fa-phone"></i> Customer phone</label>
-            <input #phoneBox id="customerPhone" type="tel" inputmode="numeric" autocomplete="off"
-                   placeholder="8 digits, so we remember them"
-                   [class.is-invalid]="phoneTouched() && phoneProblem()"
-                   [value]="customerPhone" (input)="onPhoneInput(phoneBox)" (blur)="phoneTouched.set(true)" />
-          </div>
-          <div class="cname">
-            <label for="customerName"><i class="fas fa-user"></i> Customer name</label>
-            <input id="customerName" name="customerName" type="text" autocomplete="off" placeholder="Optional"
-                   [(ngModel)]="customerName" />
-          </div>
+      @if (phoneTouched() && phoneProblem()) {
+        <p class="t2-note bad">{{ phoneProblem() }}</p>
+      }
+      @switch (lookupState()) {
+        @case ('loading') { <p class="t2-note">Looking up this number...</p> }
+        @case ('known') {
+          @if (customerInfo(); as c) {
+            <p class="t2-note known" role="status">
+              <i class="fas fa-user-check"></i> <strong>Returning customer@if (c.name) {: {{ c.name }}}</strong>
+              · {{ c.visits }} {{ c.visits === 1 ? 'visit' : 'visits' }}, Nu. {{ c.totalSpent | number: '1.0-0' }} spent
+            </p>
+          }
+        }
+        @case ('new') { <p class="t2-note">New customer: we will remember this number.</p> }
+      }
+
+      @if (showTaxes()) {
+        <div class="t2-taxes">
+          @for (tax of taxes(); track $index; let i = $index) {
+            <div class="tax">
+              <select #typeSelect (change)="setTaxType(i, typeSelect.value)" aria-label="Tax type">
+                @for (type of taxTypes; track type.value) {
+                  <option [value]="type.value" [selected]="type.value === tax.type">{{ type.label }}</option>
+                }
+              </select>
+              <input #rateInput type="number" min="0" max="100" step="0.1" [value]="tax.rate"
+                     (input)="setTaxRate(i, rateInput.value)" aria-label="Tax rate percent" />
+              <span class="tax-pct">%</span>
+              <button type="button" class="line-remove" (click)="removeTax(i)" title="Remove tax" aria-label="Remove tax">
+                <i class="fas fa-xmark"></i>
+              </button>
+            </div>
+          }
+          <button type="button" class="link-btn" (click)="addTax()"><i class="fas fa-plus"></i> Add tax</button>
         </div>
+      }
 
-        @if (phoneTouched() && phoneProblem()) {
-          <p class="phone-err">{{ phoneProblem() }}</p>
-        }
-
-        @switch (lookupState()) {
-          @case ('loading') {
-            <p class="lookup wait">Looking up this number...</p>
-          }
-          @case ('known') {
-            @if (customerInfo(); as c) {
-              <div class="lookup known" role="status">
-                <strong><i class="fas fa-user-check"></i> Returning customer@if (c.name) {: {{ c.name }}}</strong>
-                <span>
-                  {{ c.visits }} {{ c.visits === 1 ? 'visit' : 'visits' }}, Nu. {{ c.totalSpent | number: '1.2-2' }} spent
-                  @if (c.lastVisit) {
-                    , last here {{ c.lastVisit | date: 'd MMM y' }}
-                  }
-                </span>
-              </div>
-            }
-          }
-          @case ('new') {
-            <div class="lookup fresh" role="status">New customer. No earlier sales for this number yet.</div>
-          }
-        }
-
-        <details class="options">
-          <summary>
-            <i class="fas fa-percent"></i>
-            <span class="options-text">Tax: {{ taxSummary() }}</span>
-            <span class="customer-hint">change</span>
-          </summary>
-          <div class="options-body">
-      <!-- Taxes -->
-      <div class="taxes">
-        @for (tax of taxes(); track $index; let i = $index) {
-          <div class="tax">
-            <select #typeSelect (change)="setTaxType(i, typeSelect.value)" aria-label="Tax type">
-              @for (type of taxTypes; track type.value) {
-                <option [value]="type.value" [selected]="type.value === tax.type">{{ type.label }}</option>
-              }
-            </select>
-            <input #rateInput type="number" min="0" max="100" step="0.1" [value]="tax.rate"
-                   (input)="setTaxRate(i, rateInput.value)" aria-label="Tax rate percent" />
-            <span class="tax-pct">%</span>
-            <button type="button" class="line-remove" (click)="removeTax(i)" title="Remove tax" aria-label="Remove tax">
-              <i class="fas fa-xmark"></i>
-            </button>
-          </div>
-        }
-        <button type="button" class="link-btn" (click)="addTax()"><i class="fas fa-plus"></i> Add tax</button>
-      </div>
-
-
-          </div>
-        </details>
-      </div>
-
-
-      <!-- Lines -->
-      <div class="lines">
-        @if (cart().length > 0) {
-          <div class="lines-head" aria-hidden="true">
-            <span>Item</span><span>Qty</span><span>Discount</span><span class="r">Total</span><span></span>
-          </div>
-        }
+      <!-- the items: all the space that is left -->
+      <div class="t2-lines">
         @for (line of cart(); track line.itemId) {
-          <div class="line">
-            <div class="line-main">
+          <div class="t2-line">
+            <div class="t2-line-top">
               <span class="line-name">{{ line.itemName }}</span>
               <span class="line-total">Nu. {{ lineTotal(line) | number: '1.2-2' }}</span>
             </div>
-            <div class="line-controls">
+            <div class="t2-line-bottom">
               <div class="stepper">
-                <button type="button" (click)="changeQty(line, -1)" aria-label="One less">
-                  <i class="fas fa-minus"></i>
-                </button>
+                <button type="button" (click)="changeQty(line, -1)" aria-label="One less"><i class="fas fa-minus"></i></button>
                 <input #qty type="number" min="1" [value]="line.quantity" (change)="onQtyInput(line, qty)" aria-label="Quantity" />
-                <button type="button" (click)="changeQty(line, 1)" aria-label="One more">
-                  <i class="fas fa-plus"></i>
-                </button>
+                <button type="button" (click)="changeQty(line, 1)" aria-label="One more"><i class="fas fa-plus"></i></button>
               </div>
-              <span class="line-mrp"><span class="times">x </span>Nu. {{ line.mrp | number: '1.2-2' }}<span class="each"> each</span></span>
-              <label class="line-disc">
-                <span class="dl">Discount</span>
-                <input #disc type="number" min="0" max="100" step="0.1" [value]="line.discountPercent | number: '1.0-2'"
-                       (change)="onDiscountInput(line, disc)" aria-label="Discount percent" />
-                <span>%</span>
-              </label>
+              <span class="t2-each">× Nu. {{ line.mrp | number: '1.2-2' }}</span>
+              @if (canDiscount) {
+                <label class="t2-disc" title="Discount on this item">
+                  <input #disc type="number" min="0" max="100" step="0.1" [value]="line.discountPercent | number: '1.0-2'"
+                         (change)="onDiscountInput(line, disc)" aria-label="Discount percent" />
+                  <span>% off</span>
+                </label>
+              } @else if (line.discountPercent > 0) {
+                <span class="t2-off">{{ line.discountPercent | number: '1.0-1' }}% off</span>
+              }
               <button type="button" class="line-remove" (click)="removeLine(line)" title="Remove item" aria-label="Remove item">
                 <i class="fas fa-trash-can"></i>
               </button>
@@ -220,112 +215,147 @@
         } @empty {
           <div class="lines-empty">
             <i class="fas fa-basket-shopping"></i>
-            <p>The sale is empty. Tap a product or scan a barcode to add it.</p>
+            <p>The sale is empty.</p>
+            <small>Tap a product, or scan a barcode (press F2 first to jump to the search).</small>
           </div>
         }
       </div>
 
-
-
-      <!-- A discount on the whole sale -->
-      <div class="extra" [class.on]="totals().extraDiscount > 0">
-        <div class="extra-head">
-          <span><i class="fas fa-tags"></i> Discount on the whole sale</span>
-          <div class="mode" role="group" aria-label="Type of discount">
-            <button type="button" [class.on]="saleDiscountMode() === 'percent'" (click)="saleDiscountMode.set('percent')">%</button>
-            <button type="button" [class.on]="saleDiscountMode() === 'amount'" (click)="saleDiscountMode.set('amount')">Nu.</button>
-          </div>
-        </div>
-        <div class="extra-input">
-          <input #saleDisc type="number" min="0" step="any" inputmode="decimal" aria-label="Discount on the whole sale"
-                 [placeholder]="saleDiscountMode() === 'percent' ? 'For example 5, for 5% off' : 'For example 500, to take Nu. 500 off'"
-                 [value]="saleDiscountValue() ?? ''" [disabled]="cart().length === 0" (input)="onSaleDiscountInput(saleDisc)" />
-          @if (totals().extraDiscount > 0 && !totals().extraTooLarge) {
-            <span class="extra-result">- Nu. {{ totals().extraDiscount | number: '1.2-2' }}</span>
-          }
-        </div>
-        @if (totals().extraTooLarge) {
-          <p class="extra-error">That is more than the whole sale.</p>
-        }
-      </div>
-
-      <dl class="sums">
-        <div><dt>Subtotal</dt><dd>Nu. {{ totals().subtotal | number: '1.2-2' }}</dd></div>
-        <div><dt>Discounts</dt><dd class="minus">- Nu. {{ totals().discount | number: '1.2-2' }}</dd></div>
-        <div><dt>Tax ({{ taxSummary() }})</dt><dd>Nu. {{ totals().tax | number: '1.2-2' }}</dd></div>
-      </dl>
-
-      <!-- Payment -->
-      <div class="pay">
-        <div class="pay-methods" role="radiogroup" aria-label="Payment method">
-          @for (m of paymentMethods; track m.value) {
-            <button type="button" role="radio" [attr.aria-checked]="paymentMethod() === m.value"
-                    [class.on]="paymentMethod() === m.value" (click)="choosePayment(m.value)">
-              <i class="fas" [class]="'fas ' + m.icon"></i>
-              <span>{{ m.label }}</span>
-            </button>
-          }
-        </div>
-
-        @if (paymentMethod() === 'CASH') {
-          <div class="cash">
-            <label for="amountReceived">Cash received</label>
-            <div class="cash-row">
-              <span class="cash-nu">Nu.</span>
-              <input #amountInput id="amountReceived" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00"
-                     [value]="amountReceived() ?? ''" (input)="onAmountInput(amountInput)" (keydown.enter)="$event.preventDefault(); completeSale()" />
-            </div>
-            <div class="cash-quick">
-              <button type="button" (click)="setExact()" [disabled]="cart().length === 0">Exact</button>
-              @for (amount of quickAmounts; track amount) {
-                <button type="button" (click)="setReceived(amount)">{{ amount }}</button>
-              }
-            </div>
-            @if (cashState(); as state) {
-              <div class="cash-result" [class.ok]="state.ok" [class.short]="!state.ok">
-                @if (state.ok) {
-                  <span>Change to give back</span>
-                  <strong>Nu. {{ state.amount | number: '1.2-2' }}</strong>
-                } @else {
-                  <span>Still to collect</span>
-                  <strong>Nu. {{ state.amount | number: '1.2-2' }}</strong>
+      <!-- always in view: summary and the Charge button -->
+      <div class="t2-foot">
+        @if (canDiscount && cart().length > 0) {
+          @if (showSaleDiscount() || totals().extraDiscount > 0) {
+            <div class="extra" [class.on]="totals().extraDiscount > 0">
+              <div class="extra-head">
+                <span><i class="fas fa-tags"></i> Discount on the whole sale</span>
+                <div class="mode" role="group" aria-label="Type of discount">
+                  <button type="button" [class.on]="saleDiscountMode() === 'percent'" (click)="saleDiscountMode.set('percent')">%</button>
+                  <button type="button" [class.on]="saleDiscountMode() === 'amount'" (click)="saleDiscountMode.set('amount')">Nu.</button>
+                </div>
+              </div>
+              <div class="extra-input">
+                <input #saleDisc type="number" min="0" step="any" inputmode="decimal" aria-label="Discount on the whole sale"
+                       [placeholder]="saleDiscountMode() === 'percent' ? 'e.g. 5 for 5% off' : 'e.g. 500 to take Nu. 500 off'"
+                       [value]="saleDiscountValue() ?? ''" (input)="onSaleDiscountInput(saleDisc)" />
+                @if (totals().extraDiscount > 0 && !totals().extraTooLarge) {
+                  <span class="extra-result">- Nu. {{ totals().extraDiscount | number: '1.2-2' }}</span>
                 }
               </div>
-            }
-          </div>
+              @if (totals().extraTooLarge) { <p class="extra-error">That is more than the whole sale.</p> }
+            </div>
+          } @else {
+            <button type="button" class="t2-add-disc" (click)="showSaleDiscount.set(true)"><i class="fas fa-tags"></i> Add a discount on the whole sale</button>
+          }
         }
-      </div>
 
+        <div class="t2-sums">
+          <span>Subtotal <strong>Nu. {{ totals().subtotal | number: '1.2-2' }}</strong></span>
+          @if (totals().discount > 0) { <span class="minus">Discount <strong>− Nu. {{ totals().discount | number: '1.2-2' }}</strong></span> }
+          <span>Tax <strong>Nu. {{ totals().tax | number: '1.2-2' }}</strong></span>
+        </div>
 
-      </div>
-
-      <!-- Always in view: the total and the button -->
-      <div class="ticket-bar">
-      <div class="grand">
-        <span>Total</span>
-        <strong>Nu. {{ totals().total | number: '1.2-2' }}</strong>
-      </div>
-
-      <!-- Actions -->
-      <button type="button" class="complete" [disabled]="processing() || cart().length === 0" (click)="completeSale()">
-        @if (processing()) {
-          <span class="spinner-border spinner-border-sm" role="status"></span> Saving sale...
-        } @else {
-          <i class="fas fa-check"></i> Complete sale
+        <button type="button" class="t2-charge" [disabled]="processing() || cart().length === 0" (click)="openPay()">
+          <span class="t2-charge-label"><i class="fas fa-cash-register"></i> Charge</span>
+          <span class="t2-charge-amount">Nu. {{ totals().total | number: '1.2-2' }}</span>
           <span class="complete-key">F9</span>
-        }
-      </button>
-      @if (invoice()) {
-        <button type="button" class="last-invoice" (click)="showInvoice.set(true)">
-          <i class="fas fa-receipt"></i> Show last invoice
         </button>
-      }
-
-
+        @if (invoice()) {
+          <button type="button" class="last-invoice" (click)="showInvoice.set(true)">
+            <i class="fas fa-receipt"></i> Show last invoice (#{{ invoice()!.orderId }})
+          </button>
+        }
       </div>
     </aside>
   </div>
+
+  <!-- Phones: the sale is always one tap away, however far down the products you scrolled -->
+  @if (shift()) {
+    <div class="sale-bar" [class.has-items]="cart().length > 0">
+      <button type="button" class="sale-bar-search" (click)="searchFromBar()" aria-label="Search or scan a product">
+        <i class="fas fa-magnifying-glass"></i>
+      </button>
+      <button type="button" class="sale-bar-main" (click)="openSale()" aria-label="Open the current sale">
+        <span class="sale-bar-count" [class.bump]="lastAdded()">{{ itemCount() }}</span>
+        <span class="sale-bar-text">
+          @if (lastAdded(); as name) {
+            <small class="added"><i class="fas fa-check"></i> Added {{ name }}</small>
+          } @else {
+            <small>{{ cart().length ? 'Current sale' : 'Tap a product to add it' }}</small>
+          }
+          <strong>Nu. {{ totals().total | number: '1.2-2' }}</strong>
+        </span>
+        <i class="fas fa-chevron-up sale-bar-open"></i>
+      </button>
+      <button type="button" class="sale-bar-charge" [disabled]="processing() || cart().length === 0" (click)="openPay()">
+        Charge
+      </button>
+    </div>
+  }
 </div>
+
+<!-- ================= Payment: how the customer pays ================= -->
+@if (showPay()) {
+  <div class="dw-scrim" (click)="closePay()"></div>
+  <div class="dw-dialog pay-dialog" role="dialog" aria-modal="true" aria-labelledby="pay-title">
+    <div class="pay-total">
+      <span id="pay-title">Total to pay</span>
+      <strong>Nu. {{ totals().total | number: '1.2-2' }}</strong>
+      <small>{{ itemCount() }} {{ itemCount() === 1 ? 'item' : 'items' }}@if (customerName.trim()) { · {{ customerName }} }</small>
+    </div>
+
+    <div class="pay-methods" role="radiogroup" aria-label="Payment method">
+      @for (m of paymentMethods; track m.value) {
+        <button type="button" role="radio" [attr.aria-checked]="paymentMethod() === m.value"
+                [class.on]="paymentMethod() === m.value" (click)="choosePayment(m.value)">
+          <i class="fas" [class]="'fas ' + m.icon"></i>
+          <span>{{ m.label }}</span>
+        </button>
+      }
+    </div>
+
+    @if (paymentMethod() === 'CASH') {
+      <div class="cash">
+        <label for="amountReceived">Cash received from the customer</label>
+        <div class="cash-row">
+          <span class="cash-nu">Nu.</span>
+          <input #amountInput id="amountReceived" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00"
+                 [value]="amountReceived() ?? ''" (input)="onAmountInput(amountInput)" (keydown.enter)="$event.preventDefault(); completeSale()" />
+        </div>
+        <div class="cash-quick">
+          <button type="button" (click)="setExact()">Exact</button>
+          @for (amount of quickAmounts; track amount) {
+            <button type="button" (click)="setReceived(amount)">{{ amount }}</button>
+          }
+        </div>
+        @if (cashState(); as state) {
+          <div class="cash-result big" [class.ok]="state.ok" [class.short]="!state.ok">
+            <span>{{ state.ok ? 'Change to give back' : 'Still to collect' }}</span>
+            <strong>Nu. {{ state.amount | number: '1.2-2' }}</strong>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="pay-hint">
+        @switch (paymentMethod()) {
+          @case ('CARD') { Take the card payment on the card machine first, then complete the sale. }
+          @case ('UPI') { Check that the payment shows on your phone or account, then complete the sale. }
+          @default { Check that the transfer has arrived in the shop's account, then complete the sale. }
+        }
+      </p>
+    }
+
+    <div class="dw-actions pay-actions">
+      <button type="button" class="btn btn-secondary" (click)="closePay()"><i class="fas fa-arrow-left"></i> Back to the sale</button>
+      <button type="button" class="btn btn-primary btn-lg pay-complete" [disabled]="processing()" (click)="completeSale()">
+        @if (processing()) {
+          <span class="spinner-border spinner-border-sm" role="status"></span> Saving sale...
+        } @else {
+          <i class="fas fa-check"></i> Complete sale <span class="complete-key">Enter</span>
+        }
+      </button>
+    </div>
+  </div>
+}
 
 <!-- Invoice dialog: the header and the buttons stay in view, only the paper scrolls -->
 @if (showInvoice()) {
@@ -357,7 +387,7 @@
         <div #invoiceEl class="sheet">
           <div class="sheet-top">
             <div class="brand">
-              <img src="Images/website-logo.png" alt="" />
+              <img src="Images/logo-112.png" width="112" height="112" alt="" />
               <div>
                 <div class="brand-name">{{ shop.name }}</div>
                 <div class="brand-meta">{{ shop.address }}</div>
@@ -496,4 +526,146 @@
       </footer>
     </div>
   }
+}
+
+<!-- ================= Cash drawer: must be open to sell ================= -->
+@if (!shift() && !closedReport()) {
+  <div class="dw-scrim"></div>
+  <div class="dw-dialog" role="dialog" aria-modal="true" aria-labelledby="dw-open-title">
+    @if (shiftLoading()) {
+      <p class="dw-muted">Checking your cash drawer...</p>
+    } @else if (shiftError()) {
+      @if (shiftOutdated()) {
+        <h2 id="dw-open-title"><i class="fas fa-triangle-exclamation"></i> The server needs a restart</h2>
+        <p class="dw-muted">The till now uses cash drawer shifts, but the running server is an older version that does not have them yet.
+          Restart the backend (in IntelliJ: Stop, then Run), then press Try again.</p>
+      } @else {
+        <h2 id="dw-open-title"><i class="fas fa-triangle-exclamation"></i> Cannot reach the till server</h2>
+        <p class="dw-muted">{{ shiftError() }}</p>
+      }
+      <div class="dw-actions">
+        <button type="button" class="btn btn-primary" (click)="loadShift()"><i class="fas fa-rotate"></i> Try again</button>
+        <a routerLink="/pos-history" class="btn btn-secondary">Sales history</a>
+        <a routerLink="/" class="btn btn-outline-danger"><i class="fas fa-arrow-right-from-bracket"></i> Exit POS</a>
+      </div>
+    } @else {
+      <span class="dw-icon"><i class="fas fa-cash-register"></i></span>
+      <h2 id="dw-open-title">Open your cash drawer</h2>
+      <p class="dw-muted">Count the cash in the drawer before your first sale (the change float). At the end you count it again,
+        and the till shows if anything is missing.</p>
+      <form (ngSubmit)="openDrawer()">
+        <label for="openingFloat">Cash in the drawer now</label>
+        <div class="dw-money">
+          <span>Nu.</span>
+          <input id="openingFloat" name="openingFloat" type="number" min="0" step="1" inputmode="decimal" placeholder="0"
+                 [(ngModel)]="openingFloat" />
+        </div>
+        <div class="dw-actions">
+          <button type="submit" class="btn btn-primary btn-lg" [disabled]="openingDrawer()">
+            {{ openingDrawer() ? 'Opening...' : 'Open drawer and start selling' }}
+          </button>
+          <a routerLink="/pos-history" class="btn btn-secondary">Sales history</a>
+          <a routerLink="/" class="btn btn-outline-danger">Exit POS</a>
+        </div>
+      </form>
+    }
+  </div>
+}
+
+<!-- ================= Close the drawer ================= -->
+@if (showClose()) {
+  <div class="dw-scrim" (click)="showClose.set(false)"></div>
+  <div class="dw-dialog wide" role="dialog" aria-modal="true" aria-labelledby="dw-close-title">
+    <h2 id="dw-close-title"><i class="fas fa-lock"></i> Close the drawer</h2>
+    @if (closeReport(); as r) {
+      <dl class="dw-report">
+        <div><dt>Opened</dt><dd>{{ r.openedAt | date: 'd MMM, h:mm a' }}</dd></div>
+        <div><dt>Sales</dt><dd>{{ r.saleCount }} · Nu. {{ r.totalSales | number: '1.2-2' }}</dd></div>
+        @for (m of methodTotals(r); track m.method) {
+          <div class="sub"><dt>{{ m.method }}</dt><dd>Nu. {{ m.amount | number: '1.2-2' }}</dd></div>
+        }
+        <div><dt>Cash float at start</dt><dd>Nu. {{ r.openingFloat | number: '1.2-2' }}</dd></div>
+        <div><dt>+ Cash sales</dt><dd>Nu. {{ r.cashSales | number: '1.2-2' }}</dd></div>
+        <div><dt>- Cash refunds</dt><dd>Nu. {{ r.cashRefunds | number: '1.2-2' }}</dd></div>
+        <div class="total"><dt>Cash that should be in the drawer</dt><dd>Nu. {{ r.expectedCash | number: '1.2-2' }}</dd></div>
+      </dl>
+
+      <form (ngSubmit)="closeDrawer()">
+        <label for="countedCash">Count the cash in the drawer</label>
+        <div class="dw-money">
+          <span>Nu.</span>
+          <input id="countedCash" name="countedCash" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"
+                 (input)="onCounted($any($event.target).value)" />
+        </div>
+        @if (difference(); as d) {
+          <p class="dw-diff" [class.short]="d < 0" [class.over]="d > 0">
+            {{ d < 0 ? 'Short by' : 'Over by' }} Nu. {{ (d < 0 ? -d : d) | number: '1.2-2' }}
+          </p>
+        } @else if (countedCashValue() !== null) {
+          <p class="dw-diff ok"><i class="fas fa-check"></i> The count matches.</p>
+        }
+        @if (difference() !== null && difference() !== 0) {
+          <label for="closeNote">What happened? (required when the count does not match)</label>
+          <textarea id="closeNote" name="closeNote" class="form-control" rows="2" [(ngModel)]="closeNote"></textarea>
+        }
+        <div class="dw-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="closingDrawer()">{{ closingDrawer() ? 'Closing...' : 'Close drawer' }}</button>
+          <button type="button" class="btn btn-secondary" (click)="showClose.set(false)">Keep selling</button>
+        </div>
+      </form>
+    } @else {
+      <p class="dw-muted">Adding up the shift...</p>
+    }
+  </div>
+}
+
+<!-- ================= End of shift report ================= -->
+@if (closedReport(); as r) {
+  <div class="dw-scrim"></div>
+  <div class="dw-dialog wide shift-report" role="dialog" aria-modal="true" aria-labelledby="dw-z-title">
+    <h2 id="dw-z-title"><i class="fas fa-file-invoice-dollar"></i> Shift closed</h2>
+    <p class="dw-muted">{{ r.cashierName }} · {{ r.openedAt | date: 'd MMM, h:mm a' }} to {{ r.closedAt | date: 'h:mm a' }}</p>
+    <dl class="dw-report">
+      <div><dt>Sales</dt><dd>{{ r.saleCount }} · Nu. {{ r.totalSales | number: '1.2-2' }}</dd></div>
+      @for (m of methodTotals(r); track m.method) {
+        <div class="sub"><dt>{{ m.method }}</dt><dd>Nu. {{ m.amount | number: '1.2-2' }}</dd></div>
+      }
+      <div><dt>Discounts given</dt><dd>Nu. {{ r.discounts | number: '1.2-2' }}</dd></div>
+      <div><dt>Tax collected</dt><dd>Nu. {{ r.tax | number: '1.2-2' }}</dd></div>
+      <div><dt>Cash expected</dt><dd>Nu. {{ r.expectedCash | number: '1.2-2' }}</dd></div>
+      <div><dt>Cash counted</dt><dd>Nu. {{ r.countedCash | number: '1.2-2' }}</dd></div>
+      <div class="total" [class.bad]="(r.difference ?? 0) < 0">
+        <dt>Difference</dt><dd>Nu. {{ r.difference | number: '1.2-2' }}</dd>
+      </div>
+      @if (r.closingNote) { <div><dt>Note</dt><dd>{{ r.closingNote }}</dd></div> }
+    </dl>
+    <div class="dw-actions">
+      <button type="button" class="btn btn-secondary" (click)="printShiftReport()"><i class="fas fa-print"></i> Print</button>
+      <button type="button" class="btn btn-primary" (click)="closedReport.set(null)">Done</button>
+    </div>
+  </div>
+}
+
+<!-- ================= Held sales ================= -->
+@if (showHeld()) {
+  <div class="dw-scrim" (click)="showHeld.set(false)"></div>
+  <div class="dw-dialog wide" role="dialog" aria-modal="true" aria-labelledby="dw-held-title">
+    <h2 id="dw-held-title"><i class="fas fa-pause"></i> Held sales</h2>
+    <p class="held-explain">A held sale is put aside, for example while the customer fetches money, so you can serve the next
+      person. Bring it back to finish it. Held sales are kept on this computer (up to 10).</p>
+    @for (h of held(); track h.id) {
+      <div class="held-row">
+        <div>
+          <strong>{{ h.label }}</strong>
+          <span class="dw-muted">{{ h.draft.cart.length }} lines · held {{ h.at | date: 'h:mm a' }}</span>
+        </div>
+        <strong>Nu. {{ h.total | number: '1.2-2' }}</strong>
+        <button type="button" class="btn btn-primary btn-sm" (click)="recallSale(h)">Bring back</button>
+        <button type="button" class="btn btn-outline-danger btn-sm" (click)="dropHeld(h)" aria-label="Delete held sale"><i class="fas fa-trash-can"></i></button>
+      </div>
+    } @empty {
+      <p class="dw-muted">No held sales.</p>
+    }
+    <div class="dw-actions"><button type="button" class="btn btn-secondary" (click)="showHeld.set(false)">Close</button></div>
+  </div>
 }

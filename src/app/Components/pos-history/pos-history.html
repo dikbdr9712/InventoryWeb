@@ -2,8 +2,20 @@
   <div class="page-head">
     <div>
       <h1>Sales history</h1>
-      <p>Counter sales made at the point of sale.</p>
+      <p>{{ view() === 'drawers' ? 'Cash drawer shifts: what should be in each drawer, what was counted, and any difference.' : 'Counter sales made at the point of sale.' }}</p>
     </div>
+
+    <div class="seg" role="tablist" aria-label="Show">
+      <button type="button" role="tab" [class.on]="view() === 'sales'" (click)="showView('sales')"><i class="fas fa-receipt"></i> Sales</button>
+      <button type="button" role="tab" [class.on]="view() === 'drawers'" (click)="showView('drawers')"><i class="fas fa-cash-register"></i> Cash drawers</button>
+    </div>
+  </div>
+
+  @if (view() === 'drawers') {
+    <app-cash-drawers />
+  } @else {
+  <div class="page-head sub-head">
+    <div></div>
 
     <div class="seg" role="group" aria-label="Time period">
       @for (r of ranges; track r.value) {
@@ -139,6 +151,7 @@
         </table>
       </div>
     </section>
+  }
   }
 </div>
 

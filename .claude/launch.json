@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "start",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        ".claude/serve.mjs"
+      ],
+      "port": 4200,
+      "autoPort": true
+    },
+    {
+      "name": "start-prod",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        ".claude/serve.mjs",
+        "--configuration",
+        "production"
+      ],
+      "port": 4300,
+      "autoPort": true
+    }
+  ]
+}

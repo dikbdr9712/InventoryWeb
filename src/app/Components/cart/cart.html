@@ -27,12 +27,13 @@
       <!-- ============ Items ============ -->
       <section class="items panel" aria-label="Items in your cart">
         @for (item of cart.items(); track item.id) {
-          <article class="row">
+          <article class="cart-line">
             <img [src]="item.image" [alt]="item.name" (error)="onImageError($event)" />
 
             <div class="row-info">
               <a class="row-name" [routerLink]="['/products', item.id]">{{ item.name }}</a>
               <span class="row-price">Nu. {{ item.price | number: '1.2-2' }} each</span>
+              @if (item.sellerName) { <span class="row-seller"><i class="fas fa-store"></i> {{ item.sellerName }}</span> }
             </div>
 
             <div class="stepper">
@@ -57,11 +58,37 @@
         <dl class="sums">
           <div><dt>Items</dt><dd>{{ cart.count() }}</dd></div>
           <div><dt>Subtotal</dt><dd>Nu. {{ cart.total() | number: '1.2-2' }}</dd></div>
+          @if (quote(); as q) {
+            @for (p of q.packages; track $index) {
+              <div class="fee-row">
+                <dt>
+                  Delivery @if (q.packages.length > 1) { from {{ p.sellerName }} }
+                  <small class="fee-why">{{ p.sizeLabel }} · {{ p.estimated ? 'about ' : '' }}{{ p.distanceKm | number: '1.0-1' }} km</small>
+                </dt>
+                <dd>Nu. {{ p.fee | number: '1.2-2' }}</dd>
+              </div>
+            }
+          } @else {
+            <div><dt>Delivery</dt><dd class="muted">{{ quoting() ? 'Working it out...' : 'Shown at checkout' }}</dd></div>
+          }
         </dl>
+
+        @if (quote()?.problem) {
+          <p class="fee-problem" role="alert"><i class="fas fa-triangle-exclamation"></i> {{ quote()!.problem }}</p>
+        } @else if (estimated()) {
+          <p class="fee-note">
+            <i class="fas fa-circle-info"></i>
+            @if (quote()!.located) {
+              Some distances are estimated because a seller has not set their pickup point yet.
+            } @else {
+              The distance is estimated. Add your delivery location below for the exact price.
+            }
+          </p>
+        }
 
         <div class="total">
           <span>Total</span>
-          <strong>Nu. {{ cart.total() | number: '1.2-2' }}</strong>
+          <strong>Nu. {{ grandTotal() | number: '1.2-2' }}</strong>
         </div>
 
         @if (auth.isLoggedIn()) {
@@ -78,9 +105,11 @@
               }
             </div>
 
+            <app-delivery-location [(point)]="point" />
+
             <div class="field">
               <label for="address">Delivery address</label>
-              <textarea id="address" rows="3" class="form-control" placeholder="House, street, town"
+              <textarea id="address" rows="3" class="form-control" placeholder="House, building, landmark (for example: blue gate opposite the school)"
                         [class.is-invalid]="submitted() && errors().address" [(ngModel)]="delivery.address" name="address"
                         autocomplete="street-address"></textarea>
               @if (submitted() && errors().address) {
@@ -95,7 +124,7 @@
           </p>
         }
 
-        <button type="button" class="btn btn-primary btn-lg go" [disabled]="placing()" (click)="placeOrder()">
+        <button type="button" class="btn btn-primary btn-lg go" [disabled]="placing() || !!quote()?.problem" (click)="placeOrder()">
           @if (placing()) {
             <span class="spinner-border spinner-border-sm" role="status"></span> Creating your order...
           } @else if (auth.isLoggedIn()) {

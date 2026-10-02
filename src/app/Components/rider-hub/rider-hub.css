@@ -1,0 +1,231 @@
+.tabs {
+  margin-bottom: 18px;
+}
+
+.count {
+  display: inline-block;
+  min-width: 20px;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--saffron);
+  color: #2b1d00;
+  font-size: 0.75rem;
+  line-height: 20px;
+  text-align: center;
+}
+
+.earned {
+  padding: 10px 16px;
+  border: 1px solid #b9dccd;
+  border-radius: var(--radius);
+  background: var(--green-soft);
+  text-align: right;
+}
+
+.earned span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.earned strong {
+  color: var(--green-deep);
+  font-size: 1.3rem;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.job {
+  border-left: 4px solid var(--saffron);
+}
+
+.route {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.route li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.route li.done {
+  opacity: 0.55;
+}
+
+.route li > i {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--green-deep);
+  line-height: 32px;
+  text-align: center;
+}
+
+.route li div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.route span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 2px;
+}
+
+.links a {
+  font-weight: 600;
+}
+
+.deliver {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--saffron-soft);
+}
+
+.deliver label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.deliver-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.code {
+  max-width: 130px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+
+.sub {
+  margin: 26px 0 10px;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 600px) {
+  .page-head {
+    align-items: stretch;
+  }
+
+  .earned {
+    width: 100%;
+    text-align: left;
+  }
+
+  .code {
+    max-width: none;
+    flex: 1;
+  }
+}
+
+/* driving licence reminder */
+.licence {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid #f1d98f;
+  border-radius: var(--radius);
+  background: var(--saffron-soft);
+  color: #7a5200;
+}
+
+.licence.expired {
+  border-color: #f0c2bd;
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.licence-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.licence-text span {
+  flex: 1 1 260px;
+}
+
+.renew {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.renew label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  color: var(--ink);
+}
+
+@media (max-width: 600px) {
+  .renew {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* size, distance and pay at a glance */
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 2px 0 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.job-meta i {
+  margin-right: 3px;
+  color: var(--green);
+}
+
+.job-meta .size-badge i {
+  color: inherit;
+}
+
+.job-meta .muted {
+  font-weight: 400;
+}
+
+.go-now {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}

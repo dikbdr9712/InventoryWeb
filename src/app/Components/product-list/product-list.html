@@ -63,6 +63,7 @@
               <span class="category">{{ item.category }}</span>
             }
             <span class="name">{{ item.itemName }}</span>
+            @if (item.sellerName) { <span class="seller"><i class="fas fa-store"></i> {{ item.sellerName }}</span> }
             <span class="price">
               @if (item.sellingPrice != null) {
                 Nu. {{ item.sellingPrice | number: '1.2-2' }}
@@ -80,10 +81,11 @@
 
           <div class="actions">
             <button type="button" class="btn btn-primary btn-sm add" [disabled]="isOut(item)" (click)="addToCart(item)">
-              <i class="fas fa-bag-shopping"></i> {{ isOut(item) ? 'Sold out' : 'Add to cart' }}
+              <i class="fas fa-bag-shopping"></i>
+              @if (isOut(item)) { Sold out } @else { Add<span class="add-more"> to cart</span> }
             </button>
             @if (auth.isStaff() && item.sku) {
-              <a class="btn btn-secondary btn-sm" routerLink="/restock"
+              <a class="btn btn-secondary btn-sm restock" routerLink="/restock"
                  [queryParams]="{ sku: item.sku, itemName: item.itemName }" title="Restock this item">
                 <i class="fas fa-boxes-stacked"></i>
                 <span class="sr-only">Restock</span>

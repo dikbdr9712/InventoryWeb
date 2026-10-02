@@ -6,15 +6,17 @@ import { OrderService } from '../../services/order';
 import { ToastService } from '../../services/toast';
 import { AuthService } from '../../services/auth';
 import { ReturnDialog } from '../return-dialog/return-dialog';
+import { CashDrawers } from '../cash-drawers/cash-drawers';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ReturnService, SaleRefund } from '../../services/return';
-import { Order, OrderItem } from '../../models/models';
+import { Order, OrderItem, ShiftReport } from '../../models/models';
 import { errorText } from '../../utils/http-error';
 
 type Range = 'today' | 'week' | 'month' | 'all' | 'custom';
 
 @Component({
   selector: 'app-pos-history',
-  imports: [DatePipe, DecimalPipe, ReturnDialog],
+  imports: [DatePipe, DecimalPipe, ReturnDialog, CashDrawers],
   templateUrl: './pos-history.html',
   styleUrl: './pos-history.css'
 })
@@ -27,6 +29,15 @@ export class PosHistory implements OnInit {
   // refunds already given, by sale number
   refunds = signal<Record<number, SaleRefund>>({});
   auth = inject(AuthService);
+
+  // ---------- Sales or Cash drawers (the address keeps the choice: /pos-history?view=drawers) ----------
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  view = signal<'sales' | 'drawers'>(this.route.snapshot.queryParamMap.get('view') === 'drawers' ? 'drawers' : 'sales');
+
+  showView(view: 'sales' | 'drawers') {
+    this.router.navigate([], { queryParams: { view: view === 'drawers' ? 'drawers' : null }, queryParamsHandling: 'merge' });
+  }
 
   // the sale whose Return window is open
   returnOrderId = signal<number | null>(null);
@@ -112,6 +123,7 @@ export class PosHistory implements OnInit {
   }
 
   ngOnInit() {
+    this.route.queryParamMap.subscribe(q => this.view.set(q.get('view') === 'drawers' ? 'drawers' : 'sales'));
     this.loadRefunds();
     this.posService.history().subscribe({
       next: sales => {

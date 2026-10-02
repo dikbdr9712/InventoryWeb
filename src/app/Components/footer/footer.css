@@ -1,16 +1,18 @@
 .ft {
   margin-top: 40px;
+  padding: 0;                 /* the old global "footer" rule in styles.css adds padding and centers text */
   background: #10231f;
   color: #c6d3cf;
+  text-align: left;
 }
 
 .ft-inner {
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr 1.4fr;
   gap: 32px;
-  max-width: 1140px;
+  max-width: var(--site-max);
   margin: 0 auto;
-  padding: 44px 16px 32px;
+  padding: 44px var(--gutter) 32px;
 }
 
 .ft-logo {
@@ -28,16 +30,28 @@
   text-decoration: none;
 }
 
+.ft-logo span {
+  display: flex;
+  flex-direction: column;
+}
+
+.ft-logo small {
+  color: #97a9a4;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
 .ft-logo img {
   width: 44px;
   height: 44px;
+  flex: none;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .ft-brand p {
   max-width: 34ch;
-  margin: 14px 0;
+  margin: 14px 0 16px;
   line-height: 1.55;
 }
 
@@ -50,12 +64,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.09);
   color: #fff;
   text-decoration: none;
+  transition: background 0.15s;
 }
 
 .ft-social a:hover {
@@ -66,41 +81,58 @@
 .ft-col h3 {
   margin: 0 0 12px;
   color: #fff;
-  font-size: 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .ft-col a {
   display: block;
-  padding: 4px 0;
+  padding: 5px 0;
   color: #c6d3cf;
   text-decoration: none;
 }
 
 .ft-col a:hover {
   color: #fff;
-  text-decoration: underline;
 }
 
 .ft-col p {
-  margin: 0 0 8px;
+  margin: 0;
+  padding: 5px 0;
 }
 
-.ft-col p i {
-  width: 22px;
+.ft-contact a,
+.ft-contact p {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+
+.ft-contact i {
+  width: 16px;
+  margin-top: 5px;
+  flex: none;
   color: var(--saffron);
+  text-align: center;
 }
 
 .ft-base {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.ft-base span {
-  display: block;
-  max-width: 1140px;
+.ft-base-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  max-width: var(--site-max);
   margin: 0 auto;
-  padding: 16px;
-  font-size: 0.9rem;
+  padding: 16px var(--gutter);
   color: #97a9a4;
+  font-size: 0.88rem;
 }
 
 @media (max-width: 860px) {
@@ -113,8 +145,40 @@
   }
 }
 
+/* Phones: brand on top, Shop and Company side by side, contact below */
 @media (max-width: 480px) {
   .ft-inner {
-    grid-template-columns: 1fr;
+    gap: 28px 16px;
+    padding: 32px 20px 24px;
   }
+
+  .ft-contact {
+    grid-column: 1 / -1;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .ft-col a,
+  .ft-col p {
+    padding: 7px 0;           /* easier to tap */
+  }
+
+  .ft-base-inner {
+    padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+  }
+}
+
+.ft-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.ft-legal a {
+  color: #97a9a4;
+  text-decoration: none;
+}
+
+.ft-legal a:hover {
+  color: #fff;
 }

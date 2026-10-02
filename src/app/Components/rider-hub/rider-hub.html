@@ -1,0 +1,256 @@
+<div class="page">
+  @if (termsRequired()) {
+    <app-terms-gate type="RIDER" (accepted)="afterTerms()" />
+  } @else if (loadError()) {
+    <div class="empty-state">
+      <i class="fas fa-motorcycle"></i>
+      <p>{{ loadError() }}</p>
+      <a routerLink="/deliver" class="btn btn-primary">See my application</a>
+    </div>
+  } @else {
+    @let h = home();
+    <div class="page-head">
+      <div>
+        <h1>My deliveries</h1>
+        <p>@if (h) { {{ h.profile.name }} · {{ h.profile.vehicleType }} · {{ h.profile.town }} } @else { Loading... }</p>
+      </div>
+      @if (may.earnings && h?.earnings) {
+        <div class="earned">
+          <span>We owe you</span>
+          <strong>Nu. {{ h?.earnings?.balanceOwed ?? 0 | number: '1.2-2' }}</strong>
+        </div>
+      }
+    </div>
+
+    <!-- Driving licence: reminder before it runs out, and the form to send the renewed one -->
+    @if (licenceDaysLeft() !== null && licenceDaysLeft()! <= 30) {
+      <section class="licence" [class.expired]="licenceDaysLeft()! < 0">
+        <div class="licence-text">
+          <i class="fas fa-id-card"></i>
+          @if (licenceDaysLeft()! < 0) {
+            <span><strong>Your driving licence has expired.</strong> You cannot take new jobs until you send the renewed licence.</span>
+          } @else {
+            <span><strong>Your driving licence expires in {{ licenceDaysLeft() }} day{{ licenceDaysLeft() === 1 ? '' : 's' }}.</strong> Renew it in time and send us the new one.</span>
+          }
+          <button type="button" class="btn btn-sm btn-primary" (click)="showRenew.set(!showRenew())">Send renewed licence</button>
+        </div>
+        @if (showRenew()) {
+          <div class="renew">
+            <label>New expiry date <input class="form-control" type="date" [min]="today" [(ngModel)]="renewDate" name="renewDate" /></label>
+            <label>Photo or scan
+              <input class="form-control" type="file" accept="image/jpeg,image/png,application/pdf" (change)="pickRenewFile($any($event.target))" />
+            </label>
+            <button type="button" class="btn btn-primary" [disabled]="renewing()" (click)="renewLicence()">{{ renewing() ? 'Sending...' : 'Send' }}</button>
+          </div>
+        }
+      </section>
+    }
+
+    <div class="seg tabs" role="tablist">
+      @if (may.jobs) {
+        <button type="button" role="tab" [class.on]="tab() === 'jobs'" (click)="tab.set('jobs')">
+          Open jobs @if (jobs().length) { <span class="count">{{ jobs().length }}</span> }
+        </button>
+        <button type="button" role="tab" [class.on]="tab() === 'mine'" (click)="tab.set('mine')">
+          In progress @if (active().length) { <span class="count">{{ active().length }}</span> }
+        </button>
+      }
+      @if (may.earnings) {
+        <button type="button" role="tab" [class.on]="tab() === 'money'" (click)="tab.set('money')">Money</button>
+      }
+    </div>
+
+    @if (!may.jobs && !may.earnings) {
+      <div class="empty-state"><i class="fas fa-lock"></i>Your account cannot take jobs or see earnings yet. Please contact the shop.</div>
+    }
+
+    <!-- ================= Open jobs ================= -->
+    @if (tab() === 'jobs' && may.jobs) {
+      <div class="bar">
+        <span class="muted">@if (refreshedAt()) { Updated {{ refreshedAt() | date: 'h:mm a' }} }</span>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="reload()"><i class="fas fa-rotate"></i> Refresh</button>
+      </div>
+      @if (jobs().length === 0) {
+        <div class="empty-state"><i class="fas fa-mug-hot"></i>No open jobs right now. New jobs appear here by themselves.</div>
+      } @else {
+        <div class="pkg-list">
+          @for (job of jobs(); track job.id) {
+            <article class="pkg job">
+              <div class="pkg-top">
+                <h3>{{ job.itemCount }} item{{ job.itemCount === 1 ? '' : 's' }} · order #{{ job.orderId }}</h3>
+                <span class="pkg-money">Nu. {{ job.riderPay | number: '1.0-2' }}</span>
+              </div>
+              @let size = sizeInfo(job.deliverySize);
+              <p class="job-meta">
+                <span [class]="'size-badge ' + size.value"><i class="fas" [class]="'fas ' + size.icon"></i> {{ size.label }}</span>
+                @if (job.distanceKm != null) {
+                  <span><i class="fas fa-route"></i> {{ job.distanceEstimated ? 'about ' : '' }}{{ job.distanceKm | number: '1.0-1' }} km</span>
+                }
+                @if (job.distanceEstimated) {
+                  <span class="muted">distance estimated, call the customer</span>
+                }
+              </p>
+              <ol class="route">
+                <li>
+                  <i class="fas fa-store"></i>
+                  <div>
+                    <strong>Pick up</strong><span>{{ job.sellerName }} · {{ job.pickupAddress }}</span>
+                    <span class="links">
+                      <a [href]="placeLink(job.pickupLatitude, job.pickupLongitude, job.pickupAddress)" target="_blank" rel="noopener"><i class="fas fa-map"></i> Shop on the map</a>
+                    </span>
+                  </div>
+                </li>
+                <li>
+                  <i class="fas fa-location-dot"></i>
+                  <div><strong>Deliver to</strong><span>{{ job.dropAddress }}</span></div>
+                </li>
+              </ol>
+              <div class="pkg-actions">
+                <button type="button" class="btn btn-primary" [disabled]="busy() === job.id" (click)="accept(job)">
+                  <i class="fas fa-hand"></i> Take this job
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    }
+
+    <!-- ================= In progress ================= -->
+    @if (tab() === 'mine' && may.jobs) {
+      @if (active().length === 0) {
+        <div class="empty-state">
+          <i class="fas fa-route"></i>
+          <p>You have no deliveries in progress.</p>
+          <button type="button" class="btn btn-primary" (click)="tab.set('jobs')">Find a job</button>
+        </div>
+      } @else {
+        <div class="pkg-list">
+          @for (job of active(); track job.id) {
+            <article class="pkg">
+              <div class="pkg-top">
+                <h3>Order #{{ job.orderId }} · {{ job.itemCount }} item{{ job.itemCount === 1 ? '' : 's' }}</h3>
+                <span [class]="'pill ' + packagePill(job.status)">{{ job.status === 'ASSIGNED' ? 'Go and collect' : 'Deliver now' }}</span>
+              </div>
+              @let size = sizeInfo(job.deliverySize);
+              <p class="job-meta">
+                <span [class]="'size-badge ' + size.value"><i class="fas" [class]="'fas ' + size.icon"></i> {{ size.label }}</span>
+                @if (job.distanceKm != null) {
+                  <span><i class="fas fa-route"></i> {{ job.distanceEstimated ? 'about ' : '' }}{{ job.distanceKm | number: '1.0-1' }} km</span>
+                }
+                <span><i class="fas fa-coins"></i> Nu. {{ job.riderPay | number: '1.0-2' }}</span>
+              </p>
+              <a class="btn btn-primary btn-block go-now" [href]="directions(job)" target="_blank" rel="noopener">
+                <i class="fas fa-diamond-turn-right"></i> {{ job.status === 'ASSIGNED' ? 'Directions to the shop' : 'Directions to the customer' }}
+              </a>
+
+              <ol class="route">
+                <li [class.done]="job.status === 'PICKED_UP'">
+                  <i class="fas fa-store"></i>
+                  <div>
+                    <strong>1. Collect from {{ job.sellerName }}</strong>
+                    <span>{{ job.pickupAddress }}</span>
+                    @if (job.status === 'ASSIGNED') {
+                      <span class="links">
+                        @if (job.sellerPhone) { <a [href]="'tel:' + job.sellerPhone"><i class="fas fa-phone"></i> {{ job.sellerPhone }}</a> }
+                        <a [href]="placeLink(job.pickupLatitude, job.pickupLongitude, job.pickupAddress)" target="_blank" rel="noopener"><i class="fas fa-map"></i> Map</a>
+                      </span>
+                    }
+                  </div>
+                </li>
+                <li>
+                  <i class="fas fa-location-dot"></i>
+                  <div>
+                    <strong>2. Deliver to {{ job.customerName }}</strong>
+                    <span>{{ job.dropAddress }}</span>
+                    <span class="links">
+                      @if (job.customerPhone) { <a [href]="'tel:' + job.customerPhone"><i class="fas fa-phone"></i> {{ job.customerPhone }}</a> }
+                      <a [href]="placeLink(job.dropLatitude, job.dropLongitude, job.dropAddress)" target="_blank" rel="noopener"><i class="fas fa-map"></i> Map</a>
+                    </span>
+                  </div>
+                </li>
+              </ol>
+
+              <ul class="pkg-items">
+                @for (line of job.items; track line.itemId) { <li><span>{{ line.quantity }} × {{ line.itemName }}</span></li> }
+              </ul>
+
+              @if (job.status === 'ASSIGNED') {
+                <div class="pkg-actions">
+                  <button type="button" class="btn btn-primary" [disabled]="busy() === job.id" (click)="pickUp(job)">
+                    <i class="fas fa-box"></i> I have collected it
+                  </button>
+                  <button type="button" class="btn btn-outline-danger" [disabled]="busy() === job.id" (click)="release(job)">Give back</button>
+                </div>
+              } @else {
+                <form class="deliver" (ngSubmit)="deliver(job)">
+                  <label [for]="'code' + job.id">Customer's 4-digit code</label>
+                  <div class="deliver-row">
+                    <input class="form-control code" [id]="'code' + job.id" [name]="'code' + job.id" inputmode="numeric" maxlength="4"
+                           autocomplete="off" placeholder="0000" [(ngModel)]="codes[job.id]" />
+                    <button type="submit" class="btn btn-primary" [disabled]="busy() === job.id">
+                      <i class="fas fa-circle-check"></i> Delivered
+                    </button>
+                  </div>
+                  <small class="muted">The customer sees this code on their order page. It proves you gave it to the right person.</small>
+                </form>
+              }
+            </article>
+          }
+        </div>
+      }
+
+      @if (finished().length) {
+        <h2 class="sub">Finished</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Order</th><th>To</th><th>Status</th><th class="text-right">Earned</th></tr></thead>
+            <tbody>
+              @for (job of finished(); track job.id) {
+                <tr>
+                  <td>#{{ job.orderId }}</td>
+                  <td class="muted">{{ job.dropAddress }}</td>
+                  <td><span [class]="'pill ' + packagePill(job.status)">{{ packageLabel(job.status) }}</span></td>
+                  <td class="text-right">{{ job.status === 'DELIVERED' ? 'Nu. ' + (job.riderPay | number: '1.2-2') : '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+
+    <!-- ================= Money ================= -->
+    @if (tab() === 'money' && may.earnings) {
+      <div class="stats">
+        <div class="stat accent"><span>We owe you</span><strong>Nu. {{ h?.earnings?.balanceOwed ?? 0 | number: '1.2-2' }}</strong></div>
+        <div class="stat"><span>In progress</span><strong>Nu. {{ h?.earnings?.upcoming ?? 0 | number: '1.2-2' }}</strong>
+          <small>{{ h?.earnings?.activeCount ?? 0 }} jobs not yet delivered</small></div>
+        <div class="stat"><span>Earned so far</span><strong>Nu. {{ h?.earnings?.totalEarned ?? 0 | number: '1.2-2' }}</strong>
+          <small>{{ h?.earnings?.deliveredCount ?? 0 }} deliveries</small></div>
+        <div class="stat"><span>Paid out</span><strong>Nu. {{ h?.earnings?.totalPaidOut ?? 0 | number: '1.2-2' }}</strong></div>
+      </div>
+      <p class="muted">Payments go to {{ h?.profile?.bankName }}, account {{ h?.profile?.bankAccountNumber }}.</p>
+      @if (ledger().length === 0) {
+        <div class="empty-state"><i class="fas fa-receipt"></i>Your earnings appear here after each delivery.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Date</th><th>What</th><th class="text-right">Amount</th></tr></thead>
+            <tbody>
+              @for (row of ledger(); track row.id) {
+                <tr>
+                  <td>{{ row.createdAt | date: 'd MMM y' }}</td>
+                  <td>{{ ledgerLabel(row) }} @if (row.entryType === 'PAYOUT' || row.entryType === 'ADJUSTMENT') { <span class="muted">({{ row.note }})</span> }</td>
+                  <td class="text-right" [class.money-in]="row.amount > 0" [class.money-out]="row.amount < 0">
+                    {{ row.amount > 0 ? '+' : '−' }} Nu. {{ (row.amount < 0 ? -row.amount : row.amount) | number: '1.2-2' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+</div>

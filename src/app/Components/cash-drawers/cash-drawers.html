@@ -1,0 +1,159 @@
+<!-- at a glance -->
+<div class="stats">
+  <div class="stat" [class.warn]="totals().open > 0">
+    <span>Drawers open now</span><strong>{{ totals().open }}</strong>
+  </div>
+  <div class="stat"><span>Cash taken (listed shifts)</span><strong>Nu. {{ totals().cashTaken | number: '1.0-0' }}</strong></div>
+  <div class="stat" [class.bad]="totals().missing < 0">
+    <span>Cash missing</span><strong>Nu. {{ -totals().missing | number: '1.2-2' }}</strong>
+  </div>
+  <div class="stat"><span>Cash over</span><strong>Nu. {{ totals().over | number: '1.2-2' }}</strong></div>
+</div>
+
+<!-- how it works -->
+<section class="help panel">
+  <button type="button" class="help-toggle" (click)="showHelp.set(!showHelp())" [attr.aria-expanded]="showHelp()">
+    <i class="fas fa-circle-question"></i> How the cash drawer works
+    <i class="fas fa-chevron-down caret" [class.flip]="showHelp()"></i>
+  </button>
+  @if (showHelp()) {
+    <ol class="steps">
+      <li><strong>Open</strong><span>Before the first sale the cashier counts the cash already in the drawer (the change float) and opens a shift at the point of sale.</span></li>
+      <li><strong>Sell</strong><span>Every cash sale adds to the cash that should be in the drawer. Cash refunds for returns take it away. Card, UPI and bank payments are listed but never go into the drawer.</span></li>
+      <li><strong>Count</strong><span>At the end the cashier counts the drawer and closes the shift. The till compares the count with what should be there.</span></li>
+      <li><strong>Check</strong><span>A difference needs a note. Short (red) means cash is missing; over (gold) usually means change was not given. The report can be printed.</span></li>
+    </ol>
+    <p class="formula">Cash that should be in the drawer = float at start + cash sales − cash refunds</p>
+  }
+</section>
+
+<!-- filter -->
+<div class="bar">
+  <div class="seg" role="group" aria-label="Show">
+    <button type="button" [class.on]="filter() === 'all'" (click)="filter.set('all')">All shifts</button>
+    <button type="button" [class.on]="filter() === 'open'" (click)="filter.set('open')">Open now ({{ totals().open }})</button>
+    <button type="button" [class.on]="filter() === 'difference'" (click)="filter.set('difference')">With a difference</button>
+  </div>
+  <span class="muted small">{{ canManage ? 'Every cashier\'s shifts' : 'Your shifts' }}</span>
+  <button type="button" class="btn btn-secondary btn-sm" (click)="load()"><i class="fas fa-rotate"></i> Refresh</button>
+</div>
+
+@if (loading()) {
+  <p class="muted">Loading shifts...</p>
+} @else if (shown().length === 0) {
+  <div class="empty-state">
+    <i class="fas fa-cash-register"></i>
+    {{ shifts().length === 0 ? 'No shifts yet. A shift starts when a cashier opens the drawer at the point of sale.' : 'No shift matches.' }}
+  </div>
+} @else {
+  <ul class="shifts">
+    @for (s of shown(); track s.id) {
+      @let d = s.difference ?? 0;
+      <li class="shift panel" [class.is-open]="s.status === 'OPEN'" [class.expanded]="openId() === s.id">
+        <!-- the summary row -->
+        <button type="button" class="row-btn" (click)="toggle(s)" [attr.aria-expanded]="openId() === s.id">
+          <span class="who">
+            <span class="avatar">{{ (s.cashierName || s.cashierEmail).charAt(0).toUpperCase() }}</span>
+            <span class="who-text">
+              <strong>{{ s.cashierName || s.cashierEmail }}</strong>
+              <span class="muted small">
+                {{ s.openedAt | date: 'EEE d MMM, h:mm a' }}
+                @if (s.closedAt) { – {{ s.closedAt | date: 'h:mm a' }} }
+              </span>
+            </span>
+          </span>
+          <span class="state">
+            @if (s.status === 'OPEN') {
+              <span class="pill pill-info">Open{{ hoursOpen(s) > 12 ? ' since ' + (s.openedAt | date: 'd MMM') : '' }}</span>
+            } @else if (d < 0) {
+              <span class="pill pill-bad">Short Nu. {{ -d | number: '1.2-2' }}</span>
+            } @else if (d > 0) {
+              <span class="pill pill-wait">Over Nu. {{ d | number: '1.2-2' }}</span>
+            } @else {
+              <span class="pill pill-ok">Balanced</span>
+            }
+          </span>
+          <span class="fig"><span class="lbl">Sales</span>{{ s.saleCount }} · Nu. {{ s.totalSales | number: '1.2-2' }}</span>
+          <span class="fig"><span class="lbl">Cash expected</span>Nu. {{ s.expectedCash | number: '1.2-2' }}</span>
+          <span class="fig"><span class="lbl">Counted</span>{{ s.countedCash != null ? 'Nu. ' + (s.countedCash | number: '1.2-2') : '–' }}</span>
+          <i class="fas fa-chevron-down caret" [class.flip]="openId() === s.id"></i>
+        </button>
+
+        <!-- details -->
+        @if (openId() === s.id) {
+          <div class="detail" [id]="'shift-' + s.id">
+            <div class="detail-cols">
+              <div>
+                <h4>Cash in the drawer</h4>
+                <dl>
+                  <div><dt>Float at start</dt><dd>Nu. {{ s.openingFloat | number: '1.2-2' }}</dd></div>
+                  <div><dt>+ Cash sales</dt><dd>Nu. {{ s.cashSales | number: '1.2-2' }}</dd></div>
+                  <div><dt>− Cash refunds</dt><dd>Nu. {{ s.cashRefunds | number: '1.2-2' }}</dd></div>
+                  <div class="sum"><dt>Should be in the drawer</dt><dd>Nu. {{ s.expectedCash | number: '1.2-2' }}</dd></div>
+                  @if (s.countedCash != null) {
+                    <div><dt>Counted</dt><dd>Nu. {{ s.countedCash | number: '1.2-2' }}</dd></div>
+                    <div class="sum" [class.bad]="d < 0" [class.over]="d > 0"><dt>Difference</dt><dd>Nu. {{ d | number: '1.2-2' }}</dd></div>
+                  }
+                </dl>
+              </div>
+              <div>
+                <h4>Sales by payment</h4>
+                <dl>
+                  @for (m of methods(s); track m.method) {
+                    <div><dt>{{ m.method }}</dt><dd>Nu. {{ m.amount | number: '1.2-2' }}</dd></div>
+                  } @empty {
+                    <div><dt>No sales</dt><dd>–</dd></div>
+                  }
+                  <div><dt>Discounts given</dt><dd>Nu. {{ s.discounts | number: '1.2-2' }}</dd></div>
+                  <div><dt>Tax collected</dt><dd>Nu. {{ s.tax | number: '1.2-2' }}</dd></div>
+                </dl>
+              </div>
+            </div>
+            @if (s.closingNote) {
+              <p class="note"><i class="fas fa-comment-dots"></i> {{ s.closingNote }}</p>
+            }
+            @if (s.closedBy && s.closedBy.toLowerCase() !== s.cashierEmail.toLowerCase()) {
+              <p class="muted small">Closed by {{ s.closedBy }} (not the cashier).</p>
+            }
+
+            <div class="actions no-print">
+              @if (s.status === 'OPEN') {
+                @if (isMine(s)) {
+                  <a class="btn btn-primary btn-sm" routerLink="/pos"><i class="fas fa-cash-register"></i> Go to the till to close it</a>
+                } @else if (canManage) {
+                  @if (closingId() !== s.id) {
+                    <button type="button" class="btn btn-primary btn-sm" (click)="startClose(s)"><i class="fas fa-lock"></i> Close this drawer</button>
+                  }
+                }
+              } @else {
+                <button type="button" class="btn btn-secondary btn-sm" (click)="print(s)"><i class="fas fa-print"></i> Print report</button>
+              }
+            </div>
+
+            <!-- a manager closes a drawer the cashier forgot -->
+            @if (closingId() === s.id) {
+              <form class="close-form no-print" (ngSubmit)="close(s)">
+                <p class="muted small">Count the cash in {{ s.cashierName || 'the cashier' }}'s drawer, ideally with the cashier present.</p>
+                <label>Cash counted (Nu.)
+                  <input class="form-control" type="number" min="0" step="0.01" name="counted" [(ngModel)]="counted" />
+                </label>
+                @if (difference(s); as diff) {
+                  <p class="diff" [class.bad]="diff < 0" [class.over]="diff > 0">{{ diff < 0 ? 'Short by' : 'Over by' }} Nu. {{ (diff < 0 ? -diff : diff) | number: '1.2-2' }}</p>
+                } @else if (difference(s) === 0) {
+                  <p class="diff ok"><i class="fas fa-check"></i> Matches.</p>
+                }
+                <label>Note <span class="muted">(required when it does not match)</span>
+                  <input class="form-control" name="note" [(ngModel)]="note" maxlength="500" placeholder="e.g. Cashier forgot to close; counted with the manager" />
+                </label>
+                <div class="actions">
+                  <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving()">{{ saving() ? 'Closing...' : 'Close drawer' }}</button>
+                  <button type="button" class="btn btn-secondary btn-sm" (click)="closingId.set(null)">Cancel</button>
+                </div>
+              </form>
+            }
+          </div>
+        }
+      </li>
+    }
+  </ul>
+}

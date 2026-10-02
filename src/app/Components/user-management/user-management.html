@@ -1,239 +1,345 @@
 <div class="page">
   <div class="page-head">
     <div>
-      <h1>Users</h1>
-      <p>Decide who can do what. Changes apply the next time the person signs in.</p>
+      <h1>People &amp; access</h1>
+      <p>Who can sign in, and what each role is allowed to do.</p>
     </div>
-    @if (!accessDenied() && !notLoggedIn() && !loading()) {
-      <button type="button" class="btn btn-primary" (click)="toggleAdd()" [attr.aria-expanded]="showAdd()">
-        <i class="fas" [class]="showAdd() ? 'fas fa-xmark' : 'fas fa-user-plus'"></i> {{ showAdd() ? 'Close' : 'Add user' }}
+    @if (tab() === 'people') {
+      <button type="button" class="btn btn-primary" (click)="showAdd.set(!showAdd())">
+        <i class="fas" [class.fa-user-plus]="!showAdd()" [class.fa-xmark]="showAdd()"></i> {{ showAdd() ? 'Close' : 'Add person' }}
       </button>
+    } @else if (tab() === 'roles') {
+      <button type="button" class="btn btn-primary" (click)="newRole()"><i class="fas fa-plus"></i> New role</button>
     }
   </div>
 
-  <!-- The account that was just created. The password is shown once. -->
-  @if (createdInfo(); as info) {
-    <section class="created" role="status">
+  @if (serverOutdated()) {
+    <div class="alert alert-warning outdated" role="alert">
+      <i class="fas fa-triangle-exclamation"></i>
+      <div>
+        <strong>The server needs a restart.</strong>
+        It is still running an older version, so roles, permissions and switching accounts off do not work yet.
+        Restart the backend (in IntelliJ: Stop, then Run), then
+        <button type="button" class="btn btn-link p-0 align-baseline" (click)="loadAll()">reload this page</button>.
+      </div>
+    </div>
+  }
+
+  <!-- One-time password notices -->
+  @if (created(); as c) {
+    <section class="notice ok" role="status">
       <i class="fas fa-circle-check"></i>
-      <div class="created-text">
-        <strong>{{ info.name }} was added as {{ info.roleLabel }}</strong>
-        <span>Sign in with <b>{{ info.email }}</b> and this password:</span>
-        <span class="pw-line">
-          <code>{{ info.password }}</code>
-          <button type="button" class="copy" (click)="copyPassword(info.password)"><i class="fas fa-copy"></i> Copy</button>
-        </span>
-        <span class="warn">Give it to them privately. It is not shown again, and it cannot be looked up later.</span>
+      <div>
+        <strong>{{ c.name }} can now sign in as {{ c.role }}.</strong>
+        <p>Email <code>{{ c.email }}</code> · password <code>{{ c.password }}</code>
+          <button type="button" class="btn btn-sm btn-secondary" (click)="copy(c.password)">Copy</button></p>
+        <small>This password is shown only now. Ask them to change it in My profile.</small>
       </div>
-      <button type="button" class="created-close" (click)="createdInfo.set(null)" aria-label="Dismiss">
-        <i class="fas fa-xmark"></i>
-      </button>
+      <button type="button" class="close-x" aria-label="Close" (click)="created.set(null)">×</button>
+    </section>
+  }
+  @if (tempPassword(); as t) {
+    <section class="notice ok" role="status">
+      <i class="fas fa-key"></i>
+      <div>
+        <strong>New password for {{ t.name }}</strong>
+        <p>Email <code>{{ t.email }}</code> · password <code>{{ t.password }}</code>
+          <button type="button" class="btn btn-sm btn-secondary" (click)="copy(t.password)">Copy</button></p>
+        <small>Shown only now. Their old password no longer works.</small>
+      </div>
+      <button type="button" class="close-x" aria-label="Close" (click)="tempPassword.set(null)">×</button>
     </section>
   }
 
-  @if (showAdd()) {
-    <section class="panel add">
-      <h2>Add a user</h2>
-      <form (ngSubmit)="createUser()" novalidate>
-        @if (addError()) {
-          <div class="alert alert-danger" role="alert">{{ addError() }}</div>
-        }
+  <div class="seg tabs" role="tablist">
+    <button type="button" role="tab" [class.on]="tab() === 'people'" (click)="openTab('people')"><i class="fas fa-users"></i> People ({{ users().length }})</button>
+    <button type="button" role="tab" [class.on]="tab() === 'roles'" (click)="openTab('roles')"><i class="fas fa-user-shield"></i> Roles &amp; permissions</button>
+    <button type="button" role="tab" [class.on]="tab() === 'activity'" (click)="openTab('activity')"><i class="fas fa-clock-rotate-left"></i> Activity</button>
+  </div>
 
-        <div class="two">
-          <div class="field">
-            <label for="newName">Full name</label>
-            <input id="newName" name="newName" type="text" class="form-control" autocomplete="off"
-                   [class.is-invalid]="addSubmitted() && addErrors().name" [(ngModel)]="newUser.name" />
-            @if (addSubmitted() && addErrors().name) {
-              <p class="err">{{ addErrors().name }}</p>
-            }
-          </div>
-
-          <div class="field">
-            <label for="newEmail">Email</label>
-            <input id="newEmail" name="newEmail" type="email" class="form-control" autocomplete="off"
-                   [class.is-invalid]="addSubmitted() && addErrors().email" [(ngModel)]="newUser.email" />
-            @if (addSubmitted() && addErrors().email) {
-              <p class="err">{{ addErrors().email }}</p>
-            }
-          </div>
-        </div>
-
-        <div class="two">
-          <div class="field">
-            <label for="newPhone">Phone number</label>
-            <input id="newPhone" name="newPhone" type="tel" inputmode="numeric" placeholder="8 digits" class="form-control"
-                   autocomplete="off" [class.is-invalid]="addSubmitted() && addErrors().phone" [(ngModel)]="newUser.phone" />
-            @if (addSubmitted() && addErrors().phone) {
-              <p class="err">{{ addErrors().phone }}</p>
-            }
-          </div>
-
-          <div class="field">
-            <label for="newRole">Role</label>
-            <select id="newRole" name="newRole" class="custom-select" [(ngModel)]="newUser.roleId">
-              @for (role of roles; track role.id) {
-                <option [ngValue]="role.id">{{ role.label }}</option>
-              }
-            </select>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="newPassword">Password</label>
-          <div class="pw-row">
-            <input id="newPassword" name="newPassword" class="form-control" autocomplete="new-password"
-                   [type]="showNewPassword() ? 'text' : 'password'"
-                   [class.is-invalid]="addSubmitted() && addErrors().password" [(ngModel)]="newUser.password" />
-            <button type="button" class="btn btn-outline-secondary" (click)="showNewPassword.set(!showNewPassword())">
-              {{ showNewPassword() ? 'Hide' : 'Show' }}
-            </button>
-            <button type="button" class="btn btn-outline-secondary" (click)="generatePassword()">
-              <i class="fas fa-wand-magic-sparkles"></i> Generate
-            </button>
-          </div>
-          @if (addSubmitted() && addErrors().password) {
-            <p class="err">{{ addErrors().password }}</p>
-          } @else {
-            <p class="hint">At least 6 characters. You will see it once after the account is created, so you can pass it on.</p>
-          }
-        </div>
-
-        <div class="add-actions">
-          <button type="submit" class="btn btn-primary" [disabled]="adding()">
-            @if (adding()) {
-              <span class="spinner-border spinner-border-sm" role="status"></span> Creating...
-            } @else {
-              <i class="fas fa-check"></i> Create account
-            }
-          </button>
-          <button type="button" class="btn btn-secondary" (click)="toggleAdd()">Cancel</button>
-        </div>
-      </form>
-    </section>
-  }
-
-  @if (accessDenied(); as denied) {
-    <div class="state panel">
-      <i class="fas fa-lock"></i>
-      <h2>Only administrators can manage users</h2>
-      <p>You are signed in as {{ denied.name }} ({{ roleLabel(denied.role) }}).</p>
-      <a routerLink="/" class="btn btn-primary">Back to home</a>
-    </div>
-  } @else if (notLoggedIn()) {
-    <div class="state panel">
-      <i class="fas fa-right-to-bracket"></i>
-      <h2>Please sign in</h2>
-      <p>You need to be signed in as an administrator to open this page.</p>
-      <a routerLink="/login" class="btn btn-primary">Sign in</a>
-    </div>
-  } @else if (loading()) {
-    <p class="note">Loading users...</p>
+  @if (loadError()) {
+    <div class="empty-state"><i class="fas fa-lock"></i>{{ loadError() }}</div>
   } @else {
-    <div class="toolbar">
-      <div class="search">
-        <i class="fas fa-magnifying-glass"></i>
-        <input #search type="search" class="form-control" placeholder="Search by name, email or phone"
-               [value]="searchTerm()" (input)="searchTerm.set(search.value)" aria-label="Search users" />
-      </div>
 
-      <div class="seg" role="group" aria-label="Filter by role">
-        <button type="button" [class.on]="roleFilter() === ''" (click)="roleFilter.set('')">All ({{ counts()[''] }})</button>
-        @for (role of roles; track role.id) {
-          <button type="button" [class.on]="roleFilter() === role.name" (click)="roleFilter.set(role.name)">
-            {{ role.label }} ({{ counts()[role.name] }})
-          </button>
-        }
+  <!-- ================= People ================= -->
+  @if (tab() === 'people') {
+    @if (showAdd()) {
+      <section class="panel add">
+        <h2>Add a person</h2>
+        <form (ngSubmit)="createUser()" novalidate>
+          @if (addError()) { <div class="alert alert-danger" role="alert">{{ addError() }}</div> }
+          <div class="form-grid">
+            <label>Full name
+              <input class="form-control" name="name" [(ngModel)]="newUser.name" [class.is-invalid]="addSubmitted() && addErrors()['name']" />
+              @if (addSubmitted() && addErrors()['name']) { <span class="err">{{ addErrors()['name'] }}</span> }
+            </label>
+            <label>Email (they sign in with it)
+              <input class="form-control" name="email" type="email" [(ngModel)]="newUser.email" [class.is-invalid]="addSubmitted() && addErrors()['email']" />
+              @if (addSubmitted() && addErrors()['email']) { <span class="err">{{ addErrors()['email'] }}</span> }
+            </label>
+            <label>Phone
+              <input class="form-control" name="phone" inputmode="numeric" maxlength="8" [(ngModel)]="newUser.phone" [class.is-invalid]="addSubmitted() && addErrors()['phone']" />
+              @if (addSubmitted() && addErrors()['phone']) { <span class="err">{{ addErrors()['phone'] }}</span> }
+            </label>
+            <label>Role
+              <select class="form-control" name="roleId" [(ngModel)]="newUser.roleId" [class.is-invalid]="addSubmitted() && addErrors()['role']">
+                @for (r of newUserRoles(); track r.id) { <option [ngValue]="r.id">{{ roleLabel(r.name) }}</option> }
+              </select>
+              <span class="hint">For a seller or delivery driver: add them as Customer, then choose Seller or Delivery driver in the list.</span>
+            </label>
+            <label class="full">First password
+              <div class="pw-row">
+                <input class="form-control" name="password" [(ngModel)]="newUser.password" autocomplete="new-password"
+                       [class.is-invalid]="addSubmitted() && addErrors()['password']" />
+                <button type="button" class="btn btn-secondary" (click)="generatePassword()">Make one</button>
+              </div>
+              @if (addSubmitted() && addErrors()['password']) { <span class="err">{{ addErrors()['password'] }}</span> }
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn btn-primary" [disabled]="adding()">{{ adding() ? 'Adding...' : 'Add person' }}</button>
+            <button type="button" class="btn btn-secondary" (click)="showAdd.set(false)">Cancel</button>
+          </div>
+        </form>
+      </section>
+    }
+
+    <div class="filters">
+      <input class="form-control search" type="search" placeholder="Search name, email or phone" aria-label="Search people"
+             [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" />
+      <select class="form-control" aria-label="Role" [value]="roleFilter()" (change)="roleFilter.set($any($event.target).value)">
+        <option value="">All roles</option>
+        @for (r of roles(); track r.id) { <option [value]="r.name">{{ roleLabel(r.name) }} ({{ counts()[r.name] ?? 0 }})</option> }
+      </select>
+      <div class="seg" role="group" aria-label="Status">
+        <button type="button" [class.on]="statusFilter() === 'all'" (click)="statusFilter.set('all')">All</button>
+        <button type="button" [class.on]="statusFilter() === 'active'" (click)="statusFilter.set('active')">Active</button>
+        <button type="button" [class.on]="statusFilter() === 'off'" (click)="statusFilter.set('off')">Switched off</button>
       </div>
     </div>
 
-    <section class="panel table-panel">
-      <div class="table-responsive">
-        <table class="table mb-0">
-          <thead>
-            <tr>
-              <th>Person</th>
-              <th>Phone</th>
-              <th>Role</th>
-              <th>Change role</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (user of visible(); track user.id) {
-              <tr>
-                <td>
-                  <div class="person">
-                    <span class="avatar">{{ initials(user.name) }}</span>
-                    <div>
-                      <strong>{{ user.name }}</strong>
-                      @if (isSelf(user)) {
-                        <span class="you">You</span>
-                      }
-                      <span class="email">{{ user.email }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td>{{ user.phone || 'Not given' }}</td>
-                <td><span [class]="'role ' + user.roleName.toLowerCase()">{{ roleLabel(user.roleName) }}</span></td>
-                <td>
-                  @if (isSelf(user)) {
-                    <span class="locked" title="You cannot change your own role">
-                      <i class="fas fa-lock"></i> Your own role
-                    </span>
-                  } @else {
-                    <div class="change">
-                      <select #roleBox class="custom-select" [attr.aria-label]="'Role for ' + user.name"
-                              (change)="pick(user, roleBox.value)">
-                        @for (role of roles; track role.id) {
-                          <option [value]="role.id" [selected]="role.id === selectedRoleId(user)">{{ role.label }}</option>
-                        }
-                      </select>
-                      <button type="button" class="btn btn-primary btn-sm"
-                              [disabled]="!changed(user) || busyId() === user.id" (click)="save(user)">
-                        Save
-                      </button>
-                    </div>
-                  }
-                </td>
-              </tr>
-            } @empty {
-              <tr><td colspan="4" class="empty">No one matches. Try a different search or role.</td></tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </section>
+    @if (loading()) {
+      <p class="muted">Loading people...</p>
+    } @else if (visible().length === 0) {
+      <div class="empty-state"><i class="fas fa-user-slash"></i>No one matches.</div>
+    } @else {
+      <div class="people">
+        @for (u of visible(); track u.id) {
+          <article class="person" [class.off]="!u.active">
+            <div class="who">
+              <span class="avatar">{{ (u.name || '?').charAt(0).toUpperCase() }}</span>
+              <div>
+                <strong>{{ u.name }} @if (isMe(u)) { <span class="me">You</span> }</strong>
+                <span class="muted">{{ u.email }}</span>
+                <span class="muted">{{ u.phone }}</span>
+              </div>
+            </div>
 
-    <details class="panel legend">
-      <summary>What can each role do?</summary>
-      <div class="table-responsive">
-        <table class="table mb-0">
-          <thead>
-            <tr>
-              <th>Can they...</th>
-              @for (role of roles; track role.id) {
-                <th class="tick">{{ role.label }}</th>
+            <div class="role-cell">
+              @if (isMe(u)) {
+                <span class="locked"><i class="fas fa-lock"></i> {{ roleLabel(u.roleName) }}</span>
+              } @else {
+                <select #roleSelect class="form-control" [attr.aria-label]="'Role of ' + u.name" [disabled]="busyId() === u.id"
+                        [value]="u.roleId" (change)="changeRole(u, $any(roleSelect.value), roleSelect)">
+                  @for (r of assignableRoles(); track r.id) { <option [value]="r.id" [selected]="r.id === u.roleId">{{ roleLabel(r.name) }}</option> }
+                </select>
               }
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of permissionRows; track row.key) {
-              <tr>
-                <td>{{ row.label }}</td>
-                @for (role of roles; track role.id) {
-                  <td class="tick">
-                    @if (roleHas(role.name, row.key)) {
-                      <i class="fas fa-check yes" aria-label="Yes"></i>
-                    } @else {
-                      <span class="no" aria-label="No">-</span>
-                    }
-                  </td>
+              @if (u.partner && !isPartnerRole(u.roleName)) {
+                <span class="small muted">{{ u.partner === 'SELLER' ? 'Seller' : 'Driver' }} application: {{ u.partnerStatus | lowercase }}</span>
+              }
+              @if (isPartnerRole(u.roleName)) {
+                <a class="small-link" routerLink="/admin/marketplace">Shop, commission and payouts in Marketplace</a>
+              }
+            </div>
+
+            <div class="state">
+              <span [class]="'pill ' + (u.active ? 'pill-ok' : 'pill-bad')">{{ u.active ? 'Active' : 'Switched off' }}</span>
+              <span class="small muted">{{ u.lastLoginAt ? 'Last in ' + (u.lastLoginAt | date: 'd MMM, h:mm a') : 'Never signed in' }}</span>
+            </div>
+
+            <div class="row-actions">
+              @if (!isMe(u)) {
+                <button type="button" class="btn btn-sm btn-secondary" [disabled]="busyId() === u.id" (click)="resetPassword(u)">
+                  <i class="fas fa-key"></i> Reset password
+                </button>
+                <button type="button" class="btn btn-sm" [class.btn-outline-danger]="u.active" [class.btn-outline-primary]="!u.active"
+                        [disabled]="busyId() === u.id" (click)="toggleActive(u)">
+                  {{ u.active ? 'Switch off' : 'Switch on' }}
+                </button>
+              } @else {
+                <a class="btn btn-sm btn-secondary" routerLink="/profile">My profile</a>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+
+  <!-- ================= Roles & permissions ================= -->
+  @if (tab() === 'roles') {
+    <div class="roles-layout">
+      <aside class="role-list" aria-label="Roles">
+        @for (r of roles(); track r.id) {
+          <button type="button" class="role-item" [class.on]="selectedRoleId() === r.id" (click)="selectRole(r)">
+            <span class="role-name">
+              {{ roleLabel(r.name) }}
+              @if (r.locked) { <i class="fas fa-lock" title="Always everything"></i> }
+              @if (!r.builtIn) { <span class="tag">Custom</span> }
+            </span>
+            <span class="muted small">{{ r.userCount }} {{ r.userCount === 1 ? 'person' : 'people' }} · {{ r.locked ? 'everything' : r.permissions.length + ' permissions' }}</span>
+          </button>
+        }
+        @if (draft()?.id === null) {
+          <div class="role-item on"><span class="role-name">New role</span><span class="muted small">Not saved yet</span></div>
+        }
+      </aside>
+
+      @if (draft(); as d) {
+        <section class="panel editor">
+          <div class="editor-head">
+            <div class="editor-fields">
+              @if (d.id === null || (selectedRole() && !selectedRole()!.builtIn)) {
+                <label>Role name
+                  <input class="form-control" [value]="d.name" (input)="setDraft('name', $any($event.target).value)" placeholder="e.g. Cashier"
+                         [disabled]="draftLocked()" maxlength="30" />
+                </label>
+              } @else {
+                <h2>{{ roleLabel(d.name) }}</h2>
+              }
+              <label>What this role is for
+                <input class="form-control" [value]="d.description" (input)="setDraft('description', $any($event.target).value)"
+                       placeholder="e.g. Sells at the front counter" [disabled]="draftLocked()" maxlength="300" />
+              </label>
+            </div>
+            @if (selectedRole(); as r) {
+              <button type="button" class="btn btn-sm btn-secondary" (click)="peopleWith(r)">See {{ r.userCount }} {{ r.userCount === 1 ? 'person' : 'people' }}</button>
+            }
+          </div>
+
+          @if (selectedRole()?.locked) {
+            <p class="banner"><i class="fas fa-lock"></i> The Admin role always has every permission, so the shop can never be locked out.</p>
+          } @else if (isMyRole()) {
+            <p class="banner"><i class="fas fa-lock"></i> This is your own role. Another administrator has to change it.</p>
+          } @else if (d.name === 'SELLER' || d.name === 'RIDER') {
+            <p class="banner info"><i class="fas fa-circle-info"></i> People get this role when their application is approved in Marketplace.</p>
+          }
+
+          <div class="groups">
+            @for (g of groups(); track g.name) {
+              @let state = groupState(g.items);
+              <fieldset class="group">
+                <legend>
+                  <label class="group-toggle">
+                    <input type="checkbox" [checked]="state === 'all'" [indeterminate]="state === 'some'" [disabled]="draftLocked()"
+                           (change)="toggleGroup(g.items, state !== 'all')" />
+                    {{ g.name }}
+                  </label>
+                </legend>
+                @for (p of g.items; track p.key) {
+                  <label class="perm" [class.on]="d.permissions.has(p.key) || selectedRole()?.locked">
+                    <input type="checkbox" [checked]="d.permissions.has(p.key) || selectedRole()?.locked" [disabled]="draftLocked()" (change)="toggle(p.key)" />
+                    <span>
+                      <strong>{{ p.label }} @if (p.sensitive) { <span class="tag warn">Sensitive</span> }</strong>
+                      <small>{{ p.description }}</small>
+                    </span>
+                  </label>
                 }
+              </fieldset>
+            }
+          </div>
+
+          @if (!draftLocked()) {
+            <div class="editor-actions">
+              <button type="button" class="btn btn-primary" [disabled]="!dirty() || savingRole()" (click)="saveRole()">
+                {{ savingRole() ? 'Saving...' : d.id === null ? 'Create role' : 'Save changes' }}
+              </button>
+              <button type="button" class="btn btn-secondary" [disabled]="!dirty()" (click)="cancelRole()">Cancel</button>
+              @if (selectedRole() && !selectedRole()!.builtIn) {
+                <button type="button" class="btn btn-outline-danger del" (click)="deleteRole()">Delete role</button>
+              }
+            </div>
+          }
+        </section>
+      }
+    </div>
+  }
+
+  <!-- ================= Activity ================= -->
+  @if (tab() === 'activity') {
+    @if (audit().length === 0) {
+      <div class="empty-state"><i class="fas fa-clock-rotate-left"></i>Nothing recorded yet.</div>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr></thead>
+          <tbody>
+            @for (a of audit(); track a.id) {
+              <tr>
+                <td class="nowrap">{{ a.at | date: 'd MMM y, h:mm a' }}</td>
+                <td>{{ a.actor }}</td>
+                <td><strong>{{ actionLabel(a.action) }}</strong><br /><span class="muted small">{{ a.target }}</span></td>
+                <td class="muted small">{{ a.details }}</td>
               </tr>
             }
           </tbody>
         </table>
       </div>
-      <p class="legend-note">Every role can shop and see its own orders. This table is set in the app's permissions file.</p>
-    </details>
+    }
+  }
   }
 </div>
+
+<!-- ================= Seller / driver details (no application yet) ================= -->
+@if (partnerFor(); as p) {
+  <div class="pd-scrim" (click)="partnerFor.set(null)"></div>
+  <div class="pd-dialog" role="dialog" aria-modal="true" aria-labelledby="pd-title">
+    <h2 id="pd-title">Make {{ p.user.name }} a {{ p.type === 'SELLER' ? 'seller' : 'delivery driver' }}</h2>
+    <p class="muted">They have not applied themselves, so fill in their details (check their CID card and
+      {{ p.type === 'SELLER' ? 'bank book' : 'driving licence' }} in person). The account is approved at once, and they accept the
+      {{ p.type === 'SELLER' ? 'Seller' : 'Driver' }} Agreement themselves when they first open their dashboard.</p>
+    <form class="form-grid" (ngSubmit)="savePartner()" novalidate>
+      @if (p.type === 'SELLER') {
+        <label>Shop name<input class="form-control" name="shopName" [(ngModel)]="partnerForm.shopName" maxlength="120" /></label>
+        <label>Shop phone<input class="form-control" name="phone" inputmode="numeric" maxlength="8" [(ngModel)]="partnerForm.phone" /></label>
+        <label class="full">Pickup address<input class="form-control" name="pickupAddress" [(ngModel)]="partnerForm.pickupAddress" maxlength="500" /></label>
+        <label>Town<input class="form-control" name="town" [(ngModel)]="partnerForm.town" /></label>
+        <label>Owner's CID number<input class="form-control" name="cidNumber" inputmode="numeric" maxlength="11" [(ngModel)]="partnerForm.cidNumber" /></label>
+        <label>Trade licence no. <span class="hint">(optional)</span><input class="form-control" name="tradeLicenseNumber" [(ngModel)]="partnerForm.tradeLicenseNumber" /></label>
+        <label>TPN <span class="hint">(optional)</span><input class="form-control" name="tpnNumber" [(ngModel)]="partnerForm.tpnNumber" /></label>
+      } @else {
+        <label>Phone<input class="form-control" name="phone" inputmode="numeric" maxlength="8" [(ngModel)]="partnerForm.phone" /></label>
+        <label>CID number<input class="form-control" name="cidNumber" inputmode="numeric" maxlength="11" [(ngModel)]="partnerForm.cidNumber" /></label>
+        <label>Town<input class="form-control" name="town" [(ngModel)]="partnerForm.town" /></label>
+        <label>How they deliver
+          <select class="form-control" name="vehicleType" [(ngModel)]="partnerForm.vehicleType">
+            @for (v of vehicles; track v) { <option [value]="v">{{ v }}</option> }
+          </select>
+        </label>
+        @if (partnerNeedsLicence()) {
+          <label>Vehicle number<input class="form-control" name="vehicleNumber" [(ngModel)]="partnerForm.vehicleNumber" /></label>
+          <label>Driving licence no.<input class="form-control" name="licenseNumber" [(ngModel)]="partnerForm.licenseNumber" /></label>
+          <label>Licence valid until<input class="form-control" type="date" name="licenseExpiry" [min]="today" [(ngModel)]="partnerForm.licenseExpiry" /></label>
+        }
+        <label>Emergency contact<input class="form-control" name="emergencyContactName" [(ngModel)]="partnerForm.emergencyContactName" /></label>
+        <label>Their phone<input class="form-control" name="emergencyContactPhone" inputmode="numeric" maxlength="8" [(ngModel)]="partnerForm.emergencyContactPhone" /></label>
+      }
+      <p class="form-section">Where we send their money</p>
+      <label>Bank
+        <select class="form-control" name="bankName" [(ngModel)]="partnerForm.bankName">
+          @for (b of banks; track b) { <option [value]="b">{{ b }}</option> }
+        </select>
+      </label>
+      <label>Account holder<input class="form-control" name="bankAccountName" [(ngModel)]="partnerForm.bankAccountName" /></label>
+      <label class="full">Account number<input class="form-control" name="bankAccountNumber" inputmode="numeric" [(ngModel)]="partnerForm.bankAccountNumber" /></label>
+
+      @if (partnerSubmitted() && partnerErrors().length) {
+        <p class="full err">Please check: {{ partnerErrors().join(', ') }}.</p>
+      }
+      <div class="full pd-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="partnerSaving()">{{ partnerSaving() ? 'Saving...' : 'Save and approve' }}</button>
+        <button type="button" class="btn btn-secondary" (click)="partnerFor.set(null)">Cancel</button>
+      </div>
+    </form>
+  </div>
+}

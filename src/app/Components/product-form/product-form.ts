@@ -7,6 +7,8 @@ import { ItemService } from '../../services/item';
 import { ToastService } from '../../services/toast';
 import { errorText } from '../../utils/http-error';
 import { focusFirstError } from '../../utils/focus-error';
+import { DeliverySize } from '../../models/models';
+import { DELIVERY_SIZES } from '../../utils/location';
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
@@ -44,8 +46,10 @@ export class ProductForm implements OnInit {
     quantity: 0 as number | null,
     lowStockThreshold: 10 as number | null,
     barcode: '',
-    supplierItemCode: ''
+    supplierItemCode: '',
+    deliverySize: 'SMALL' as DeliverySize
   };
+  readonly sizes = DELIVERY_SIZES;
 
   loaded = signal(false);
   loadError = signal('');
@@ -108,7 +112,8 @@ export class ProductForm implements OnInit {
           quantity: item.currentQuantity ?? item.currentStock ?? item.quantity ?? 0,
           lowStockThreshold: item.lowStockThreshold ?? 10,
           barcode: item.barcode ?? '',
-          supplierItemCode: item.supplierItemCode ?? ''
+          supplierItemCode: item.supplierItemCode ?? '',
+          deliverySize: item.deliverySize ?? 'SMALL'
         };
         this.originalImage = this.itemService.imageUrl(item.imagePath);
         this.imageUrl.set(this.originalImage);
@@ -223,6 +228,7 @@ export class ProductForm implements OnInit {
     }
     data.append('barcode', this.model.barcode.trim());
     data.append('supplierItemCode', this.model.supplierItemCode.trim());
+    data.append('deliverySize', this.model.deliverySize);
     data.append('quantity', String(Math.trunc(Number(this.model.quantity) || 0)));
     data.append('lowStockThreshold', String(Math.trunc(Number(this.model.lowStockThreshold) || 10)));
     // Your backend uses "images" when adding and "image" when editing
@@ -272,7 +278,8 @@ export class ProductForm implements OnInit {
     const keep = {
       category: this.model.category,
       uom: this.model.uom,
-      lowStockThreshold: this.model.lowStockThreshold
+      lowStockThreshold: this.model.lowStockThreshold,
+      deliverySize: this.model.deliverySize
     };
     this.model = {
       itemName: '',
@@ -286,7 +293,8 @@ export class ProductForm implements OnInit {
       quantity: 0,
       lowStockThreshold: keep.lowStockThreshold,
       barcode: '',
-      supplierItemCode: ''
+      supplierItemCode: '',
+      deliverySize: keep.deliverySize
     };
     this.selectedFile = null;
     this.fileError.set('');

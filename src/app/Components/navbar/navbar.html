@@ -5,7 +5,7 @@
     </button>
 
     <a routerLink="/" class="nb-brand" (click)="closeAll()" aria-label="DK/Phar home">
-      <img src="Images/website-logo.png" alt="" />
+      <img src="Images/logo-112.png" width="112" height="112" alt="" />
       <span class="nb-brand-text">DK/Phar <small>Inventory</small></span>
     </a>
 
@@ -41,6 +41,9 @@
                   }
                 </div>
               </div>
+              @if (home(); as h) {
+                <a class="nb-item nb-home" role="menuitem" [routerLink]="h.path" (click)="closeAll()"><i class="fas" [class]="'fas ' + h.icon"></i> {{ h.label }}</a>
+              }
               <a class="nb-item" role="menuitem" routerLink="/profile" (click)="closeAll()"><i class="fas fa-user"></i> My profile</a>
               <a class="nb-item" role="menuitem" routerLink="/orders" (click)="closeAll()"><i class="fas fa-receipt"></i> My orders</a>
               <button type="button" class="nb-item nb-out" role="menuitem" (click)="signOut()">
@@ -49,8 +52,10 @@
             </div>
           }
         </div>
-      } @else {
-        <a routerLink="/login" class="nb-signin" (click)="closeAll()">Sign in</a>
+      } @else if (!onAuthPage()) {
+        <a routerLink="/login" class="nb-signin" (click)="closeAll()">
+          <i class="fas fa-circle-user"></i><span>Sign in</span>
+        </a>
       }
     </div>
   </div>
@@ -61,7 +66,7 @@
 <aside class="nb-drawer" [class.open]="drawerOpen()" aria-label="Menu">
   <div class="nb-drawer-head">
     <a routerLink="/" class="nb-brand" (click)="closeAll()">
-      <img src="Images/website-logo.png" alt="" />
+      <img src="Images/logo-112.png" width="112" height="112" alt="" />
       <span class="nb-brand-text">DK/Phar <small>Inventory</small></span>
     </a>
     <button type="button" class="nb-burger" (click)="closeDrawer()" aria-label="Close menu">
@@ -69,18 +74,62 @@
     </button>
   </div>
 
+  <!-- Who is using the app, or an invitation to sign in -->
+  @if (auth.isLoggedIn()) {
+    <div class="nb-who nb-drawer-who">
+      <span class="nb-avatar nb-avatar-lg">{{ initials() }}</span>
+      <div>
+        <strong>{{ auth.name() }}</strong>
+        <span>{{ auth.email() }}</span>
+        @if (roleLabel()) {
+          <em>{{ roleLabel() }}</em>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="nb-guest">
+      <strong>Welcome</strong>
+      <span>Sign in to check out faster and follow your orders.</span>
+    </div>
+  }
+
+  @if (home(); as h) {
+    <div class="nb-drawer-links">
+      <a class="nb-item nb-home" [routerLink]="h.path" routerLinkActive="active" (click)="closeAll()">
+        <i class="fas" [class]="'fas ' + h.icon"></i> {{ h.label }} <span class="nb-pill">Mine</span>
+      </a>
+    </div>
+  }
+
   <nav class="nb-drawer-links" aria-label="Main">
+    <p class="nb-group">Shop</p>
     @for (link of mainLinks; track link.path) {
-      <a [routerLink]="link.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: link.exact }" (click)="closeAll()">{{ link.label }}</a>
+      <a class="nb-item" [routerLink]="link.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: link.exact }" (click)="closeAll()">
+        <i class="fas" [class]="'fas ' + link.icon"></i> {{ link.label }}
+      </a>
     }
+    <a class="nb-item" routerLink="/cart" routerLinkActive="active" (click)="closeAll()">
+      <i class="fas fa-bag-shopping"></i> Cart
+      @if (cart.count() > 0) {
+        <span class="nb-pill">{{ cart.count() }}</span>
+      }
+    </a>
   </nav>
+
+  @if (canJoin()) {
+    <div class="nb-drawer-manage">
+      <p class="nb-group">Work with us</p>
+      <a class="nb-item" routerLink="/sell" routerLinkActive="active" (click)="closeAll()"><i class="fas fa-store"></i> Sell with us</a>
+      <a class="nb-item" routerLink="/deliver" routerLinkActive="active" (click)="closeAll()"><i class="fas fa-motorcycle"></i> Deliver with us</a>
+    </div>
+  }
 
   @if (visibleGroups().length > 0) {
     <div class="nb-drawer-manage">
       @for (group of visibleGroups(); track group.title) {
         <p class="nb-group">{{ group.title }}</p>
-        @for (item of group.items; track item.path) {
-          <a class="nb-item" [routerLink]="item.path" (click)="closeAll()">
+        @for (item of group.items; track item.label) {
+          <a class="nb-item" [routerLink]="item.path" [queryParams]="item.query ?? {}" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeAll()">
             <i class="fas" [class]="'fas ' + item.icon"></i> {{ item.label }}
           </a>
         }
@@ -94,6 +143,7 @@
       <button type="button" class="nb-item nb-out" (click)="signOut()"><i class="fas fa-arrow-right-from-bracket"></i> Sign out</button>
     } @else {
       <a routerLink="/login" class="nb-signin nb-signin-block" (click)="closeAll()">Sign in</a>
+      <a routerLink="/signup" class="nb-signup-block" (click)="closeAll()">Create an account</a>
     }
   </div>
 </aside>

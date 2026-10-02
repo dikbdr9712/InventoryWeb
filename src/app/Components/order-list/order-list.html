@@ -2,7 +2,7 @@
   <div class="page-head">
     <div>
       <h1>Orders</h1>
-      <p>Confirm payments, ship orders and follow them to delivery.</p>
+      <p>Online orders: check payments, then pack and deliver. Counter sales are in <a routerLink="/pos-history">Sales history</a>.</p>
     </div>
 
     <div class="seg" role="tablist" aria-label="Which orders to show">
@@ -89,15 +89,36 @@
             <strong>Total Nu. {{ order.totalAmount | number: '1.2-2' }}</strong>
           </div>
 
+          <!-- the payment the customer sent: what to look for in the bank account -->
+          @if (order.paymentSubmitted) {
+            <div class="payment-info" [class.check]="waitingForCheck(order)">
+              <i class="fas fa-building-columns"></i>
+              <span>{{ methodLabel(order.paymentMethod) }}
+                @if (order.journalNumber) { · journal <strong>{{ order.journalNumber }}</strong> }
+                @if (order.paymentAmount != null) { · Nu. {{ order.paymentAmount | number: '1.2-2' }} }
+                @if (amountDiffers(order)) { <span class="warn"> (order total is Nu. {{ order.totalAmount | number: '1.2-2' }})</span> }
+              </span>
+            </div>
+          }
+
           <div class="actions">
-            @if (order.paymentStatus === 'PENDING' || order.paymentStatus === 'PARTIALLY_PAID') {
-              @if (auth.can('payments.verify')) {
+            @if (order.orderStatus === 'CANCELLED') {
+              <span class="view-only">Cancelled</span>
+            } @else if ((order.paymentStatus ?? '').toUpperCase() === 'PENDING_INFO') {
+              <span class="view-only">Waiting for the customer to send more information</span>
+            } @else if (waitingForCheck(order)) {
+              @if (canVerify) {
+                <a class="btn btn-secondary btn-sm" routerLink="/order-verification">Ask for info / reject</a>
                 <button type="button" class="btn btn-primary btn-sm" [disabled]="busyId() === order.orderId" (click)="confirmPayment(order)">
-                  Confirm payment
+                  Payment received
                 </button>
               } @else {
-                <span class="view-only">Waiting for a payment check</span>
+                <span class="view-only">Customer has paid. An Admin or Manager checks the payment (Verify payments).</span>
               }
+            } @else if (order.paymentStatus === 'PENDING' && order.orderStatus === 'CREATED') {
+              <span class="view-only">Waiting for the customer to pay</span>
+            } @else if (order.hasPackages && (order.orderStatus === 'CONFIRMED' || order.orderStatus === 'SHIPPED')) {
+              <a class="btn btn-secondary btn-sm" routerLink="/admin/deliveries"><i class="fas fa-truck-fast"></i> Follow it in Deliveries</a>
             } @else if (order.paymentStatus === 'PAID' && order.orderStatus === 'CREATED') {
               @if (!auth.can('orders.fulfil')) {
                 <span class="view-only">Ready to confirm</span>

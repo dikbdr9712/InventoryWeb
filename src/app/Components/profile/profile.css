@@ -156,7 +156,40 @@
   color: var(--green);
 }
 
+.password {
+  margin-bottom: 20px;
+}
+
+.pw-fields {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.pw-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.pw-fields label > span {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.err {
+  margin: 0 0 10px;
+  color: #b42318;
+  font-size: 0.88rem;
+}
+
 @media (max-width: 720px) {
+  .pw-fields {
+    grid-template-columns: 1fr;
+  }
+
   .grid {
     grid-template-columns: 1fr;
   }

@@ -121,7 +121,9 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
 }
 
@@ -165,4 +167,27 @@
 .view-only {
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+/* the payment the customer sent */
+.payment-info {
+  display: flex;
+  flex: 1 1 280px;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--wash);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.payment-info.check {
+  background: var(--saffron-soft);
+  color: #7a5200;
+}
+
+.payment-info i {
+  color: var(--green);
 }

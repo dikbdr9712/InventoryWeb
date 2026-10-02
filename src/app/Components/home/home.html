@@ -14,8 +14,10 @@
 
   <div class="banner" role="region" aria-roledescription="carousel" aria-label="Shop photos">
     @for (slide of slides; track slide; let i = $index) {
-      <img class="banner-img" [class.on]="i === current()" [src]="slide"
-           [alt]="'Inside the shop, photo ' + (i + 1)" [attr.aria-hidden]="i !== current()" />
+      @if (ready()[i]) {
+        <img class="banner-img" [class.on]="i === current()" [src]="slide" [attr.fetchpriority]="i === 0 ? 'high' : null"
+             [alt]="'Inside the shop, photo ' + (i + 1)" [attr.aria-hidden]="i !== current()" />
+      }
     }
     <button type="button" class="banner-btn prev" (click)="prev()" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>
     <button type="button" class="banner-btn next" (click)="next()" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>

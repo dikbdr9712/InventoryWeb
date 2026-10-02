@@ -30,7 +30,7 @@
         </div>
       </dl>
       <p class="help">
-        Need to change your name, phone number or password?
+        Need to change your name or phone number?
         <a routerLink="/contact">Contact us</a> and we will update it for you.
       </p>
     </section>
@@ -58,6 +58,37 @@
       }
     </section>
   </div>
+
+  <section class="panel box password">
+    <h2>Change password</h2>
+    <form (ngSubmit)="changePassword()" novalidate>
+      <div class="pw-fields">
+        <label>
+          <span>Current password</span>
+          <input type="password" name="current" class="form-control" autocomplete="current-password"
+                 [class.is-invalid]="pwSubmitted() && pwErrors().current" [(ngModel)]="pw.current" />
+          @if (pwSubmitted() && pwErrors().current) { <small class="err">{{ pwErrors().current }}</small> }
+        </label>
+        <label>
+          <span>New password</span>
+          <input type="password" name="next" class="form-control" autocomplete="new-password"
+                 [class.is-invalid]="pwSubmitted() && pwErrors().next" [(ngModel)]="pw.next" />
+          @if (pwSubmitted() && pwErrors().next) { <small class="err">{{ pwErrors().next }}</small> }
+          @else { <small class="muted">At least 6 characters.</small> }
+        </label>
+        <label>
+          <span>Confirm new password</span>
+          <input type="password" name="confirm" class="form-control" autocomplete="new-password"
+                 [class.is-invalid]="pwSubmitted() && pwErrors().confirm" [(ngModel)]="pw.confirm" />
+          @if (pwSubmitted() && pwErrors().confirm) { <small class="err">{{ pwErrors().confirm }}</small> }
+        </label>
+      </div>
+      @if (pwError()) { <p class="err" role="alert">{{ pwError() }}</p> }
+      <button type="submit" class="btn btn-primary btn-sm" [disabled]="pwSaving()">
+        {{ pwSaving() ? 'Saving...' : 'Change password' }}
+      </button>
+    </form>
+  </section>
 
   @if (abilities.length > 0) {
     <section class="panel box access">

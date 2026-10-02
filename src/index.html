@@ -2,15 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>DK/Phar Inventory Management System</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
-  <script src="https://kit.fontawesome.com/33616e440d.js" crossorigin="anonymous"></script>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DK/Phar Inventory Management System</title>
+  <meta name="description" content="DK/Phar: shop medicines and everyday products online, sell on our marketplace or deliver with us, and run the shop counter, stock and orders in one place.">
+  <meta name="theme-color" content="#0b6b4f">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!-- Open the connections early, while the page is still being read -->
+  <link rel="preconnect" href="https://stackpath.bootstrapcdn.com">
+  <link rel="preconnect" href="https://kit.fontawesome.com" crossorigin>
+  <link rel="preconnect" href="https://ka-f.fontawesome.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Layout styles: needed before the first paint, so this one stays blocking -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+  <!-- The font: the production build copies these rules into the page, so they cost no extra request -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
+
+  <!-- Icons: runs after the page is read instead of stopping it -->
+  <script src="https://kit.fontawesome.com/33616e440d.js" crossorigin="anonymous" defer></script>
 </head>
 <body>
   <app-root></app-root>

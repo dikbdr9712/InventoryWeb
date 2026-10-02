@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { LegalService } from '../../services/legal';
 import { ToastService } from '../../services/toast';
 import { AuthLayout } from '../auth-layout/auth-layout';
 import { errorText } from '../../utils/http-error';
@@ -18,6 +19,21 @@ export class Signup {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private toasts = inject(ToastService);
+  private legal = inject(LegalService);
+
+  // the current Terms of Use and Privacy: the version ticked is sent and recorded by the server
+  termsVersion = signal<number | null>(null);
+  termsError = signal(false);
+  agreeTerms = false;
+
+  constructor() {
+    this.loadTerms();
+  }
+
+  loadTerms() {
+    this.termsError.set(false);
+    this.legal.current('CUSTOMER').subscribe({ next: t => this.termsVersion.set(t.version), error: () => this.termsError.set(true) });
+  }
 
   form = { name: '', email: '', phone: '', password: '', confirm: '' };
   showPassword = signal(false);
@@ -28,7 +44,7 @@ export class Signup {
   returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
   errors() {
-    const e: { name?: string; email?: string; phone?: string; password?: string; confirm?: string } = {};
+    const e: { name?: string; email?: string; phone?: string; password?: string; confirm?: string; terms?: string } = {};
     const f = this.form;
     if (!f.name.trim()) e.name = 'Enter your full name.';
     if (!f.email.trim()) e.email = 'Enter your email address.';
@@ -36,6 +52,8 @@ export class Signup {
     if (!/^[0-9]{8}$/.test(f.phone.trim())) e.phone = 'Enter an 8-digit phone number.';
     if (f.password.length < 6) e.password = 'Use at least 6 characters.';
     if (f.confirm !== f.password) e.confirm = 'The passwords do not match.';
+    if (!this.agreeTerms) e.terms = 'Please read and accept the Terms of Use and Privacy.';
+    else if (!this.termsVersion()) e.terms = 'The Terms of Use could not be loaded. Press "Load again" and try once more.';
     return e;
   }
 
@@ -54,7 +72,8 @@ export class Signup {
       name: this.form.name.trim(),
       email,
       phone: this.form.phone.trim(),
-      password
+      password,
+      acceptedTermsVersion: this.termsVersion()
     }).subscribe({
       // Sign the new customer in straight away, so they do not have to type it all again
       next: () => {

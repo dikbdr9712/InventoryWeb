@@ -176,13 +176,14 @@
     grid-template-columns: 1fr;
   }
 
+  /* The header above already shows the logo; a thin brand stripe is enough here */
   .auth .auth-brand {
-    padding: 22px 24px;
+    display: none;
   }
 
-  .auth .auth-brand h2,
-  .auth .auth-brand ul {
-    display: none;
+  .auth .auth-card {
+    max-width: 480px;
+    border-top: 4px solid var(--green);
   }
 
   .auth .auth-panel {
@@ -192,7 +193,19 @@
 
 @media (max-width: 480px) {
   .auth {
-    padding: 16px 10px 40px;
+    padding: 20px 12px 40px;
+  }
+
+  .auth .auth-card {
+    border-radius: 14px;
+  }
+
+  .auth .auth-panel h1 {
+    font-size: 1.6rem;
+  }
+
+  .auth .auth-sub {
+    margin-bottom: 20px;
   }
 
   .auth .auth-two {

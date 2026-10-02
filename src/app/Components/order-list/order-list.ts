@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService } from '../../services/order';
 import { ConfirmService } from '../../services/confirm';
 import { ToastService } from '../../services/toast';
@@ -12,7 +12,7 @@ import { orderLabel, orderPill, paymentLabel, paymentPill } from '../../utils/or
 
 @Component({
   selector: 'app-order-list',
-  imports: [DatePipe, DecimalPipe],
+  imports: [DatePipe, DecimalPipe, RouterLink],
   templateUrl: './order-list.html',
   styleUrl: './order-list.css'
 })
@@ -31,6 +31,10 @@ export class OrderList implements OnInit {
   paymentPill = paymentPill;
 
   orders = signal<AdminOrder[]>([]);
+
+  // what the signed-in person may do decides what "needs action" means for them
+  canVerify = this.auth.can('payments.verify');
+  canFulfil = this.auth.can('orders.fulfil');
   loading = signal(true);
   error = signal('');
   busyId = signal<number | null>(null); // the order an action is running on
@@ -87,7 +91,8 @@ export class OrderList implements OnInit {
   load() {
     this.orderService.getAllForAdmin().subscribe({
       next: orders => {
-        this.orders.set(orders);
+        // online orders only: counter sales are finished at the till and live in Sales history
+        this.orders.set(orders.filter(o => (o.source ?? 'ONLINE').toUpperCase() !== 'POS'));
         this.loading.set(false);
       },
       error: (err: HttpErrorResponse) => {
@@ -102,15 +107,37 @@ export class OrderList implements OnInit {
     });
   }
 
-  // Same rules as before: which orders wait for a person to do something
+  // Which orders wait for THIS person: a payment to check (Verify payments), or an order to confirm or send out.
   needsAction(order: AdminOrder): boolean {
-    const status = order.orderStatus;
-    const payment = order.paymentStatus;
-    if ((payment === 'PAID' || payment === 'PARTIALLY_PAID') && status === 'CREATED') return true;
-    if (status === 'CONFIRMED') return true;
-    if (status === 'SHIPPED') return true;
-    if (!status || status === 'UNKNOWN') return true;
-    return false;
+    const status = (order.orderStatus ?? '').toUpperCase();
+    const payment = (order.paymentStatus ?? '').toUpperCase();
+    if (status === 'CANCELLED' || status === 'COMPLETED') return false;
+    if (this.waitingForCheck(order)) return this.canVerify;
+    if (this.canFulfil) {
+      if ((payment === 'PAID' || payment === 'PARTIALLY_PAID') && status === 'CREATED') return true;
+      // orders with packages go out through the Deliveries board, which has its own "Needs us"
+      if (!order.hasPackages && (status === 'CONFIRMED' || status === 'SHIPPED')) return true;
+    }
+    return !status || status === 'UNKNOWN';
+  }
+
+  // The customer sent a payment (journal number) and it has not been checked yet
+  waitingForCheck(order: AdminOrder): boolean {
+    const payment = (order.paymentStatus ?? '').toUpperCase();
+    const status = (order.orderStatus ?? '').toUpperCase();
+    return !!order.paymentSubmitted && (payment === 'PENDING' || payment === 'PARTIALLY_PAID') && (status === 'CREATED' || status === 'PENDING');
+  }
+
+  methodLabel(method?: string | null): string {
+    switch ((method ?? '').toLowerCase()) {
+      case 'bank': return 'Bank transfer';
+      case 'cod': return 'Cash on delivery';
+      default: return method || 'Payment';
+    }
+  }
+
+  amountDiffers(order: AdminOrder): boolean {
+    return order.paymentAmount != null && Math.abs(Number(order.paymentAmount) - Number(order.totalAmount)) > 0.009;
   }
 
   allInStock(order: AdminOrder): boolean {
@@ -129,7 +156,8 @@ export class OrderList implements OnInit {
   async confirmPayment(order: AdminOrder) {
     const ok = await this.confirm.ask({
       title: 'Confirm payment',
-      message: `Confirm that the payment for order #${order.orderId} was received?`,
+      message: `Check your bank account first: is there a transfer of Nu. ${Number(order.paymentAmount ?? order.totalAmount).toFixed(2)}`
+        + (order.journalNumber ? ` with journal number ${order.journalNumber}` : '') + `? Confirming takes the stock and starts packing order #${order.orderId}.`,
       confirmLabel: 'Payment received'
     });
     if (ok) this.run(order, 'confirm-payment', 'Payment confirmed.');

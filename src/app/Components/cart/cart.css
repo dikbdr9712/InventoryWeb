@@ -12,7 +12,7 @@
   overflow: hidden;
 }
 
-.row {
+.cart-line {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr) auto 120px 40px;
   align-items: center;
@@ -21,11 +21,11 @@
   border-bottom: 1px solid var(--line);
 }
 
-.row:last-child {
+.cart-line:last-child {
   border-bottom: 0;
 }
 
-.row img {
+.cart-line img {
   width: 72px;
   height: 72px;
   border-radius: 10px;
@@ -255,18 +255,72 @@
   }
 }
 
+/* Phones: photo, name and remove on top; quantity and line total underneath, across the whole width */
 @media (max-width: 620px) {
-  .row {
-    grid-template-columns: 64px minmax(0, 1fr) 40px;
+  .cart-line {
+    grid-template-columns: 56px auto minmax(0, 1fr) 36px;
     grid-template-areas:
-      'photo info remove'
-      'photo step total';
-    gap: 8px 12px;
+      'photo info info remove'
+      'step step total total';
+    gap: 10px;
+    padding: 14px 12px;
   }
 
-  .row img { grid-area: photo; width: 64px; height: 64px; }
-  .row-info { grid-area: info; }
-  .remove { grid-area: remove; }
+  .cart-line img { grid-area: photo; width: 56px; height: 56px; }
+  .row-info { grid-area: info; align-self: center; }
+  .remove { grid-area: remove; align-self: start; }
   .stepper { grid-area: step; justify-self: start; }
-  .row-total { grid-area: total; }
+  .row-total { grid-area: total; align-self: center; font-size: 1.05rem; }
+
+  .stepper button {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.row-seller {
+  display: block;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.row-seller i {
+  margin-right: 3px;
+  color: var(--green);
+}
+
+/* delivery: one line per seller, with what the price is based on */
+.fee-row dt {
+  display: flex;
+  flex-direction: column;
+}
+
+.fee-why {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.sums .muted {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.fee-note,
+.fee-problem {
+  margin: 4px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.fee-note {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.fee-problem {
+  background: var(--red-soft);
+  color: var(--red);
+  font-weight: 600;
 }

@@ -1,10 +1,11 @@
-import { Component, ElementRef, HostListener, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs';
 import { AuthService } from '../../services/auth';
 import { CartService } from '../../services/cart';
 import { StaffLink, STAFF_GROUPS } from '../../utils/staff-nav';
+import { homeFor } from '../../utils/home';
 
 type MenuName = 'account' | null;
 
@@ -20,22 +21,37 @@ export class Navbar {
   private router = inject(Router);
   private el = inject(ElementRef);
 
+  // this person's own starting page (My shop, My deliveries, Dashboard, POS...); empty for customers
+  home = computed(() => {
+    const h = homeFor(this.auth);
+    return this.auth.isLoggedIn() && h.path !== '/products' ? h : null;
+  });
+
   drawerOpen = signal(false);
   openMenu = signal<MenuName>(null);
+  // On the sign-in and sign-up pages the header's "Sign in" button would only repeat the form below it
+  onAuthPage = signal(this.isAuthUrl(this.router.url));
 
   constructor() {
     // Any page change closes the menus: a click on a link, the browser's back button, a redirect
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd), takeUntilDestroyed())
-      .subscribe(() => this.closeAll());
+      .subscribe(event => {
+        this.onAuthPage.set(this.isAuthUrl(event.urlAfterRedirects));
+        this.closeAll();
+      });
+  }
+
+  private isAuthUrl(url: string) {
+    return /^\/(login|signup)(\?|$)/.test(url);
   }
 
   mainLinks = [
-    { path: '/', label: 'Home', exact: true },
-    { path: '/products', label: 'Products', exact: false },
-    { path: '/services', label: 'Services', exact: false },
-    { path: '/orders', label: 'My orders', exact: false },
-    { path: '/contact', label: 'Contact', exact: false }
+    { path: '/', label: 'Home', icon: 'fa-house', exact: true },
+    { path: '/products', label: 'Products', icon: 'fa-store', exact: false },
+    { path: '/services', label: 'Services', icon: 'fa-hand-holding-heart', exact: false },
+    { path: '/orders', label: 'My orders', icon: 'fa-receipt', exact: false },
+    { path: '/contact', label: 'Contact', icon: 'fa-envelope', exact: false }
   ];
 
   // Staff tools (also shown in the staff bar). One shared list: see utils/staff-nav.ts
@@ -52,6 +68,11 @@ export class Navbar {
       .filter(g => g.items.length > 0);
   }
 
+  // Customers and visitors are invited to sell or deliver; staff, sellers and riders are not
+  canJoin(): boolean {
+    return !this.auth.isLoggedIn() || (this.auth.role() ?? 'USER').toUpperCase() === 'USER';
+  }
+
   initials(): string {
     const text = (this.auth.name() || this.auth.email() || '?').trim();
     const parts = text.split(/\s+/);
@@ -59,8 +80,9 @@ export class Navbar {
   }
 
   roleLabel(): string {
-    const role = this.auth.role() ?? '';
-    return role ? role.charAt(0) + role.slice(1).toLowerCase() : '';
+    const role = (this.auth.role() ?? '').toUpperCase();
+    const names: Record<string, string> = { USER: 'Customer', RIDER: 'Delivery driver', SELLER: 'Seller' };
+    return role ? names[role] ?? role.charAt(0) + role.slice(1).toLowerCase().replace(/_/g, ' ') : '';
   }
 
   toggle(menu: 'account') {

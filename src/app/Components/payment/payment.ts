@@ -1,4 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, debounceTime, filter, of, switchMap } from 'rxjs';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -8,8 +10,10 @@ import { CartService } from '../../services/cart';
 import { ItemService } from '../../services/item';
 import { OrderService } from '../../services/order';
 import { PaymentService } from '../../services/payment';
+import { DeliveryService } from '../../services/delivery';
+import { DeliveryLocation } from '../delivery-location/delivery-location';
 import { ToastService } from '../../services/toast';
-import { DirectOrderRequest, Item, OrderItem } from '../../models/models';
+import { DeliveryPoint, DeliveryQuote, DirectOrderRequest, Item, OrderItem } from '../../models/models';
 import { errorText } from '../../utils/http-error';
 
 // Checkout for both entry points:
@@ -17,7 +21,7 @@ import { errorText } from '../../utils/http-error';
 //   /payment?itemId=7              -> "Buy now" for a single product
 @Component({
   selector: 'app-payment',
-  imports: [FormsModule, DecimalPipe, RouterLink],
+  imports: [FormsModule, DecimalPipe, RouterLink, DeliveryLocation],
   templateUrl: './payment.html',
   styleUrl: './payment.css'
 })
@@ -29,13 +33,14 @@ export class Payment implements OnInit {
   private itemService = inject(ItemService);
   private orderService = inject(OrderService);
   private paymentService = inject(PaymentService);
+  private delivery = inject(DeliveryService);
   private toasts = inject(ToastService);
 
   mode: 'order' | 'buyNow' = 'order';
 
   // Cart order
   orderId = 0;
-  total = 0;
+  total = signal(0); // the order's real total, loaded from the server
   orderItems = signal<OrderItem[]>([]);
 
   // Buy now
@@ -50,7 +55,26 @@ export class Payment implements OnInit {
   billing = { name: '', phone: '', address: '' };
 
   // Both
-  paymentMethod = signal<'cod' | 'bank'>('cod');
+  // Online orders are paid before delivery, so bank transfer is the only way (the server refuses anything else)
+  paymentMethod = signal<'bank'>('bank');
+  deliveryFee = signal(0); // what the customer pays for delivery (cart orders: from the order; buy now: priced by the server)
+
+  // Buy now: where to deliver, and the server's price for it (size of the product + distance from the seller)
+  point = signal<DeliveryPoint | null>(null);
+  quote = signal<DeliveryQuote | null>(null);
+
+  constructor() {
+    const ask = computed(() => ({ item: this.item(), quantity: this.quantity(), point: this.point() }));
+    toObservable(ask).pipe(
+      filter(a => this.mode === 'buyNow' && !!a.item),
+      debounceTime(250),
+      switchMap(a => this.delivery.quote([{ itemId: a.item!.itemId, quantity: a.quantity }], a.point).pipe(catchError(() => of(null)))),
+      takeUntilDestroyed()
+    ).subscribe(q => {
+      this.quote.set(q);
+      this.deliveryFee.set(Number(q?.totalFee) || 0);
+    });
+  }
   journalNumber = '';
   submitting = signal(false);
   submitted = signal(false); // field errors only show after the first attempt
@@ -58,7 +82,7 @@ export class Payment implements OnInit {
   readonly account = { name: 'Pharmith Lepcha', number: '216358950', bank: 'Bank of Bhutan' };
 
   get amount(): number {
-    return this.mode === 'order' ? this.total : this.price() * this.quantity();
+    return this.mode === 'order' ? this.total() : this.price() * this.quantity() + this.deliveryFee();
   }
 
   // Number shown on the payment step: it is step 1 when there is no delivery step
@@ -72,15 +96,20 @@ export class Payment implements OnInit {
     const itemId = Number(params.get('itemId'));
 
     if (orderId) {
-      const total = Number(params.get('total'));
-      if (!(total > 0)) {
-        this.toasts.error('That order has no total. Please start again from your cart.');
-        this.router.navigate(['/cart']);
-        return;
-      }
+      // The total in the address is only shown until the server's own total arrives
       this.mode = 'order';
       this.orderId = orderId;
-      this.total = total;
+      this.total.set(Number(params.get('total')) || 0);
+      this.orderService.getById(orderId).subscribe({
+        next: order => {
+          this.total.set(Number(order.totalAmount) || 0);
+          this.deliveryFee.set(Number(order.deliveryFee) || 0);
+        },
+        error: () => {
+          this.toasts.error('We could not load this order. Please start again from your cart.');
+          this.router.navigate(['/cart']);
+        }
+      });
       this.orderService.getItems(orderId).subscribe({
         next: items => this.orderItems.set(items),
         error: () => this.orderItems.set([]) // the summary still shows the total
@@ -181,7 +210,7 @@ export class Payment implements OnInit {
 
     this.paymentService.create({
       orderId: this.orderId,
-      amount: this.total,
+      amount: this.total(), // the server ignores this and uses the order's real total
       paymentMethod: method,
       status: 'pending',
       journalNumber: method === 'bank' ? journal : ''
@@ -197,7 +226,7 @@ export class Payment implements OnInit {
         this.submitting.set(false);
         this.toasts.error(err.status === 0
           ? 'Could not reach the server. Is it running?'
-          : 'We could not record your payment. Please try again.');
+          : 'We could not record your payment. ' + errorText(err));
       }
     });
   }
@@ -213,7 +242,14 @@ export class Payment implements OnInit {
       return;
     }
 
+    const problem = this.quote()?.problem;
+    if (problem) {
+      this.toasts.error(problem);
+      return;
+    }
+
     const total = this.price() * quantity;
+    const point = this.point();
     const order: DirectOrderRequest = {
       customerName: this.billing.name.trim(),
       customerEmail: this.auth.email() ?? '',
@@ -221,7 +257,10 @@ export class Payment implements OnInit {
       address: this.billing.address.trim(),
       totalAmount: total,
       orderStatus: 'PENDING',
-      items: [{ itemId: item.itemId, quantity, unitPrice: this.price() }]
+      items: [{ itemId: item.itemId, quantity, unitPrice: this.price() }],
+      areaId: point?.areaId ?? null,
+      dropLatitude: point?.areaId ? null : point?.latitude ?? null,
+      dropLongitude: point?.areaId ? null : point?.longitude ?? null
     };
 
     this.submitting.set(true);

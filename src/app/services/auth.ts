@@ -5,24 +5,40 @@ import { environment } from '../../environments/environment';
 import { LoginResponse, SignupRequest } from '../models/models';
 import { Permission, permissionsFor } from '../utils/permissions';
 
+function readPermissions(): string[] | null {
+  try {
+    const raw = localStorage.getItem('userPermissions');
+    const list = raw ? JSON.parse(raw) : null;
+    return Array.isArray(list) ? list : null;
+  } catch {
+    return null;
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
 
   isLoggedIn = signal(localStorage.getItem('isLoggedIn') === 'true');
   role = signal(localStorage.getItem('userRole'));
+  // What the server says this person may do (null = not known yet: fall back to the built-in table)
+  permissions = signal<string[] | null>(readPermissions());
 
-  // ADMIN / MANAGER / CONTROLLER: admin menu, restock, POS, orders...
-  isStaff = computed(() => this.isLoggedIn() && ['ADMIN', 'MANAGER', 'CONTROLLER'].includes(this.role() ?? ''));
-  // ADMIN / MANAGER only: add and edit items (same as your product.js)
-  // ADMIN only: user management
+  // Works in the shop (any staff tool), whatever the role is called (custom roles such as CASHIER count too)
+  isStaff = computed(() => {
+    if (!this.isLoggedIn()) return false;
+    const list = this.permissions() ?? permissionsFor(this.role());
+    return list.some(p => p !== 'seller.portal' && p !== 'rider.portal');
+  });
   isAdmin = computed(() => this.isLoggedIn() && this.role() === 'ADMIN');
   canManageItems = computed(() => this.can('items.manage'));
 
   // Ask for a specific permission instead of checking role names.
   // The table in utils/permissions.ts decides who has what.
   can(permission: Permission): boolean {
-    return this.isLoggedIn() && permissionsFor(this.role()).includes(permission);
+    if (!this.isLoggedIn()) return false;
+    const fromServer = this.permissions();
+    return fromServer ? fromServer.includes(permission) : permissionsFor(this.role()).includes(permission);
   }
 
   email() { return localStorage.getItem('currentUser'); }
@@ -42,6 +58,7 @@ export class AuthService {
           localStorage.setItem('userEmail', user.email);
           this.isLoggedIn.set(true);
           this.role.set(user.role);
+          this.setPermissions(user.permissions);
         })
       );
   }
@@ -50,10 +67,36 @@ export class AuthService {
     return this.http.post(`${environment.apiUrl}/api/auth/signup`, data, { responseType: 'text' });
   }
 
+  // Ask the server who we are. The role can change while signed in (an admin approves a seller or rider),
+  // so this brings the menus up to date without signing out and in again.
+  refresh() {
+    return this.http.get<LoginResponse>(`${environment.apiUrl}/api/auth/me`).pipe(
+      tap(user => {
+        if (!this.isLoggedIn()) return;
+        localStorage.setItem('userRole', user.role);
+        localStorage.setItem('userName', user.name);
+        this.role.set(user.role);
+        this.setPermissions(user.permissions);
+      })
+    );
+  }
+
+  // The server checks the current password and the length rule
+  changePassword(currentPassword: string, newPassword: string) {
+    return this.http.post(`${environment.apiUrl}/api/auth/change-password`, { currentPassword, newPassword });
+  }
+
   logout() {
-    ['isLoggedIn', 'currentUser', 'userName', 'userPhone', 'userRole', 'userEmail']
+    ['isLoggedIn', 'currentUser', 'userName', 'userPhone', 'userRole', 'userEmail', 'userPermissions']
       .forEach(key => localStorage.removeItem(key));
     this.isLoggedIn.set(false);
     this.role.set(null);
+    this.permissions.set(null);
+  }
+
+  private setPermissions(list: string[] | undefined) {
+    if (!list) return;
+    localStorage.setItem('userPermissions', JSON.stringify(list));
+    this.permissions.set(list);
   }
 }

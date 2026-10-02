@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { AuthLayout } from '../auth-layout/auth-layout';
 import { errorText } from '../../utils/http-error';
+import { homeFor } from '../../utils/home';
 
 @Component({
   selector: 'app-login',
@@ -52,7 +53,7 @@ export class Login {
         // only follow paths inside this site
         const target = this.returnUrl && this.returnUrl.startsWith('/') && !this.returnUrl.startsWith('//')
           ? this.returnUrl
-          : '/products';
+          : homeFor(this.auth).path; // each person starts on their own dashboard
         this.router.navigateByUrl(target);
       },
       error: (err: HttpErrorResponse) => {

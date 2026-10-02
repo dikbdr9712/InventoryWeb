@@ -1,4 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, debounceTime, of, switchMap } from 'rxjs';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -6,13 +8,15 @@ import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../../services/cart';
 import { AuthService } from '../../services/auth';
 import { OrderService } from '../../services/order';
+import { DeliveryService } from '../../services/delivery';
+import { DeliveryLocation } from '../delivery-location/delivery-location';
 import { ToastService } from '../../services/toast';
-import { CartItem, OrderRequest } from '../../models/models';
+import { CartItem, DeliveryPoint, DeliveryQuote, OrderRequest } from '../../models/models';
 import { errorText } from '../../utils/http-error';
 
 @Component({
   selector: 'app-cart',
-  imports: [DecimalPipe, FormsModule, RouterLink],
+  imports: [DecimalPipe, FormsModule, RouterLink, DeliveryLocation],
   templateUrl: './cart.html',
   styleUrl: './cart.css'
 })
@@ -20,6 +24,32 @@ export class Cart {
   cart = inject(CartService);
   auth = inject(AuthService);
   private orders = inject(OrderService);
+  private deliveryApi = inject(DeliveryService);
+
+  // Where to deliver (the phone's location or an area). The server prices each seller's package by its size
+  // and the distance from that seller; the price is asked again whenever the cart or the location changes.
+  point = signal<DeliveryPoint | null>(null);
+  quote = signal<DeliveryQuote | null>(null);
+  quoting = signal(false);
+  deliveryTotal = computed(() => Number(this.quote()?.totalFee) || 0);
+  grandTotal = computed(() => this.cart.total() + this.deliveryTotal());
+  estimated = computed(() => this.quote()?.packages.some(p => p.estimated) ?? false);
+
+  constructor() {
+    const ask = computed(() => ({ items: this.cart.items().map(i => ({ itemId: i.id, quantity: i.quantity })), point: this.point() }));
+    toObservable(ask).pipe(
+      debounceTime(250),
+      switchMap(({ items, point }) => {
+        if (items.length === 0) return of(null);
+        this.quoting.set(true);
+        return this.deliveryApi.quote(items, point).pipe(catchError(() => of(null)));
+      }),
+      takeUntilDestroyed()
+    ).subscribe(q => {
+      this.quote.set(q);
+      this.quoting.set(false);
+    });
+  }
   private router = inject(Router);
   private toasts = inject(ToastService);
 
@@ -81,14 +111,24 @@ export class Cart {
     const items = this.cart.items();
     if (items.length === 0) return;
 
+    const problem = this.quote()?.problem;
+    if (problem) {
+      this.toasts.error(problem);
+      return;
+    }
+
     const total = this.cart.total();
+    const point = this.point();
     const order: OrderRequest = {
       customerEmail: email,
       customerName: name,
       customerPhone: this.delivery.phone.trim(),
       address: this.delivery.address.trim(),
       totalAmount: total,
-      items: items.map(i => ({ itemId: i.id, quantity: i.quantity, price: i.price }))
+      items: items.map(i => ({ itemId: i.id, quantity: i.quantity, price: i.price })),
+      areaId: point?.areaId ?? null,
+      dropLatitude: point?.areaId ? null : point?.latitude ?? null,
+      dropLongitude: point?.areaId ? null : point?.longitude ?? null
     };
 
     this.placing.set(true);

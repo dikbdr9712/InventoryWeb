@@ -19,6 +19,11 @@
           <span class="category">{{ item.category }}</span>
         }
         <h1>{{ item.itemName }}</h1>
+        <p class="sold-by">
+          <i class="fas fa-store"></i>
+          Sold by <strong>{{ item.sellerName || 'DK/Phar' }}</strong>
+          @if (item.sellerName) { <span>· delivered by DK/Phar riders</span> }
+        </p>
 
         <div class="price-row">
           <strong class="price">

@@ -9,7 +9,7 @@ import { AuthService } from '../../services/auth';
 import { ConfirmService } from '../../services/confirm';
 import { ToastService } from '../../services/toast';
 import { CustomerLookup, CustomerService } from '../../services/customer';
-import { PosSaleRequest, PosTax } from '../../models/models';
+import { PosSaleRequest, PosTax, ShiftReport } from '../../models/models';
 import { errorText } from '../../utils/http-error';
 
 interface PosProduct {
@@ -46,6 +46,52 @@ interface Invoice {
   discount: number;
   taxLines: { label: string; amount: number }[];
   total: number;
+}
+
+// A sale in progress, kept in this browser so a refresh, a crash or a held sale never loses it
+interface SaleDraft {
+  cart: PosLine[];
+  customerName: string;
+  customerPhone: string;
+  taxes: PosTax[];
+  paymentMethod: string;
+  saleDiscountMode: 'percent' | 'amount';
+  saleDiscountValue: number | null;
+}
+
+interface HeldSale {
+  id: string;
+  at: string;
+  label: string;
+  total: number;
+  draft: SaleDraft;
+}
+
+const DRAFT_KEY = 'posDraft';
+const HELD_KEY = 'posHeld';
+const MAX_HELD = 10;
+
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* storage full or blocked: the sale still works */
+  }
+}
+
+function newRef(): string {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
 // Printed at the top of every invoice and receipt
@@ -138,6 +184,46 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
 
   processing = signal(false);
   invoice = signal<Invoice | null>(null);
+
+  // Till v2: paying happens in its own dialog (Charge / F9); tax and whole-sale discount open only when needed
+  showPay = signal(false);
+  showTaxes = signal(false);
+  showSaleDiscount = signal(false);
+
+  // ---------- Cash drawer ----------
+  shift = signal<ShiftReport | null>(null);
+  shiftLoading = signal(true);
+  shiftError = signal('');
+  shiftOutdated = signal(false); // the server does not know shifts yet (older version still running)
+  openingFloat: number | null = null;
+  openingDrawer = signal(false);
+  showClose = signal(false);
+  closeReport = signal<ShiftReport | null>(null);   // live numbers in the close dialog
+  countedCash: number | null = null;
+  countedCashValue = signal<number | null>(null);
+  closeNote = '';
+  closingDrawer = signal(false);
+  closedReport = signal<ShiftReport | null>(null);  // the end-of-shift report after closing
+  difference = computed(() => {
+    const r = this.closeReport();
+    const counted = this.countedCashValue();
+    return r && counted !== null ? Math.round((counted - r.expectedCash) * 100) / 100 : null;
+  });
+
+  // ---------- Permissions ----------
+  // Discounts beyond the shop price need "Give extra discounts"; the server checks it too
+  canDiscount = this.auth.can('pos.discount');
+
+  // ---------- Held sales ----------
+  held = signal<HeldSale[]>(readJson<HeldSale[]>(HELD_KEY, []));
+  showHeld = signal(false);
+
+  // The id of the sale being rung up. Kept when the answer is lost, so trying again can never save it twice.
+  private saleRef: string | null = null;
+
+  // customer fields are plain properties (bound to inputs); these mirror them so the saved draft sees changes
+  private customerNameSig = signal('');
+  private customerPhoneSig = signal('');
   showInvoice = signal(false);
 
   // ---------- Calculated values ----------
@@ -211,6 +297,27 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
     return diff >= 0 ? { ok: true, amount: diff } : { ok: false, amount: -diff };
   });
 
+  // ---------- Phones: the sale opens over the products (the bar at the bottom shows it is there) ----------
+  saleOpen = signal(false);
+  lastAdded = signal<string | null>(null); // "Added Phone" in the bar, so the cashier sees the tap worked
+  private lastAddedTimer?: ReturnType<typeof setTimeout>;
+  // A finger, not a mouse: do not jump into the search box after each tap (that pops the keyboard up)
+  private readonly touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
+  openSale() {
+    this.saleOpen.set(true);
+  }
+
+  closeSale() {
+    this.saleOpen.set(false);
+  }
+
+  searchFromBar() {
+    this.saleOpen.set(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.focusSearch(true);
+  }
+
   // ---------- Setup ----------
   // "Full screen" hides the site header, the staff bar and the footer, so the till gets the whole window.
   fullScreen = signal(localStorage.getItem('posFullScreen') !== 'no'); // on unless switched off
@@ -236,6 +343,12 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
 
   constructor() {
     this.applyFullScreen();
+    // keep the sale in progress, so a refresh or a crash does not lose it
+    effect(() => {
+      const draft = this.currentDraft();
+      if (draft.cart.length === 0) localStorage.removeItem(DRAFT_KEY);
+      else writeJson(DRAFT_KEY, draft);
+    });
     effect(() => {
       if (this.showInvoice()) setTimeout(() => this.invoiceDialog()?.nativeElement.focus(), 0);
     });
@@ -243,6 +356,183 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.loadProducts();
+    this.loadShift();
+    const draft = readJson<SaleDraft | null>(DRAFT_KEY, null);
+    if (draft && Array.isArray(draft.cart) && draft.cart.length > 0) {
+      this.applyDraft(draft);
+      this.toasts.info('Your unfinished sale was brought back.');
+    }
+  }
+
+  // ---------- Cash drawer ----------
+  loadShift() {
+    this.shiftLoading.set(true);
+    this.shiftError.set('');
+    this.shiftOutdated.set(false);
+    this.posService.currentShift().subscribe({
+      next: shift => {
+        this.shift.set(shift);
+        this.shiftLoading.set(false);
+        if (shift) setTimeout(() => this.focusSearch(), 0);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.shiftLoading.set(false);
+        this.shiftOutdated.set(err.status === 404);
+        this.shiftError.set(errorText(err));
+      }
+    });
+  }
+
+  openDrawer() {
+    const amount = Number(this.openingFloat ?? 0);
+    if (!(amount >= 0)) {
+      this.toasts.error('Enter the cash in the drawer (0 or more).');
+      return;
+    }
+    this.openingDrawer.set(true);
+    this.posService.openShift(amount).subscribe({
+      next: shift => {
+        this.openingDrawer.set(false);
+        this.shift.set(shift);
+        this.openingFloat = null;
+        this.toasts.success('Drawer open. Good selling!');
+        setTimeout(() => this.focusSearch(), 0);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.openingDrawer.set(false);
+        this.toasts.error(errorText(err));
+        this.loadShift();
+      }
+    });
+  }
+
+  startClose() {
+    const shift = this.shift();
+    if (!shift) return;
+    if (this.cart().length > 0) {
+      this.toasts.error('Finish or hold the current sale before closing the drawer.');
+      return;
+    }
+    this.countedCash = null;
+    this.countedCashValue.set(null);
+    this.closeNote = '';
+    this.closeReport.set(null);
+    this.showClose.set(true);
+    this.posService.shift(shift.id).subscribe({
+      next: r => this.closeReport.set(r),
+      error: (err: HttpErrorResponse) => this.toasts.error(errorText(err))
+    });
+  }
+
+  onCounted(value: string) {
+    const n = parseFloat(value);
+    this.countedCash = isNaN(n) ? null : n;
+    this.countedCashValue.set(this.countedCash);
+  }
+
+  closeDrawer() {
+    const shift = this.shift();
+    if (!shift || this.closingDrawer()) return;
+    if (this.countedCash === null || this.countedCash < 0) {
+      this.toasts.error('Count the cash in the drawer and enter the amount.');
+      return;
+    }
+    const diff = this.difference();
+    if (diff !== null && diff !== 0 && !this.closeNote.trim()) {
+      this.toasts.error('The count does not match. Please write a short note about it.');
+      return;
+    }
+    this.closingDrawer.set(true);
+    this.posService.closeShift(shift.id, this.countedCash, this.closeNote.trim()).subscribe({
+      next: report => {
+        this.closingDrawer.set(false);
+        this.showClose.set(false);
+        this.shift.set(null);
+        this.closedReport.set(report);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.closingDrawer.set(false);
+        this.toasts.error(errorText(err));
+      }
+    });
+  }
+
+  methodTotals(report: ShiftReport) {
+    return Object.entries(report.salesByMethod ?? {}).map(([method, amount]) => ({ method: this.methodLabel(method), amount }));
+  }
+
+  // ---------- Draft and held sales ----------
+  private currentDraft(): SaleDraft {
+    return {
+      cart: this.cart(),
+      customerName: this.customerNameSig(),
+      customerPhone: this.customerPhoneSig(),
+      taxes: this.taxes(),
+      paymentMethod: this.paymentMethod(),
+      saleDiscountMode: this.saleDiscountMode(),
+      saleDiscountValue: this.saleDiscountValue()
+    };
+  }
+
+  syncCustomer() {
+    this.customerNameSig.set(this.customerName);
+    this.customerPhoneSig.set(this.customerPhone);
+  }
+
+  private applyDraft(d: SaleDraft) {
+    this.cart.set(d.cart ?? []);
+    this.customerName = d.customerName ?? '';
+    this.customerPhone = d.customerPhone ?? '';
+    this.syncCustomer();
+    this.taxes.set(d.taxes?.length ? d.taxes : DEFAULT_TAXES.map(t => ({ ...t })));
+    this.paymentMethod.set(d.paymentMethod || 'CASH');
+    this.saleDiscountMode.set(d.saleDiscountMode || 'percent');
+    this.saleDiscountValue.set(this.canDiscount ? d.saleDiscountValue ?? null : null);
+    this.saleRef = null;
+  }
+
+  holdSale() {
+    if (this.cart().length === 0) return;
+    if (this.held().length >= MAX_HELD) {
+      this.toasts.error('You already have ' + MAX_HELD + ' held sales. Finish one first.');
+      return;
+    }
+    const label = this.customerName.trim() || (this.customerPhone ? 'Phone ' + this.customerPhone : 'Walk-in customer');
+    const entry: HeldSale = { id: newRef(), at: new Date().toISOString(), label, total: this.totals().total, draft: this.currentDraft() };
+    this.held.update(list => [entry, ...list]);
+    writeJson(HELD_KEY, this.held());
+    this.resetSale();
+    this.toasts.info('Sale held. Serve the next customer, then bring it back from Held sales.');
+    this.focusSearch();
+  }
+
+  async recallSale(entry: HeldSale) {
+    if (this.cart().length > 0) {
+      const ok = await this.confirm.ask({
+        title: 'Replace the current sale?',
+        message: 'The sale on screen will be held so you can come back to it.',
+        confirmLabel: 'Hold it and bring back'
+      });
+      if (!ok) return;
+      this.holdSale();
+    }
+    this.held.update(list => list.filter(h => h.id !== entry.id));
+    writeJson(HELD_KEY, this.held());
+    this.applyDraft(entry.draft);
+    this.showHeld.set(false);
+    this.focusSearch();
+  }
+
+  async dropHeld(entry: HeldSale) {
+    const ok = await this.confirm.ask({
+      title: 'Delete held sale?',
+      message: entry.label + ', Nu. ' + entry.total.toFixed(2),
+      confirmLabel: 'Delete',
+      danger: true
+    });
+    if (!ok) return;
+    this.held.update(list => list.filter(h => h.id !== entry.id));
+    writeJson(HELD_KEY, this.held());
   }
 
   ngAfterViewInit() {
@@ -277,7 +567,9 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
     this.loadProducts();
   }
 
-  private focusSearch() {
+  // Ready to type or scan. On a touch screen only when asked (force), because focusing pops the keyboard up.
+  private focusSearch(force = false) {
+    if (this.touch && !force) return;
     this.searchInput()?.nativeElement.focus();
   }
 
@@ -294,12 +586,16 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
   onKey(event: KeyboardEvent) {
     if (event.key === 'F2') {
       event.preventDefault();
-      this.focusSearch();
+      this.focusSearch(true);
     } else if (event.key === 'F9') {
       event.preventDefault();
-      if (!this.showInvoice()) this.completeSale();
+      if (this.showInvoice() || this.showClose() || !this.shift()) return;
+      if (this.showPay()) this.completeSale();
+      else this.openPay();
     } else if (event.key === 'Escape') {
-      if (this.showInvoice()) this.closeInvoice();
+      if (this.showPay()) this.closePay();
+      else if (this.showInvoice()) this.closeInvoice();
+      else if (this.saleOpen()) this.closeSale();
       else if (this.searchTerm()) this.clearSearch();
     }
   }
@@ -311,14 +607,18 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
 
   clearSearch() {
     this.searchTerm.set('');
-    this.focusSearch();
+    this.focusSearch(true);
   }
 
   // Enter adds the first match. A barcode scanner types the code and presses Enter, so it works too.
   onSearchEnter(event: Event) {
     event.preventDefault();
-    const first = this.matches()[0];
+    // a scanner types the exact code: an exact code match wins over a name that merely contains it
+    const code = this.searchTerm().trim().toLowerCase();
+    const exact = code ? this.products().find(p => p.itemCode.toLowerCase() === code) : undefined;
+    const first = exact ?? this.matches()[0];
     if (first) this.addProduct(first);
+    else if (code) this.toasts.error('No product matches ' + this.searchTerm().trim() + '.');
   }
 
   isOut(product: PosProduct) {
@@ -356,6 +656,7 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    this.saleRef = null;
     const existing = this.cart().find(l => l.itemId === product.itemId);
     if (existing) {
       this.setLineQuantity(existing, existing.quantity + 1);
@@ -369,10 +670,18 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
         stock: product.stock
       }]);
     }
-    this.clearSearch(); // ready for the next item
+    // ready for the next item: back in the search box when typing or scanning, but not after a finger tap
+    const searching = document.activeElement === this.searchInput()?.nativeElement;
+    this.searchTerm.set('');
+    this.focusSearch(searching);
+
+    this.lastAdded.set(product.itemName);
+    clearTimeout(this.lastAddedTimer);
+    this.lastAddedTimer = setTimeout(() => this.lastAdded.set(null), 1800);
   }
 
   private updateLine(itemId: number, changes: Partial<PosLine>) {
+    this.saleRef = null;
     this.cart.update(lines => lines.map(l => (l.itemId === itemId ? { ...l, ...changes } : l)));
   }
 
@@ -399,12 +708,17 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onDiscountInput(line: PosLine, input: HTMLInputElement) {
+    if (!this.canDiscount) {
+      input.value = String(line.discountPercent);
+      return;
+    }
     const discount = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
     this.updateLine(line.itemId, { discountPercent: discount });
     input.value = String(discount);
   }
 
   removeLine(line: PosLine) {
+    this.saleRef = null;
     this.cart.update(lines => lines.filter(l => l.itemId !== line.itemId));
   }
 
@@ -482,6 +796,7 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
   onPhoneInput(box: HTMLInputElement) {
     this.customerPhone = cleanPhone(box.value);
     box.value = this.customerPhone;
+    this.syncCustomer();
     this.customerInfo.set(null);
 
     if (this.customerPhone.length !== 8) {
@@ -499,7 +814,10 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
           this.customerInfo.set(info);
           this.lookupState.set('known');
           // fill in the name they gave last time, unless the cashier already typed one
-          if (!this.customerName.trim() && info.name) this.customerName = info.name;
+          if (!this.customerName.trim() && info.name) {
+            this.customerName = info.name;
+            this.syncCustomer();
+          }
         } else {
           this.lookupState.set('new');
         }
@@ -540,9 +858,44 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
     this.amountReceived.set(Math.round(this.totals().total * 100) / 100);
   }
 
+  // ---------- Charge: open the payment dialog ----------
+  openPay() {
+    if (this.processing()) return;
+    if (!this.shift()) {
+      this.toasts.error('Open your cash drawer first.');
+      return;
+    }
+    if (this.cart().length === 0) {
+      this.toasts.error('Add at least one item to the sale first.');
+      return;
+    }
+    const phoneProblem = this.phoneProblem();
+    if (phoneProblem) {
+      this.phoneTouched.set(true);
+      this.toasts.error(phoneProblem);
+      return;
+    }
+    if (this.totals().extraTooLarge) {
+      this.toasts.error('The discount is bigger than the whole sale. Lower it first.');
+      return;
+    }
+    this.showPay.set(true);
+    if (this.paymentMethod() === 'CASH') setTimeout(() => this.amountInput()?.nativeElement.focus(), 50);
+  }
+
+  closePay() {
+    if (this.processing()) return;
+    this.showPay.set(false);
+    this.focusSearch();
+  }
+
   // ---------- Complete sale ----------
   completeSale() {
     if (this.processing()) return;
+    if (!this.shift()) {
+      this.toasts.error('Open your cash drawer first.');
+      return;
+    }
 
     const lines = this.cart();
     if (lines.length === 0) {
@@ -573,7 +926,10 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
+    if (!this.saleRef) this.saleRef = newRef();
     const request: PosSaleRequest = {
+      clientRef: this.saleRef,
+      amountTendered: method === 'CASH' ? this.amountReceived() : null,
       customerName: this.customerName.trim() || null,
       customerPhone: this.customerPhone.trim() || null,
       paymentMethod: method,
@@ -610,23 +966,37 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
 
         this.resetSale();
         this.processing.set(false);
+        this.showPay.set(false);
+        this.posService.currentShift().subscribe({ next: s => this.shift.set(s), error: () => {} });
         this.toasts.success(`Sale #${order.orderId} completed.`);
         this.showInvoice.set(true);
         this.loadProducts(); // stock changed, refresh the tiles
       },
       error: (err: HttpErrorResponse) => {
         this.processing.set(false);
+        if (err.status === 0) {
+          // the answer was lost: the sale may or may not be saved. Pressing Complete again is safe (same id).
+          this.toasts.error('No answer from the server. Press Complete sale again when the connection is back; it will not be saved twice.');
+          return;
+        }
+        this.saleRef = null;
         this.toasts.error(`The sale was not saved: ${errorText(err)}`);
+        if (/cash drawer/i.test(errorText(err))) this.loadShift();
       }
     });
   }
 
   private resetSale() {
+    this.saleRef = null;
+    this.saleOpen.set(false);
+    this.showSaleDiscount.set(false);
+    this.showTaxes.set(false);
     this.cart.set([]);
     this.taxes.set(DEFAULT_TAXES.map(t => ({ ...t })));
     this.paymentMethod.set('CASH');
     this.customerName = '';
     this.customerPhone = '';
+    this.syncCustomer();
     this.phoneTouched.set(false);
     this.lookupState.set('idle');
     this.customerInfo.set(null);
@@ -639,6 +1009,39 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
   closeInvoice() {
     this.showInvoice.set(false);
     this.focusSearch();
+  }
+
+  // The end-of-shift report, on the receipt printer (same way as the receipt below)
+  printShiftReport() {
+    const source = document.querySelector<HTMLElement>('.shift-report');
+    if (!source) return;
+    document.getElementById('print-root')?.remove();
+    document.getElementById('print-style')?.remove();
+    const root = document.createElement('div');
+    root.id = 'print-root';
+    root.innerHTML = source.outerHTML;
+    root.querySelector('.dw-actions')?.remove();
+    const style = document.createElement('style');
+    style.id = 'print-style';
+    style.textContent = `
+      #print-root { display: none; }
+      @media print {
+        @page { size: 80mm auto; margin: 3mm; }
+        html, body { background: #fff !important; margin: 0 !important; }
+        body > *:not(#print-root) { display: none !important; }
+        #print-root { display: block !important; font-family: monospace; font-size: 12px; width: 74mm; }
+        #print-root .dw-dialog { position: static; transform: none; width: auto; box-shadow: none; padding: 0; }
+        #print-root .dw-report div { display: flex; justify-content: space-between; }
+      }`;
+    document.body.appendChild(root);
+    document.head.appendChild(style);
+    const cleanup = () => {
+      root.remove();
+      style.remove();
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    window.print();
   }
 
   // Prints either the narrow receipt (for a receipt printer) or the A4 invoice.

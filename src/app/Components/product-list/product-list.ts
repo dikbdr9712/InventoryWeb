@@ -128,7 +128,9 @@ export class ProductList implements OnInit {
       id: item.itemId,
       name: item.itemName,
       price: Number(item.sellingPrice) || 0,
-      image: this.image(item)
+      image: this.image(item),
+      sellerId: item.sellerId ?? null,
+      sellerName: item.sellerName
     });
     // Say how many the customer now has, because pressing Add again stacks up
     const inCart = this.cart.items().find(i => i.id === item.itemId)?.quantity ?? 1;

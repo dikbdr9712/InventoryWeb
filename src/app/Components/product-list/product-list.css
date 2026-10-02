@@ -66,6 +66,7 @@
 }
 
 .product {
+  container-type: inline-size; /* the card adapts to its own width (see the end of this file) */
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
@@ -167,6 +168,12 @@
 
 .actions .add {
   flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.actions .restock {
+  flex: none;
 }
 
 /* Loading placeholders and empty state */
@@ -197,13 +204,146 @@
   color: var(--muted);
 }
 
-@media (max-width: 480px) {
+/* ---------- Tablets and phones ---------- */
+@media (max-width: 767px) {
   .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (max-width: 575px) {
+  .toolbar {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .search {
+    flex: 1 1 100%;
   }
 
   .sort {
     flex: 1 1 100%;
   }
+
+  /* one row of categories that slides sideways, instead of five rows of buttons */
+  .chips {
+    flex-wrap: nowrap;
+    margin: 0 calc(-1 * var(--gutter)) 14px;
+    padding: 2px var(--gutter) 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chips button {
+    flex: none;
+    padding: 6px 12px;
+    white-space: nowrap;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .product {
+    border-radius: 10px;
+  }
+
+  .skeleton {
+    min-height: 260px;
+  }
+}
+
+/* ---------- A narrow card (two cards side by side on a phone) ---------- */
+@container (max-width: 210px) {
+  .product-link {
+    gap: 2px;
+    padding: 8px 8px 6px;
+  }
+
+  .photo {
+    margin-bottom: 6px;
+  }
+
+  .off {
+    top: 6px;
+    left: 6px;
+    padding: 1px 7px;
+    font-size: 0.72rem;
+  }
+
+  .category {
+    overflow: hidden;
+    font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* long names stop after two lines */
+  .name {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 0.93rem;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 6px;
+    font-size: 1rem;
+  }
+
+  .price s {
+    margin-left: 0;
+    font-size: 0.78rem;
+  }
+
+  .stock {
+    font-size: 0.75rem;
+  }
+
+  .actions {
+    gap: 6px;
+    padding: 2px 8px 8px;
+  }
+
+  .actions .btn {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .actions .restock {
+    width: 36px;
+    padding-inline: 0;
+  }
+
+  /* with the staff Restock button next to it, the button just says Add */
+  .actions:has(.restock) .add-more {
+    display: none;
+  }
+}
+
+.seller {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seller i {
+  margin-right: 3px;
+  color: var(--green);
 }

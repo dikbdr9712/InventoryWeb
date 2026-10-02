@@ -1,5 +1,7 @@
 :host {
   display: block;
+  position: relative;
+  z-index: 900; /* the menus open above the page */
 }
 
 .sb {
@@ -7,19 +9,13 @@
   border-bottom: 1px solid #072a20;
 }
 
+/* One line, lined up with the page content */
 .sb-inner {
   display: flex;
   align-items: stretch;
-  max-width: none;
-  height: 44px;
-  margin: 0;
-  padding: 0 20px;
-  overflow-x: auto;          /* a long list scrolls sideways instead of wrapping */
-  scrollbar-width: thin;
-}
-
-.sb-inner::-webkit-scrollbar {
-  display: none;
+  gap: 2px;
+  height: 46px;
+  padding: 0 max(var(--gutter), calc((100% - var(--site-max)) / 2 + var(--gutter)));
 }
 
 .sb-tag {
@@ -27,65 +23,69 @@
   flex: none;
   align-items: center;
   gap: 8px;
-  padding-right: 16px;
-  margin-right: 4px;
+  padding-right: 14px;
+  margin-right: 6px;
   color: var(--saffron);
   font-size: 0.85rem;
   font-weight: 700;
   border-right: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-/* Tools that belong together sit together, with a thin line between groups */
-.sb-group {
-  display: flex;
-  flex: none;
-  align-items: stretch;
-}
-
-.sb-group + .sb-group {
-  margin-left: 6px;
-  padding-left: 6px;
-  border-left: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.sb-group a {
+/* A link or a menu button: the same look */
+.sb-link {
   position: relative;
   display: flex;
+  flex: none;
   align-items: center;
   gap: 8px;
   padding: 0 12px;
+  border: 0;
+  background: none;
   color: #cfe0d9;
+  font: inherit;
   font-size: 0.92rem;
   font-weight: 500;
   white-space: nowrap;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.sb-group a i {
+.sb-link i {
   color: #8fb5a6;
   font-size: 0.85rem;
 }
 
-.sb-group a:hover {
+.sb-link .caret {
+  font-size: 0.65rem;
+  transition: transform 0.15s;
+}
+
+.sb-link.open .caret {
+  transform: rotate(180deg);
+}
+
+.sb-link:hover,
+.sb-link.open {
   color: #fff;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.08);
   text-decoration: none;
 }
 
-.sb-group a:hover i {
+.sb-link:hover i,
+.sb-link.open i {
   color: #fff;
 }
 
-.sb-group a.active {
+.sb-link.active {
   color: #fff;
   font-weight: 700;
 }
 
-.sb-group a.active i {
+.sb-link.active > i:first-child {
   color: var(--saffron);
 }
 
-.sb-group a.active::after {
+.sb-link.active::after {
   content: '';
   position: absolute;
   left: 12px;
@@ -96,21 +96,87 @@
   background: var(--saffron);
 }
 
-/* On phones and tablets the same tools live in the slide-in menu */
-@media (max-width: 991px) {
-  :host {
+.sb-link:focus-visible {
+  outline: 2px solid var(--saffron);
+  outline-offset: -2px;
+}
+
+/* The menu of a group */
+.sb-menu {
+  position: relative;
+  display: flex;
+}
+
+.sb-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 260px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(16, 35, 31, 0.18);
+}
+
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.sb-item:hover {
+  background: var(--green-soft);
+  color: var(--green-deep);
+  text-decoration: none;
+}
+
+.sb-item.active {
+  background: var(--green-soft);
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+.sb-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--wash);
+  color: var(--green);
+}
+
+.sb-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.sb-text small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Medium screens: no icons on the bar itself, so every group fits */
+@media (max-width: 1280px) {
+  .sb-link > i:first-child {
     display: none;
+  }
+
+  .sb-link {
+    padding: 0 10px;
   }
 }
 
-/* On medium screens drop the small icons so every tool fits (nothing hides off the right edge) */
-@media (max-width: 1500px) {
-  .sb-group a i {
+/* Phones and tablets: the same tools live in the slide-in menu */
+@media (max-width: 991px) {
+  :host {
     display: none;
-  }
-
-  .sb-group a {
-    padding: 0 10px;
-    font-size: 0.9rem;
   }
 }

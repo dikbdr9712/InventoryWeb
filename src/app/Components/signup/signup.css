@@ -1,1 +1,23 @@
 /* The look comes from auth-layout.css. Nothing page-specific is needed here. */
+
+.terms-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 8px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.terms-check.bad {
+  color: var(--red);
+}
+
+.terms-check input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: none;
+  accent-color: var(--green);
+}

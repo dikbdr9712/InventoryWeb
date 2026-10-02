@@ -1,0 +1,16 @@
+.filter {
+  margin-bottom: 16px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.pkg-top h3 a {
+  color: var(--ink);
+}
+
+.when {
+  margin-left: auto;
+  font-size: 0.85rem;
+}

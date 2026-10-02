@@ -2,8 +2,8 @@
   <div class="ft-inner">
     <div class="ft-brand">
       <a routerLink="/" class="ft-logo">
-        <img src="Images/website-logo.png" alt="" />
-        <span>DK/Phar Inventory<br />Management System</span>
+        <img src="Images/logo-112.png" width="112" height="112" alt="" />
+        <span>DK/Phar Inventory<small>Management System</small></span>
       </a>
       <p>Quality natural products, handled with care from our shelf to your door.</p>
       <div class="ft-social">
@@ -27,17 +27,26 @@
       <h3>Company</h3>
       <a routerLink="/about">About us</a>
       <a routerLink="/contact">Contact us</a>
+      <a routerLink="/sell">Sell with us</a>
+      <a routerLink="/deliver">Deliver with us</a>
     </nav>
 
-    <div class="ft-col">
+    <div class="ft-col ft-contact">
       <h3>Get in touch</h3>
-      <p><i class="fas fa-phone"></i> 77269712</p>
-      <p><i class="fas fa-envelope"></i> dikbdrghalley12&#64;gmail.com</p>
-      <p><i class="fas fa-location-dot"></i> Thimphu / Phuentsholing, Bhutan</p>
+      <a href="tel:+97577269712"><i class="fas fa-phone"></i><span>77269712</span></a>
+      <a href="mailto:dikbdrghalley12&#64;gmail.com"><i class="fas fa-envelope"></i><span>dikbdrghalley12&#64;gmail.com</span></a>
+      <p><i class="fas fa-location-dot"></i><span>Thimphu / Phuentsholing, Bhutan</span></p>
     </div>
   </div>
 
   <div class="ft-base">
-    <span>&copy; {{ year }} DK/Phar Inventory Management System</span>
+    <div class="ft-base-inner">
+      <span>&copy; {{ year }} DK/Phar Inventory Management System</span>
+      <nav class="ft-legal" aria-label="Legal">
+        <a routerLink="/terms">Terms &amp; Privacy</a>
+        <a routerLink="/terms/seller">Seller Agreement</a>
+        <a routerLink="/terms/driver">Driver Agreement</a>
+      </nav>
+    </div>
   </div>
 </footer>

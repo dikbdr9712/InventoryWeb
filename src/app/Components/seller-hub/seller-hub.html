@@ -1,0 +1,333 @@
+<div class="page">
+  @if (termsRequired()) {
+    <app-terms-gate type="SELLER" (accepted)="afterTerms()" />
+  } @else if (loadError()) {
+    <div class="empty-state">
+      <i class="fas fa-store-slash"></i>
+      <p>{{ loadError() }}</p>
+      <a routerLink="/sell" class="btn btn-primary">See my application</a>
+    </div>
+  } @else {
+    @let h = home();
+    <div class="page-head">
+      <div>
+        <h1>{{ h?.profile?.shopName ?? 'My shop' }}</h1>
+        <p>
+          @if (h) {
+            {{ h.profile.town }} · Commission {{ h.profile.effectiveCommissionPercent | number: '1.0-2' }}% per sale
+          } @else { Loading... }
+        </p>
+      </div>
+      @if (may.products) {
+        <button type="button" class="btn btn-primary" (click)="tab.set('products'); newProduct()">
+          <i class="fas fa-plus"></i> Add product
+        </button>
+      }
+    </div>
+
+    <div class="seg tabs" role="tablist">
+      <button type="button" role="tab" [class.on]="tab() === 'overview'" (click)="tab.set('overview')">Overview</button>
+      @if (may.orders) {
+        <button type="button" role="tab" [class.on]="tab() === 'packages'" (click)="tab.set('packages')">
+          Packages @if (toPack().length) { <span class="count">{{ toPack().length }}</span> }
+        </button>
+      }
+      @if (may.products) {
+        <button type="button" role="tab" [class.on]="tab() === 'products'" (click)="tab.set('products')">Products ({{ products().length }})</button>
+      }
+      @if (may.earnings) {
+        <button type="button" role="tab" [class.on]="tab() === 'money'" (click)="tab.set('money')">Money</button>
+      }
+    </div>
+
+    <!-- ================= Overview ================= -->
+    @if (tab() === 'overview') {
+      @if (h) {
+        <section class="panel box pickup" [class.missing]="!pickupPoint()">
+          <h2><i class="fas fa-location-dot"></i> Pickup point</h2>
+          <p class="muted">
+            Where riders collect your packages: {{ h.profile.pickupAddress }}@if (h.profile.town) {, {{ h.profile.town }}}.
+            @if (!pickupPoint()) {
+              <strong>Set it on the map</strong> so customers pay the right delivery price. Until then the distance is estimated.
+            } @else {
+              Delivery prices are worked out from this point.
+            }
+          </p>
+          <app-map-point [point]="pickupPoint()" (pointChange)="savePickup($event)" emptyText="Not set on the map yet" />
+        </section>
+      }
+      @if (h?.earnings) {
+      <div class="stats">
+        <div class="stat accent">
+          <span>We owe you</span>
+          <strong>Nu. {{ h?.earnings?.balanceOwed ?? 0 | number: '1.2-2' }}</strong>
+          <small>Paid to {{ h?.profile?.bankName }}</small>
+        </div>
+        <div class="stat">
+          <span>On the way</span>
+          <strong>Nu. {{ h?.earnings?.upcoming ?? 0 | number: '1.2-2' }}</strong>
+          <small>{{ h?.earnings?.activeCount ?? 0 }} paid orders not yet delivered</small>
+        </div>
+        <div class="stat">
+          <span>Earned so far</span>
+          <strong>Nu. {{ h?.earnings?.totalEarned ?? 0 | number: '1.2-2' }}</strong>
+          <small>{{ h?.earnings?.deliveredCount ?? 0 }} delivered</small>
+        </div>
+        <div class="stat">
+          <span>Paid out</span>
+          <strong>Nu. {{ h?.earnings?.totalPaidOut ?? 0 | number: '1.2-2' }}</strong>
+        </div>
+      </div>
+      }
+
+      <div class="two">
+        @if (may.orders) {
+        <section class="panel box">
+          <h2><i class="fas fa-box-open"></i> To pack now</h2>
+          @if (toPack().length === 0) {
+            <p class="muted">Nothing to pack. New paid orders appear here.</p>
+          } @else {
+            <ul class="list">
+              @for (p of toPack().slice(0, 5); track p.id) {
+                <li>
+                  <span>Order #{{ p.orderId }} · {{ p.itemCount }} item{{ p.itemCount === 1 ? '' : 's' }}</span>
+                  <button type="button" class="btn btn-sm btn-primary" [disabled]="busy() === p.id" (click)="markPacked(p)">Packed</button>
+                </li>
+              }
+            </ul>
+            <button type="button" class="btn btn-link px-0" (click)="tab.set('packages')">See all packages</button>
+          }
+        </section>
+        }
+
+        @if (may.products) {
+        <section class="panel box">
+          <h2><i class="fas fa-triangle-exclamation"></i> Running low</h2>
+          @if (lowStock().length === 0) {
+            <p class="muted">All your products have more than 3 in stock.</p>
+          } @else {
+            <ul class="list">
+              @for (item of lowStock().slice(0, 5); track item.itemId) {
+                <li>
+                  <span>{{ item.itemName }} · <strong>{{ item.currentQuantity ?? 0 }}</strong> left</span>
+                  <button type="button" class="btn btn-sm btn-secondary" (click)="tab.set('products'); editProduct(item)">Update</button>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+        }
+      </div>
+
+      <section class="panel box how">
+        <h2>How you get paid</h2>
+        <p>
+          When a customer's payment is checked, the order appears under <strong>To pack</strong>. Pack it and press
+          <strong>Packed</strong>; a rider collects it. When the customer receives it, your earning (the sale minus
+          {{ h?.profile?.effectiveCommissionPercent ?? 0 | number: '1.0-2' }}% commission) is added to <strong>We owe you</strong>,
+          and we transfer it to your bank account.
+        </p>
+      </section>
+    }
+
+    <!-- ================= Packages ================= -->
+    @if (tab() === 'packages' && may.orders) {
+      <div class="seg filter" role="group" aria-label="Show">
+        <button type="button" [class.on]="filter() === 'todo'" (click)="filter.set('todo')">To pack ({{ toPack().length }})</button>
+        <button type="button" [class.on]="filter() === 'moving'" (click)="filter.set('moving')">With rider</button>
+        <button type="button" [class.on]="filter() === 'done'" (click)="filter.set('done')">Finished</button>
+        <button type="button" [class.on]="filter() === 'all'" (click)="filter.set('all')">All</button>
+      </div>
+
+      @if (shownPackages().length === 0) {
+        <div class="empty-state"><i class="fas fa-box"></i>No packages here.</div>
+      } @else {
+        <div class="pkg-list">
+          @for (p of shownPackages(); track p.id) {
+            <article class="pkg">
+              <div class="pkg-top">
+                <h3>Order #{{ p.orderId }} <small class="muted">· package {{ p.id }}</small></h3>
+                <span [class]="'pill ' + packagePill(p.status)">{{ packageLabel(p.status) }}</span>
+              </div>
+              <ul class="pkg-items">
+                @for (line of p.items; track line.itemId) {
+                  <li><span>{{ line.quantity }} × {{ line.itemName }}</span><span>Nu. {{ line.unitPrice * line.quantity | number: '1.2-2' }}</span></li>
+                }
+              </ul>
+              <dl class="pkg-meta">
+                <div><dt>Customer</dt><dd>{{ p.customerName || 'Customer' }}</dd></div>
+                <div><dt>Sale</dt><dd>Nu. {{ p.itemsSubtotal | number: '1.2-2' }}</dd></div>
+                @if (may.earnings) {
+                  <div><dt>Commission ({{ p.commissionPercent | number: '1.0-2' }}%)</dt><dd>− Nu. {{ p.commissionAmount | number: '1.2-2' }}</dd></div>
+                  <div><dt>You get</dt><dd class="pkg-money">Nu. {{ p.sellerEarning | number: '1.2-2' }}</dd></div>
+                }
+                @if (p.riderName) {
+                  <div><dt>Rider</dt><dd>{{ p.riderName }} · {{ p.riderVehicle }}</dd></div>
+                }
+              </dl>
+              @if (p.status === 'TO_PACK') {
+                <div class="pkg-actions">
+                  <button type="button" class="btn btn-primary" [disabled]="busy() === p.id" (click)="markPacked(p)">
+                    <i class="fas fa-box"></i> Packed, ready for pickup
+                  </button>
+                </div>
+              }
+            </article>
+          }
+        </div>
+      }
+    }
+
+    <!-- ================= Products ================= -->
+    @if (tab() === 'products' && may.products) {
+      @if (showForm()) {
+        <section class="panel box" id="product-form">
+          <h2>{{ editingId() ? 'Edit product' : 'Add a product' }}</h2>
+          <form (ngSubmit)="saveProduct()" novalidate>
+            @if (formError()) { <div class="alert alert-danger" role="alert">{{ formError() }}</div> }
+            <div class="product-form">
+              <div class="photo">
+                @if (photoPreview()) {
+                  <img [src]="photoPreview()" alt="Product photo" />
+                } @else {
+                  <div class="photo-empty"><i class="fas fa-camera"></i><span>No photo</span></div>
+                }
+                <label class="btn btn-secondary btn-sm">
+                  <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onPhoto($any($event.target))" hidden />
+                  {{ photoPreview() ? 'Change photo' : 'Add photo' }}
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="full">
+                  Product name
+                  <input class="form-control" name="itemName" maxlength="120" [(ngModel)]="form.itemName"
+                         [class.is-invalid]="submitted() && formErrors()['itemName']" />
+                  @if (submitted() && formErrors()['itemName']) { <span class="err">{{ formErrors()['itemName'] }}</span> }
+                </label>
+                <label>
+                  Your price (Nu.)
+                  <input class="form-control" name="sellingPrice" type="number" min="0" step="0.01" [(ngModel)]="form.sellingPrice"
+                         [class.is-invalid]="submitted() && formErrors()['sellingPrice']" />
+                  @if (submitted() && formErrors()['sellingPrice']) { <span class="err">{{ formErrors()['sellingPrice'] }}</span> }
+                  @else if (keepPerUnit() != null) { <span class="hint">You keep Nu. {{ keepPerUnit() | number: '1.2-2' }} per sale</span> }
+                </label>
+                <label>
+                  MRP <span class="hint">(optional, shows a discount)</span>
+                  <input class="form-control" name="mrp" type="number" min="0" step="0.01" [(ngModel)]="form.mrp"
+                         [class.is-invalid]="submitted() && formErrors()['mrp']" />
+                  @if (submitted() && formErrors()['mrp']) { <span class="err">{{ formErrors()['mrp'] }}</span> }
+                </label>
+                <label>
+                  In stock
+                  <input class="form-control" name="quantity" type="number" min="0" step="1" [(ngModel)]="form.quantity"
+                         [class.is-invalid]="submitted() && formErrors()['quantity']" />
+                  @if (submitted() && formErrors()['quantity']) { <span class="err">{{ formErrors()['quantity'] }}</span> }
+                </label>
+                <label>
+                  Sold per
+                  <select class="form-control" name="uom" [(ngModel)]="form.uom">
+                    @for (u of units; track u) { <option [value]="u">{{ u }}</option> }
+                  </select>
+                </label>
+                <label class="full">
+                  Category
+                  <input class="form-control" name="category" maxlength="100" [(ngModel)]="form.category" placeholder="For example: Skincare, Food, Supplements" />
+                </label>
+                <label class="full">
+                  Description
+                  <textarea class="form-control" name="description" rows="3" [(ngModel)]="form.description"></textarea>
+                </label>
+                <fieldset class="sizes full">
+                  <legend>Delivery size <small>sets the delivery price and which riders can carry it</small></legend>
+                  <div class="size-grid">
+                    @for (s of sizes; track s.value) {
+                      <label class="size" [class.on]="form.deliverySize === s.value">
+                        <input type="radio" name="deliverySize" [value]="s.value" [(ngModel)]="form.deliverySize" />
+                        <i class="fas" [class]="'fas ' + s.icon"></i>
+                        <span class="size-text">
+                          <strong>{{ s.label }} <em>{{ s.vehicle }}</em></strong>
+                          <small>{{ s.hint }}</small>
+                        </span>
+                      </label>
+                    }
+                  </div>
+                </fieldset>
+                <label class="check full">
+                  <input type="checkbox" name="isActive" [(ngModel)]="form.isActive" />
+                  <span>Show this product to customers</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save product' }}</button>
+              <button type="button" class="btn btn-secondary" (click)="showForm.set(false)">Cancel</button>
+            </div>
+          </form>
+        </section>
+      }
+
+      @if (products().length === 0 && !showForm()) {
+        <div class="empty-state">
+          <i class="fas fa-tags"></i>
+          <p>You have not added any products yet.</p>
+          <button type="button" class="btn btn-primary" (click)="newProduct()">Add your first product</button>
+        </div>
+      } @else {
+        <div class="products">
+          @for (item of products(); track item.itemId) {
+            <article class="product" [class.off]="item.isActive === false">
+              <img [src]="image(item.imagePath)" [alt]="item.itemName" loading="lazy" />
+              <div class="product-body">
+                <h3>{{ item.itemName }}</h3>
+                <p class="muted">{{ item.category }}</p>
+                <p class="price">Nu. {{ item.sellingPrice | number: '1.2-2' }} <small>/ {{ item.uom }}</small></p>
+                <p>
+                  @if (item.isActive === false) {
+                    <span class="pill pill-mute">Hidden</span>
+                  } @else if ((item.currentQuantity ?? 0) === 0) {
+                    <span class="pill pill-bad">Out of stock</span>
+                  } @else {
+                    <span class="pill pill-ok">{{ item.currentQuantity }} in stock</span>
+                  }
+                </p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" (click)="editProduct(item)"><i class="fas fa-pen"></i> Edit</button>
+            </article>
+          }
+        </div>
+      }
+    }
+
+    <!-- ================= Money ================= -->
+    @if (tab() === 'money' && may.earnings) {
+      <div class="stats">
+        <div class="stat accent"><span>We owe you</span><strong>Nu. {{ h?.earnings?.balanceOwed ?? 0 | number: '1.2-2' }}</strong></div>
+        <div class="stat"><span>Earned so far</span><strong>Nu. {{ h?.earnings?.totalEarned ?? 0 | number: '1.2-2' }}</strong></div>
+        <div class="stat"><span>Paid out</span><strong>Nu. {{ h?.earnings?.totalPaidOut ?? 0 | number: '1.2-2' }}</strong></div>
+      </div>
+      <p class="muted">Payments go to {{ h?.profile?.bankName }}, account {{ h?.profile?.bankAccountNumber }} ({{ h?.profile?.bankAccountName }}).</p>
+      @if (ledger().length === 0) {
+        <div class="empty-state"><i class="fas fa-receipt"></i>Nothing yet. Earnings appear here when your packages are delivered.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Date</th><th>What</th><th>Details</th><th class="text-right">Amount</th></tr></thead>
+            <tbody>
+              @for (row of ledger(); track row.id) {
+                <tr>
+                  <td>{{ row.createdAt | date: 'd MMM y' }}</td>
+                  <td>{{ ledgerLabel(row) }}</td>
+                  <td class="muted">{{ row.note }}</td>
+                  <td class="text-right" [class.money-in]="row.amount > 0" [class.money-out]="row.amount < 0">
+                    {{ row.amount > 0 ? '+' : '−' }} Nu. {{ (row.amount < 0 ? -row.amount : row.amount) | number: '1.2-2' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+</div>

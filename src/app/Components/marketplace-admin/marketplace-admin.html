@@ -1,0 +1,439 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Marketplace</h1>
+      <p>Sellers, delivery drivers, commission and payouts.</p>
+    </div>
+    <a routerLink="/admin/deliveries" class="btn btn-secondary"><i class="fas fa-truck-fast"></i> Deliveries board</a>
+  </div>
+
+  <div class="seg tabs" role="tablist">
+    <button type="button" role="tab" [class.on]="tab() === 'overview'" (click)="tab.set('overview')">Overview</button>
+    <button type="button" role="tab" [class.on]="tab() === 'people'" (click)="tab.set('people')">
+      Sellers &amp; drivers @if (waiting().length) { <span class="count">{{ waiting().length }}</span> }
+    </button>
+    <button type="button" role="tab" [class.on]="tab() === 'payouts'" (click)="tab.set('payouts')">
+      Payouts @if (owed().length) { <span class="count">{{ owed().length }}</span> }
+    </button>
+    <button type="button" role="tab" [class.on]="tab() === 'terms'" (click)="openTerms()">Agreements</button>
+    <button type="button" role="tab" [class.on]="tab() === 'settings'" (click)="tab.set('settings')">Settings</button>
+  </div>
+
+  <!-- ================= Overview ================= -->
+  @if (tab() === 'overview') {
+    @let o = overview();
+    <div class="stats">
+      <div class="stat accent"><span>Commission earned</span><strong>Nu. {{ o?.commissionEarned ?? 0 | number: '1.2-2' }}</strong>
+        <small>From delivered seller orders</small></div>
+      <div class="stat"><span>We owe sellers</span><strong>Nu. {{ o?.owedToSellers ?? 0 | number: '1.2-2' }}</strong></div>
+      <div class="stat"><span>We owe drivers</span><strong>Nu. {{ o?.owedToRiders ?? 0 | number: '1.2-2' }}</strong></div>
+      <div class="stat"><span>Waiting for approval</span><strong>{{ o?.pendingApplications ?? 0 }}</strong></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>Active sellers</span><strong>{{ o?.approvedSellers ?? 0 }}</strong></div>
+      <div class="stat"><span>Active drivers</span><strong>{{ o?.approvedRiders ?? 0 }}</strong></div>
+      <div class="stat"><span>To pack</span><strong>{{ o?.packagesToPack ?? 0 }}</strong></div>
+      <div class="stat"><span>Ready / on the way</span><strong>{{ (o?.packagesReady ?? 0) }} / {{ o?.packagesOnTheWay ?? 0 }}</strong></div>
+    </div>
+
+    <section class="panel flow">
+      <h2>How an order moves</h2>
+      <ol>
+        <li><i class="fas fa-cart-shopping"></i><strong>Customer pays</strong><span>Bank transfer with journal number</span></li>
+        <li><i class="fas fa-circle-check"></i><strong>Payment verified</strong><span>Staff mark it paid: stock is taken</span></li>
+        <li><i class="fas fa-box"></i><strong>Seller packs</strong><span>One package per seller</span></li>
+        <li><i class="fas fa-motorcycle"></i><strong>Rider delivers</strong><span>Customer's 4-digit code confirms it</span></li>
+        <li><i class="fas fa-building-columns"></i><strong>Payouts</strong><span>Seller and rider earnings, by bank</span></li>
+      </ol>
+    </section>
+  }
+
+  <!-- ================= Sellers & riders ================= -->
+  @if (tab() === 'people') {
+    <div class="seg filter" role="group" aria-label="Show">
+      <button type="button" [class.on]="filter() === 'waiting'" (click)="filter.set('waiting')">Waiting ({{ waiting().length }})</button>
+      <button type="button" [class.on]="filter() === 'SELLER'" (click)="filter.set('SELLER')">Sellers</button>
+      <button type="button" [class.on]="filter() === 'RIDER'" (click)="filter.set('RIDER')">Drivers</button>
+      <button type="button" [class.on]="filter() === 'all'" (click)="filter.set('all')">All</button>
+    </div>
+
+    @if (shown().length === 0) {
+      <div class="empty-state"><i class="fas fa-user-check"></i>No one here. Applications from /sell and /deliver appear in this list.</div>
+    } @else {
+      <div class="pkg-list">
+        @for (p of shown(); track key(p)) {
+          <article class="pkg person">
+            <div class="pkg-top">
+              <h3>
+                <i class="fas" [class.fa-store]="p.type === 'SELLER'" [class.fa-motorcycle]="p.type === 'RIDER'"></i>
+                {{ p.type === 'SELLER' ? p.shopName : p.name }}
+                <small class="muted">· {{ p.type === 'SELLER' ? 'Seller' : 'Driver' }}</small>
+              </h3>
+              <span [class]="'pill ' + partnerPill(p.status)">{{ partnerLabel(p.status) }}</span>
+            </div>
+            <dl class="pkg-meta">
+              <div><dt>Person</dt><dd>{{ p.name }}<br /><span class="muted">{{ p.email }}</span></dd></div>
+              <div><dt>Phone</dt><dd><a [href]="'tel:' + p.phone">{{ p.phone }}</a></dd></div>
+              @if (p.type === 'SELLER') {
+                <div><dt>Pickup</dt><dd>{{ p.pickupAddress }}, {{ p.town }}</dd></div>
+                @if (p.description) { <div><dt>Sells</dt><dd>{{ p.description }}</dd></div> }
+              } @else {
+                <div><dt>Vehicle</dt><dd>{{ p.vehicleType }} {{ p.vehicleNumber }}</dd></div>
+                <div><dt>Licence / CID</dt><dd>{{ p.licenseNumber }}</dd></div>
+                <div><dt>Town</dt><dd>{{ p.town }}</dd></div>
+              }
+              <div><dt>Bank</dt><dd>{{ p.bankName }}<br /><span class="muted">{{ p.bankAccountName }} · {{ p.bankAccountNumber }}</span></dd></div>
+              <div><dt>Applied</dt><dd>{{ p.createdAt | date: 'd MMM y' }}</dd></div>
+              @if (p.statusNote) { <div><dt>Note</dt><dd>{{ p.statusNote }}</dd></div> }
+            </dl>
+
+            <!-- identity checks, agreement and documents -->
+            @if (p.verification; as v) {
+              <div class="verify">
+                <dl class="pkg-meta">
+                  <div><dt>CID</dt><dd>{{ v.cidNumber || 'Not given' }}</dd></div>
+                  @if (p.type === 'SELLER') {
+                    <div><dt>Trade licence</dt><dd>{{ v.tradeLicenseNumber || '-' }}</dd></div>
+                    <div><dt>TPN</dt><dd>{{ v.tpnNumber || '-' }}</dd></div>
+                  } @else {
+                    <div><dt>Licence valid until</dt>
+                      <dd [class.expired]="v.licenceExpired">{{ v.licenseExpiry ? (v.licenseExpiry | date: 'd MMM y') : '-' }}@if (v.licenceExpired) { (expired) }</dd></div>
+                    <div><dt>Emergency contact</dt><dd>{{ v.emergencyContactName || '-' }}@if (v.emergencyContactPhone) { · <a [href]="'tel:' + v.emergencyContactPhone">{{ v.emergencyContactPhone }}</a> }</dd></div>
+                  }
+                  <div><dt>Agreement</dt>
+                    <dd>@if (v.termsVersion) {
+                        <a [routerLink]="p.type === 'SELLER' ? '/terms/seller' : '/terms/driver'" [queryParams]="{ v: v.termsVersion }" target="_blank">Version {{ v.termsVersion }}</a>,
+                        {{ v.termsAcceptedAt | date: 'd MMM y, h:mm a' }}
+                      } @else { <span class="expired">Not accepted yet</span> }</dd></div>
+                </dl>
+                <div class="docs-row">
+                  @for (d of v.documents; track d.id) {
+                    <a class="doc-link" [href]="documentUrl(d)" target="_blank" rel="noopener">
+                      <i class="fas" [class.fa-file-pdf]="d.contentType === 'application/pdf'" [class.fa-file-image]="d.contentType !== 'application/pdf'"></i>
+                      {{ docLabel(d.kind) }}
+                    </a>
+                  } @empty {
+                    <span class="muted small"><i class="fas fa-triangle-exclamation"></i> No documents sent (application made before documents were required). Ask for them before approving.</span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (p.type === 'SELLER' && p.status === 'APPROVED') {
+              <div class="rate">
+                <label [for]="'rate' + p.id">Commission for this seller</label>
+                <div class="rate-row">
+                  <input class="form-control" type="number" min="0" max="50" step="0.1" [id]="'rate' + p.id" [(ngModel)]="rates[p.id]"
+                         [placeholder]="'Default (' + (savedSettings()?.defaultCommissionPercent ?? 3) + '%)'" />
+                  <span>%</span>
+                  <button type="button" class="btn btn-secondary btn-sm" [disabled]="busy() === key(p)" (click)="saveRate(p)">Save</button>
+                </div>
+                <small class="muted">Now {{ p.effectiveCommissionPercent | number: '1.0-2' }}%. Leave empty to use the default. Applies to new orders.</small>
+              </div>
+            }
+
+            <div class="pkg-actions">
+              @if (p.status === 'PENDING') {
+                <button type="button" class="btn btn-primary" [disabled]="busy() === key(p)" (click)="approve(p)"><i class="fas fa-check"></i> Approve</button>
+                <button type="button" class="btn btn-outline-danger" [disabled]="busy() === key(p)" (click)="refuse(p, 'REJECTED')">Reject</button>
+              } @else if (p.status === 'APPROVED') {
+                <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="busy() === key(p)" (click)="refuse(p, 'SUSPENDED')">Suspend</button>
+              } @else if (p.status === 'SUSPENDED') {
+                <button type="button" class="btn btn-primary btn-sm" [disabled]="busy() === key(p)" (click)="approve(p)">Reinstate</button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+
+  <!-- ================= Payouts ================= -->
+  @if (tab() === 'payouts') {
+    <p class="muted intro">
+      Transfer the money from your bank first, then record it here with the bank's journal number.
+      A payout can never be more than what we owe.
+    </p>
+    @if (balances().length === 0) {
+      <div class="empty-state"><i class="fas fa-building-columns"></i>No approved sellers or riders yet.</div>
+    } @else {
+      <div class="pkg-list">
+        @for (row of balances(); track key(row)) {
+          <article class="pkg">
+            <div class="pkg-top">
+              <h3>
+                <i class="fas" [class.fa-store]="row.partyType === 'SELLER'" [class.fa-motorcycle]="row.partyType === 'RIDER'"></i>
+                {{ row.name }} <small class="muted">· {{ row.partyType === 'SELLER' ? 'Seller' : 'Driver' }}</small>
+              </h3>
+              <span class="pkg-money" [class.zero]="row.balanceOwed <= 0">Owed Nu. {{ row.balanceOwed | number: '1.2-2' }}</span>
+            </div>
+            <dl class="pkg-meta">
+              <div><dt>Bank</dt><dd>{{ row.bankName }}<br /><span class="muted">{{ row.bankAccountName }} · {{ row.bankAccountNumber }}</span></dd></div>
+              <div><dt>Earned</dt><dd>Nu. {{ row.totalEarned | number: '1.2-2' }}</dd></div>
+              <div><dt>Paid out</dt><dd>Nu. {{ row.totalPaidOut | number: '1.2-2' }}</dd></div>
+            </dl>
+
+            @if (payingKey() === key(row)) {
+              <div class="pay">
+                <label>Amount (Nu.)<input class="form-control" type="number" min="0" step="0.01" [(ngModel)]="payAmount" /></label>
+                <label>Bank journal number<input class="form-control" [(ngModel)]="payRef" placeholder="e.g. 123456789" /></label>
+                <div class="pay-actions">
+                  <button type="button" class="btn btn-primary" [disabled]="busy() === key(row)" (click)="pay(row)">Record payout</button>
+                  <button type="button" class="btn btn-secondary" (click)="payingKey.set(null)">Cancel</button>
+                </div>
+              </div>
+            } @else {
+              <div class="pkg-actions">
+                <button type="button" class="btn btn-primary btn-sm" [disabled]="row.balanceOwed <= 0" (click)="startPay(row)">
+                  <i class="fas fa-money-bill-transfer"></i> Pay out
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="startAdjust(row)" title="Take money back for a refund, or add a correction">
+                  <i class="fas fa-scale-balanced"></i> Adjust
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="showHistory(row)">
+                  {{ historyKey() === key(row) ? 'Hide history' : 'History' }}
+                </button>
+              </div>
+            }
+
+            @if (adjustKey() === key(row)) {
+              <div class="pay adjust">
+                <label>Amount (Nu.)<input class="form-control" type="number" step="0.01" [(ngModel)]="adjustAmount" placeholder="-250 or 100" /></label>
+                <label>Order no. <span class="muted">(optional)</span><input class="form-control" type="number" [(ngModel)]="adjustOrder" /></label>
+                <label class="wide">Reason (they see it)<input class="form-control" [(ngModel)]="adjustReason" placeholder="e.g. Refund for damaged item, order 123" /></label>
+                <div class="pay-actions">
+                  <button type="button" class="btn btn-primary" [disabled]="busy() === key(row)" (click)="adjust(row)">Record</button>
+                  <button type="button" class="btn btn-secondary" (click)="adjustKey.set(null)">Cancel</button>
+                </div>
+              </div>
+            }
+
+            @if (historyKey() === key(row)) {
+              <div class="table-wrap history">
+                <table class="table table-sm">
+                  <tbody>
+                    @for (h of history(); track h.id) {
+                      <tr>
+                        <td>{{ h.createdAt | date: 'd MMM y' }}</td>
+                        <td>{{ h.entryType === 'PAYOUT' ? 'Payout' : h.entryType === 'SALE' ? 'Sale #' + h.orderId : h.entryType === 'DELIVERY' ? 'Delivery #' + h.orderId : 'Adjustment' }}</td>
+                        <td class="muted">{{ h.note }}</td>
+                        <td class="text-right" [class.money-in]="h.amount > 0" [class.money-out]="h.amount < 0">
+                          {{ h.amount > 0 ? '+' : '−' }} {{ (h.amount < 0 ? -h.amount : h.amount) | number: '1.2-2' }}
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr><td class="muted">Nothing yet.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </article>
+        }
+      </div>
+    }
+  }
+
+  <!-- ================= Settings ================= -->
+  @if (tab() === 'terms') {
+    <div class="seg filter" role="group" aria-label="Agreement">
+      @for (t of termsTypes; track t.value) {
+        <button type="button" [class.on]="termsType() === t.value" (click)="chooseTerms(t.value)">{{ t.label }}</button>
+      }
+    </div>
+
+    @if (currentTerms(); as cur) {
+      <section class="panel terms-admin">
+        <div class="terms-head">
+          <div>
+            <h2>{{ cur.title }}</h2>
+            <p class="muted">Version {{ cur.version }} · published {{ cur.publishedAt | date: 'd MMM y' }} by {{ cur.publishedBy }}
+              · accepted by {{ cur.acceptedCount }} {{ cur.acceptedCount === 1 ? 'person' : 'people' }}</p>
+          </div>
+          <a class="btn btn-secondary btn-sm" [routerLink]="termsSlug()" target="_blank"><i class="fas fa-up-right-from-square"></i> Public page</a>
+        </div>
+
+        <p class="note-legal"><i class="fas fa-scale-balanced"></i> These agreements are a starting template. Have them checked by a legal adviser
+          in Bhutan before you rely on them. Publishing never changes an old version: people keep the version they accepted on record.</p>
+
+        <label class="field">Title <input class="form-control" [(ngModel)]="termsDraft.title" maxlength="150" /></label>
+        <div class="editor-bar">
+          <span class="muted small">Write <code># Title</code>, <code>## Section</code>, <code>- list item</code>; a blank line starts a new paragraph.</span>
+          <div class="seg">
+            <button type="button" [class.on]="!termsPreview()" (click)="termsPreview.set(false)">Edit</button>
+            <button type="button" [class.on]="termsPreview()" (click)="termsPreview.set(true)">Preview</button>
+          </div>
+        </div>
+        @if (termsPreview()) {
+          <div class="terms-preview"><app-terms-text [body]="termsDraft.body" /></div>
+        } @else {
+          <textarea class="form-control terms-body" rows="20" [(ngModel)]="termsDraft.body" spellcheck="true"></textarea>
+        }
+        <label class="field">What changed (people who must accept again see this)
+          <input class="form-control" [(ngModel)]="termsDraft.changeSummary" maxlength="500" placeholder="e.g. Payouts are now made twice a month" />
+        </label>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" [disabled]="publishing() || !termsChanged()" (click)="publishTerms()">
+            {{ publishing() ? 'Publishing...' : 'Publish as version ' + (cur.version + 1) }}
+          </button>
+          <button type="button" class="btn btn-secondary" [disabled]="!termsChanged()" (click)="chooseTerms(termsType())">Discard changes</button>
+        </div>
+
+        <h3 class="sub">All versions</h3>
+        <div class="table-wrap">
+          <table class="table table-sm">
+            <thead><tr><th>Version</th><th>Published</th><th>What changed</th><th class="text-right">Accepted by</th></tr></thead>
+            <tbody>
+              @for (v of allTerms()[termsType()]; track v.version) {
+                <tr>
+                  <td><a [routerLink]="termsSlug()" [queryParams]="{ v: v.version }" target="_blank">Version {{ v.version }}</a></td>
+                  <td>{{ v.publishedAt | date: 'd MMM y' }}<br /><span class="muted small">{{ v.publishedBy }}</span></td>
+                  <td class="muted">{{ v.changeSummary }}</td>
+                  <td class="text-right">{{ v.acceptedCount }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    } @else {
+      <p class="muted">Loading agreements...</p>
+    }
+  }
+
+  @if (tab() === 'settings') {
+    <form (ngSubmit)="saveSettings()" novalidate>
+      <!-- Commission -->
+      <section class="panel settings">
+        <h2 class="set-title"><i class="fas fa-percent"></i> Commission</h2>
+        <div class="form-grid three">
+          <label>
+            Default commission (%)
+            <input class="form-control" type="number" min="0" max="50" step="0.1" name="rate" [(ngModel)]="settings.defaultCommissionPercent" />
+            <span class="hint">Of the selling price, before GST. Each seller can have their own rate.</span>
+          </label>
+        </div>
+        @let cx = commissionExample();
+        <p class="muted small">A Nu. {{ cx.sale | number: '1.0-0' }} sale: we keep Nu. {{ cx.commission | number: '1.2-2' }}, the seller gets Nu. {{ cx.seller | number: '1.2-2' }}.</p>
+      </section>
+
+      <!-- Delivery rates -->
+      <section class="panel settings">
+        <h2 class="set-title"><i class="fas fa-truck-fast"></i> Delivery prices</h2>
+        <p class="muted">
+          Each package is priced by the size of its biggest product and the road distance from the seller to the customer:
+          <strong>base fee + (km beyond the first {{ settings.includedKm || 0 }} km) × price per km</strong>, rounded up to the next Nu. 5.
+          Riders only see jobs their vehicle can carry.
+        </p>
+        <div class="table-wrap">
+          <table class="table rates">
+            <thead>
+              <tr><th>Size</th><th>Base fee (Nu.)<br /><span class="muted small">first {{ settings.includedKm || 0 }} km</span></th><th>Per km after (Nu.)</th>
+                @for (km of exampleKm; track km) { <th class="text-right">{{ km }} km<br /><span class="muted small">customer / rider</span></th> }
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of settings.rates; track r.size) {
+                <tr>
+                  <td><strong>{{ r.label }}</strong><br /><span class="muted small">{{ r.vehicle }}</span></td>
+                  <td><input class="form-control" type="number" min="0" step="5" [name]="'base' + r.size" [(ngModel)]="r.baseFee" [attr.aria-label]="r.label + ' base fee'" /></td>
+                  <td><input class="form-control" type="number" min="0" step="1" [name]="'km' + r.size" [(ngModel)]="r.perKm" [attr.aria-label]="r.label + ' price per km'" /></td>
+                  @for (km of exampleKm; track km) {
+                    @let e = deliveryExample(r, km);
+                    <td class="text-right ex">Nu. {{ e.fee | number: '1.0-0' }}<br /><span class="muted small">rider {{ e.rider | number: '1.0-0' }}</span></td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="form-grid four">
+          <label>
+            Km in the base fee
+            <input class="form-control" type="number" min="0" max="50" step="0.5" name="included" [(ngModel)]="settings.includedKm" />
+            <span class="hint">Short trips pay only the base fee.</span>
+          </label>
+          <label>
+            Rider's share (%)
+            <input class="form-control" type="number" min="1" max="100" step="1" name="share" [(ngModel)]="settings.riderSharePercent" />
+            <span class="hint">Of each delivery fee. The rest covers our costs.</span>
+          </label>
+          <label>
+            Longest delivery (km)
+            <input class="form-control" type="number" min="1" max="500" step="1" name="max" [(ngModel)]="settings.maxDistanceKm" />
+            <span class="hint">Further addresses cannot order.</span>
+          </label>
+          <label>
+            Distance without a location (km)
+            <input class="form-control" type="number" min="0" max="100" step="0.5" name="unknown" [(ngModel)]="settings.unknownDistanceKm" />
+            <span class="hint">Used when the customer shares no location. Marked "estimated".</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Our own shop's pickup point -->
+      <section class="panel settings">
+        <h2 class="set-title"><i class="fas fa-store"></i> Our shop's pickup point</h2>
+        <p class="muted">Where riders collect our own products. Without it, our deliveries use the estimated distance.</p>
+        <label class="shop-address">
+          Address shown to riders
+          <input class="form-control" name="shopAddress" maxlength="300" [(ngModel)]="settings.shopAddress" placeholder="For example: Norzin Lam, near the clock tower, Thimphu" />
+        </label>
+        <app-map-point [(point)]="shopPoint" emptyText="Not set on the map yet" />
+      </section>
+
+      <div class="form-actions sticky-save">
+        <button type="submit" class="btn btn-primary" [disabled]="savingSettings()">{{ savingSettings() ? 'Saving...' : 'Save settings' }}</button>
+        @if (savedSettings()?.updatedAt) {
+          <span class="muted">Last changed {{ savedSettings()!.updatedAt | date: 'd MMM y, h:mm a' }} by {{ savedSettings()!.updatedBy }}</span>
+        }
+        <span class="muted small">New orders only. Orders already placed keep their prices.</span>
+      </div>
+    </form>
+
+    <!-- Delivery areas -->
+    <section class="panel settings areas">
+      <h2 class="set-title"><i class="fas fa-map-location-dot"></i> Delivery areas</h2>
+      <p class="muted">
+        Customers who do not share their phone's location choose one of these at checkout, and the distance is measured from it.
+        Add the neighbourhoods you deliver to.
+      </p>
+
+      @if (areas().length > 0) {
+        <ul class="area-list">
+          @for (a of areas(); track a.id) {
+            <li [class.off]="!a.active">
+              <div>
+                <strong>{{ a.name }}</strong>, {{ a.town }}
+                @if (!a.active) { <span class="pill pill-mute">Hidden</span> }
+                <br />
+                <a class="small" [href]="mapLink(a.latitude, a.longitude)" target="_blank" rel="noopener">{{ a.latitude }}, {{ a.longitude }}</a>
+              </div>
+              <div class="area-actions">
+                <button type="button" class="btn btn-sm btn-secondary" (click)="editArea(a)">Edit</button>
+                <button type="button" class="btn btn-sm btn-secondary" (click)="toggleArea(a)">{{ a.active ? 'Hide' : 'Show' }}</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeArea(a)" [attr.aria-label]="'Remove ' + a.name"><i class="fas fa-trash-can"></i></button>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty-note">No areas yet. Customers can still share their phone's location.</p>
+      }
+
+      <form class="area-form" (ngSubmit)="saveArea()" novalidate>
+        <h3>{{ editingAreaId() ? 'Change area' : 'Add an area' }}</h3>
+        <div class="form-grid two">
+          <label>Area<input class="form-control" name="areaName" maxlength="80" [(ngModel)]="areaForm.name" placeholder="For example: Babesa" /></label>
+          <label>Town<input class="form-control" name="areaTown" maxlength="80" [(ngModel)]="areaForm.town" placeholder="Thimphu" /></label>
+        </div>
+        <app-map-point [(point)]="areaPoint" emptyText="Set the middle of the area on the map" />
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="savingArea()">{{ editingAreaId() ? 'Save area' : 'Add area' }}</button>
+          @if (editingAreaId()) { <button type="button" class="btn btn-secondary" (click)="cancelArea()">Cancel</button> }
+        </div>
+      </form>
+    </section>
+  }
+</div>

@@ -224,3 +224,28 @@
     aspect-ratio: 4 / 3;
   }
 }
+
+.sold-by {
+  margin: -4px 0 12px;
+  color: var(--muted);
+}
+
+.sold-by i {
+  margin-right: 4px;
+  color: var(--green);
+}
+
+.sold-by strong {
+  color: var(--ink);
+}
+
+@media (max-width: 575px) {
+  .info h1 {
+    margin-bottom: 10px;
+    font-size: 1.45rem;
+  }
+
+  .price {
+    font-size: 1.7rem;
+  }
+}

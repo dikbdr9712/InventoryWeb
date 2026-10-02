@@ -35,37 +35,29 @@
 
           <div class="field">
             <label for="billingAddress">Delivery address</label>
-            <textarea id="billingAddress" rows="3" class="form-control" placeholder="House, street, town"
+            <textarea id="billingAddress" rows="3" class="form-control"
+                      placeholder="House, building, landmark (for example: blue gate opposite the school)"
                       [class.is-invalid]="submitted() && errors().address" [(ngModel)]="billing.address"
                       name="billingAddress" autocomplete="street-address"></textarea>
             @if (submitted() && errors().address) {
               <p class="err">{{ errors().address }}</p>
             }
           </div>
+
+          <app-delivery-location [(point)]="point" />
         </section>
       }
 
       <section class="step panel">
-        <h2><span class="num">{{ paymentStepNumber }}</span> Payment method</h2>
+        <h2><span class="num">{{ paymentStepNumber }}</span> Pay by bank transfer</h2>
 
-        <div class="methods" role="radiogroup" aria-label="Payment method">
-          <button type="button" role="radio" class="method" [class.on]="paymentMethod() === 'cod'"
-                  [attr.aria-checked]="paymentMethod() === 'cod'" (click)="paymentMethod.set('cod')">
-            <i class="fas fa-hand-holding-dollar"></i>
-            <span>
-              <strong>Cash on delivery</strong>
-              <small>Pay when your order arrives.</small>
-            </span>
-          </button>
-          <button type="button" role="radio" class="method" [class.on]="paymentMethod() === 'bank'"
-                  [attr.aria-checked]="paymentMethod() === 'bank'" (click)="paymentMethod.set('bank')">
-            <i class="fas fa-building-columns"></i>
-            <span>
-              <strong>Bank transfer</strong>
-              <small>Pay now with mobile banking.</small>
-            </span>
-          </button>
-        </div>
+        <p class="prepay">
+          <i class="fas fa-shield-halved"></i>
+          <span>
+            Pay now with mobile banking. We check your transfer, then your order is packed and delivered.
+            Our riders never carry cash.
+          </span>
+        </p>
 
         @if (paymentMethod() === 'bank') {
           <div class="bank">
@@ -137,7 +129,7 @@
             <li>
               <img [src]="buyNowImage(it)" [alt]="it.itemName" />
               <span class="l-name">{{ it.itemName }}<small>Nu. {{ price() | number: '1.2-2' }} each</small></span>
-              <span class="l-total">Nu. {{ amount | number: '1.2-2' }}</span>
+              <span class="l-total">Nu. {{ price() * quantity() | number: '1.2-2' }}</span>
             </li>
           </ul>
 
@@ -161,13 +153,32 @@
         }
       }
 
+      @if (mode === 'buyNow' && quote(); as q) {
+        @for (p of q.packages; track $index) {
+          <div class="fee">
+            <span>Delivery <small>{{ p.sizeLabel }} · {{ p.estimated ? 'about ' : '' }}{{ p.distanceKm | number: '1.0-1' }} km</small></span>
+            <span>Nu. {{ p.fee | number: '1.2-2' }}</span>
+          </div>
+        }
+        @if (q.problem) {
+          <p class="fee-problem" role="alert"><i class="fas fa-triangle-exclamation"></i> {{ q.problem }}</p>
+        } @else if (!q.located) {
+          <p class="fee-note"><i class="fas fa-circle-info"></i> The distance is estimated. Add your delivery location for the exact price.</p>
+        }
+      } @else if (deliveryFee() > 0) {
+        <div class="fee">
+          <span>Delivery</span>
+          <span>Nu. {{ deliveryFee() | number: '1.2-2' }}</span>
+        </div>
+      }
+
       <div class="total">
         <span>Total to pay</span>
         <strong>Nu. {{ amount | number: '1.2-2' }}</strong>
       </div>
 
       <button type="button" class="btn btn-primary btn-lg place" (click)="submit()"
-              [disabled]="submitting() || (mode === 'buyNow' && (!item() || stock() <= 0))">
+              [disabled]="submitting() || (mode === 'buyNow' && (!item() || stock() <= 0 || !!quote()?.problem))">
         @if (submitting()) {
           <span class="spinner-border spinner-border-sm" role="status"></span> Placing your order...
         } @else {
@@ -176,11 +187,7 @@
       </button>
 
       <p class="after">
-        @if (paymentMethod() === 'bank') {
-          We check your transfer before we ship your order.
-        } @else {
-          You pay in cash when your order arrives.
-        }
+        We check your transfer before we ship your order.
       </p>
 
       <a class="back" [routerLink]="mode === 'order' ? '/cart' : '/products'">

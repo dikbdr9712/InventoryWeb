@@ -113,7 +113,9 @@ export class ProductDetail implements OnInit {
       id: item.itemId,
       name: item.itemName,
       price: Number(item.sellingPrice) || 0,
-      image: this.image(item)
+      image: this.image(item),
+      sellerId: item.sellerId ?? null,
+      sellerName: item.sellerName
     }, qty);
 
     const inCart = this.cart.items().find(i => i.id === item.itemId)?.quantity ?? qty;

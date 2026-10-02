@@ -55,6 +55,56 @@
       }
     </section>
 
+    <!-- One package per seller: where each one is, who brings it, and the code for the rider -->
+    @if (packages().length > 0 && !cancelled()) {
+      <section class="parcels">
+        <h2>
+          {{ packages().length === 1 ? 'Your delivery' : 'Your order comes in ' + packages().length + ' packages' }}
+        </h2>
+        @for (p of packages(); track p.id) {
+          <article class="parcel panel">
+            <div class="parcel-top">
+              <div>
+                <strong>From {{ p.sellerName }}</strong>
+                <span class="muted">{{ p.itemCount }} item{{ p.itemCount === 1 ? '' : 's' }}</span>
+              </div>
+              <span [class]="'pill ' + packagePill(p.status)">{{ packageLabel(p.status, true) }}</span>
+            </div>
+
+            @if (p.status !== 'CANCELLED' && p.status !== 'PENDING_PAYMENT') {
+              <ol class="mini-steps" [attr.aria-label]="'Progress: ' + packageLabel(p.status, true)">
+                @for (step of steps; track step; let i = $index) {
+                  <li [class.on]="packageStage(p.status) >= i + 1">{{ step }}</li>
+                }
+              </ol>
+            }
+
+            @if (p.riderName && p.status !== 'DELIVERED') {
+              <p class="rider">
+                <i class="fas fa-motorcycle"></i>
+                <span><strong>{{ p.riderName }}</strong> is bringing it · {{ p.riderVehicle }}</span>
+                @if (p.riderPhone) { <a class="btn btn-sm btn-secondary" [href]="'tel:' + p.riderPhone"><i class="fas fa-phone"></i> Call</a> }
+              </p>
+            }
+
+            @if (p.deliveryCode && p.status !== 'DELIVERED') {
+              <div class="code">
+                <div>
+                  <strong>Delivery code</strong>
+                  <span>Give this code to the rider only when you have the package in your hands.</span>
+                </div>
+                <span class="digits" aria-label="Delivery code">{{ p.deliveryCode }}</span>
+              </div>
+            }
+
+            @if (p.status === 'DELIVERED' && p.deliveredAt) {
+              <p class="muted done"><i class="fas fa-circle-check"></i> Delivered {{ p.deliveredAt | date: 'd MMM, h:mm a' }}</p>
+            }
+          </article>
+        }
+      </section>
+    }
+
     <div class="layout">
       <section class="items panel">
         <h2>Items</h2>
@@ -78,6 +128,10 @@
         <section class="panel box">
           <h2>Summary</h2>
           <dl>
+            @if (order.deliveryFee) {
+              <div><dt>Items</dt><dd>Nu. {{ itemsTotal() | number: '1.2-2' }}</dd></div>
+              <div><dt>Delivery</dt><dd>Nu. {{ order.deliveryFee | number: '1.2-2' }}</dd></div>
+            }
             <div class="grand"><dt>Total</dt><dd>Nu. {{ order.totalAmount | number: '1.2-2' }}</dd></div>
             @if (order.paymentStatus) {
               <div>

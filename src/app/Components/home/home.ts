@@ -15,8 +15,11 @@ export class Home implements OnInit, OnDestroy {
 
   slides = [1, 2, 3, 4, 5].map(n => `Images/cors-${n}.jpg`);
   current = signal(0);
+  // Only the first photo is downloaded with the page; each other photo is fetched just before it is shown
+  ready = signal<boolean[]>(this.slides.map((_, i) => i === 0));
   featured = signal<Item[]>([]);
   private timer?: ReturnType<typeof setInterval>;
+  private warmup?: ReturnType<typeof setTimeout>;
 
   values = [
     {
@@ -42,6 +45,8 @@ export class Home implements OnInit, OnDestroy {
     if (!reduceMotion) {
       this.timer = setInterval(() => this.next(), 6000);
     }
+    // once the page has settled, get the second photo ready so the first slide change is smooth
+    this.warmup = setTimeout(() => this.prepare(1), 2500);
 
     // A few real products from the shop
     this.itemService.getAll().subscribe({
@@ -52,11 +57,20 @@ export class Home implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     clearInterval(this.timer);
+    clearTimeout(this.warmup);
   }
 
-  next() { this.current.update(i => (i + 1) % this.slides.length); }
-  prev() { this.current.update(i => (i - 1 + this.slides.length) % this.slides.length); }
-  goTo(i: number) { this.current.set(i); }
+  next() { this.goTo((this.current() + 1) % this.slides.length); }
+  prev() { this.goTo((this.current() - 1 + this.slides.length) % this.slides.length); }
+  goTo(i: number) {
+    this.prepare(i);
+    this.current.set(i);
+    this.prepare((i + 1) % this.slides.length);
+  }
+
+  private prepare(i: number) {
+    if (!this.ready()[i]) this.ready.update(r => r.map((on, j) => on || j === i));
+  }
 
   image(item: Item) {
     return this.itemService.imageFor(item);
