@@ -1,4 +1,5 @@
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
+import { NotificationBell } from '../notification-bell/notification-bell';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs';
@@ -11,7 +12,7 @@ type MenuName = 'account' | null;
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, NotificationBell],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css'
 })

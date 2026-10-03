@@ -212,3 +212,17 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* label with a link on the same line ("Password ... Forgot password?") */
+.auth .label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auth .label-row .forgot {
+  margin-bottom: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}

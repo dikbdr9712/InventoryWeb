@@ -63,6 +63,20 @@ export class AuthService {
       );
   }
 
+  // ---------- Forgot password ----------
+  // The answer is the same whether or not the email has an account
+  forgotPassword(email: string) {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/api/auth/forgot-password`, { email });
+  }
+
+  checkResetLink(token: string) {
+    return this.http.get<{ valid: boolean }>(`${environment.apiUrl}/api/auth/reset-password/check`, { params: { token } });
+  }
+
+  resetPassword(token: string, newPassword: string) {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/api/auth/reset-password`, { token, newPassword });
+  }
+
   signup(data: SignupRequest) {
     return this.http.post(`${environment.apiUrl}/api/auth/signup`, data, { responseType: 'text' });
   }

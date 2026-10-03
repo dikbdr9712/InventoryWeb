@@ -16,6 +16,11 @@
     </nav>
 
     <div class="nb-actions">
+      <!-- What happened to my orders, jobs and money -->
+      @if (auth.isLoggedIn()) {
+        <app-notification-bell />
+      }
+
       <!-- Cart -->
       <a routerLink="/cart" class="nb-cart" (click)="closeAll()" [attr.aria-label]="'Cart, ' + cart.count() + ' items'">
         <i class="fas fa-bag-shopping"></i>

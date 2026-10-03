@@ -127,3 +127,19 @@
     border-radius: var(--radius) var(--radius) 0 0;
   }
 }
+
+.profit {
+  margin-top: 12px;
+}
+
+.profit .strip-main small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.profit-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}

@@ -17,6 +17,8 @@ export const routes: Routes = [
   { path: 'contact', loadComponent: () => import('./Components/contact/contact').then(m => m.Contact) },
   { path: 'login', loadComponent: () => import('./Components/login/login').then(m => m.Login) },
   { path: 'signup', loadComponent: () => import('./Components/signup/signup').then(m => m.Signup) },
+  { path: 'forgot-password', loadComponent: () => import('./Components/forgot-password/forgot-password').then(m => m.ForgotPassword) },
+  { path: 'reset-password', loadComponent: () => import('./Components/reset-password/reset-password').then(m => m.ResetPassword) },
   { path: 'sell', loadComponent: () => import('./Components/partner-join/partner-join').then(m => m.PartnerJoin), data: { kind: 'seller' } },
   { path: 'deliver', loadComponent: () => import('./Components/partner-join/partner-join').then(m => m.PartnerJoin), data: { kind: 'rider' } },
   { path: 'terms', loadComponent: () => import('./Components/terms-page/terms-page').then(m => m.TermsPage) },          // Terms of Use and Privacy
@@ -32,6 +34,9 @@ export const routes: Routes = [
   { path: 'cart', loadComponent: () => import('./Components/cart/cart').then(m => m.Cart) },
   { path: 'payment', loadComponent: () => import('./Components/payment/payment').then(m => m.Payment), canActivate: [authGuard] },
   { path: 'order-success', loadComponent: () => import('./Components/order-success/order-success').then(m => m.OrderSuccess), canActivate: [authGuard] },
+  // online payment: the test gateway's page, and where every gateway sends the customer back
+  { path: 'pay/test', loadComponent: () => import('./Components/pay-sandbox/pay-sandbox').then(m => m.PaySandbox), canActivate: [authGuard] },
+  { path: 'payment/result', loadComponent: () => import('./Components/payment-result/payment-result').then(m => m.PaymentResult), canActivate: [authGuard] },
 
   // ---------- Customer account ----------
   { path: 'profile', loadComponent: () => import('./Components/profile/profile').then(m => m.Profile), canActivate: [authGuard] },
@@ -40,6 +45,7 @@ export const routes: Routes = [
 
   // ---------- Staff ----------
   { path: 'restock', loadComponent: () => import('./Components/restock/restock').then(m => m.Restock), canActivate: [permissionGuard('stock.restock')] },
+  { path: 'admin/stock', loadComponent: () => import('./Components/stock-batches/stock-batches').then(m => m.StockBatches), canActivate: [permissionGuard('stock.restock')] },
   { path: 'pos', loadComponent: () => import('./Components/pos/pos').then(m => m.Pos), canActivate: [permissionGuard('pos.use')] },
   { path: 'pos-history', loadComponent: () => import('./Components/pos-history/pos-history').then(m => m.PosHistory), canActivate: [permissionGuard('pos.use')] },
   { path: 'admin/orders', loadComponent: () => import('./Components/order-list/order-list').then(m => m.OrderList), canActivate: [permissionGuard('orders.view')] },

@@ -3,6 +3,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ReportService } from '../../services/report';
+import { ProfitReport, StockService } from '../../services/stock';
 import { SalesRow, SalesSummary } from '../../models/models';
 
 @Component({
@@ -13,6 +14,10 @@ import { SalesRow, SalesSummary } from '../../models/models';
 })
 export class SalesDashboard implements OnInit {
   private reportService = inject(ReportService);
+  private stock = inject(StockService);
+
+  // profit on our own products: what each sold unit really cost (batch by batch)
+  profit = signal<ProfitReport | null>(null);
 
   periods = [
     { value: 'today', label: 'Today' },
@@ -32,6 +37,23 @@ export class SalesDashboard implements OnInit {
 
   ngOnInit() {
     this.load('today');
+  }
+
+  // the period as two days (yyyy-mm-dd); a week starts on Monday
+  private range(period: string, start: string, end: string): [string, string] {
+    const day = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const today = new Date();
+    switch (period) {
+      case 'thisWeek': {
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+        return [day(monday), day(today)];
+      }
+      case 'thisMonth': return [day(new Date(today.getFullYear(), today.getMonth(), 1)), day(today)];
+      case 'thisYear': return [day(new Date(today.getFullYear(), 0, 1)), day(today)];
+      case 'custom': return [start, end];
+      default: return [day(today), day(today)];
+    }
   }
 
   periodLabel() {
@@ -66,6 +88,9 @@ export class SalesDashboard implements OnInit {
 
   private load(period: string, start = '', end = '') {
     this.loading.set(true);
+    const [from, to] = this.range(period, start, end);
+    this.profit.set(null);
+    this.stock.profit(from, to).subscribe({ next: p => this.profit.set(p), error: () => this.profit.set(null) });
 
     this.reportService.getSales(period, start, end).subscribe({
       next: rows => {

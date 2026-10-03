@@ -1,0 +1,160 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Stock</h1>
+      <p>Every delivery is its own batch, with its own cost and expiry date. Sales take the batch that expires first.</p>
+    </div>
+    @if (canChange) {
+      <a routerLink="/restock" class="btn btn-primary"><i class="fas fa-boxes-stacked"></i> Restock</a>
+    }
+  </div>
+
+  @if (summary(); as s) {
+    <div class="stats">
+      <div class="stat accent">
+        <span>Stock value at cost</span>
+        <strong>Nu. {{ s.stockValue | number: '1.0-0' }}</strong>
+        <small>{{ s.units | number }} units in {{ s.batchesOnShelf }} batches</small>
+      </div>
+      <button type="button" class="stat stat-btn" [class.warn]="s.expiringBatches > 0" (click)="show('expiring')">
+        <span>Expiring within {{ s.expiringWithinDays }} days</span>
+        <strong>{{ s.expiringBatches }} {{ s.expiringBatches === 1 ? 'batch' : 'batches' }}</strong>
+        <small>{{ s.expiringUnits | number }} units, Nu. {{ s.expiringValue | number: '1.0-0' }} at cost</small>
+      </button>
+      <button type="button" class="stat stat-btn" (click)="show('expired')">
+        <span>Expired or written off this month</span>
+        <strong>Nu. {{ s.lostThisMonthValue | number: '1.0-0' }}</strong>
+        <small>{{ s.lostThisMonthUnits | number }} units</small>
+      </button>
+    </div>
+  }
+
+  <div class="bar">
+    <div class="seg" role="tablist" aria-label="Which batches">
+      <button type="button" role="tab" [class.on]="view() === 'shelf'" (click)="show('shelf')">On the shelf</button>
+      <button type="button" role="tab" [class.on]="view() === 'expiring'" (click)="show('expiring')">Expiring soon</button>
+      <button type="button" role="tab" [class.on]="view() === 'expired'" (click)="show('expired')">Expired</button>
+    </div>
+    @if (view() === 'expiring') {
+      <select class="custom-select days" aria-label="Within how many days" [ngModel]="days()" (ngModelChange)="setDays(+$event)">
+        <option [ngValue]="30">within 30 days</option>
+        <option [ngValue]="60">within 60 days</option>
+        <option [ngValue]="90">within 90 days</option>
+        <option [ngValue]="180">within 6 months</option>
+      </select>
+    }
+    <div class="search">
+      <i class="fas fa-magnifying-glass"></i>
+      <input type="search" class="form-control" placeholder="Product, code, batch or supplier" aria-label="Search batches"
+             [ngModel]="search()" (ngModelChange)="search.set($event)" />
+    </div>
+  </div>
+
+  @if (view() === 'expired') {
+    <p class="note"><i class="fas fa-circle-info"></i> These were taken off sale automatically on their expiry date. Take them off the
+      shelf and dispose of them safely (or return them to the supplier).</p>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  } @else if (loading()) {
+    <p class="muted">Loading batches...</p>
+  } @else {
+    <ul class="batches">
+      @for (b of shown(); track b.id) {
+        <li class="batch panel" [class.gone]="b.status !== 'ACTIVE'">
+          <div class="b-head">
+            <div class="b-name">
+              <strong>{{ b.itemName }}</strong>
+              <span class="muted small">{{ b.sku }}</span>
+            </div>
+            <span [class]="'pill ' + expiryPill(b)">
+              {{ expiryText(b) }}@if (b.expiryDate) { · {{ b.expiryDate | date: 'd MMM y' }} }
+            </span>
+          </div>
+
+          <div class="b-figs">
+            <div><span class="lbl">Batch</span>{{ b.batchNo || '—' }}</div>
+            <div><span class="lbl">{{ b.status === 'EXPIRED' ? 'Expired' : 'Left' }}</span><span>{{ b.quantityLeft }} <span class="muted">/ {{ b.quantityReceived }}</span></span></div>
+            <div><span class="lbl">Cost of one</span>Nu. {{ b.unitCost | number: '1.2-2' }}</div>
+            <div><span class="lbl">Value</span>Nu. {{ b.value | number: '1.2-2' }}</div>
+            <div class="b-from"><span class="lbl">From</span>{{ sourceLabel(b) }}@if (b.supplier) { · {{ b.supplier }} } · {{ b.receivedAt | date: 'd MMM y' }}</div>
+          </div>
+
+          @if (canChange && b.status === 'ACTIVE') {
+            <div class="b-actions">
+              <button type="button" class="btn btn-sm btn-secondary" (click)="open(b, 'edit')" [class.active]="isOpen(b, 'edit')">
+                <i class="fas fa-pen"></i> Batch / date
+              </button>
+              @if (b.quantityLeft > 0) {
+                <button type="button" class="btn btn-sm btn-secondary" (click)="open(b, 'writeoff')" [class.active]="isOpen(b, 'writeoff')">
+                  <i class="fas fa-trash-can"></i> Write off
+                </button>
+              }
+              <button type="button" class="btn btn-sm btn-secondary" (click)="open(b, 'count')" [class.active]="isOpen(b, 'count')">
+                <i class="fas fa-list-ol"></i> Count this product
+              </button>
+            </div>
+          }
+
+          @if (isOpen(b, 'edit')) {
+            <form class="b-form" (ngSubmit)="saveDetails(b)">
+              <label>Batch / lot number<input class="form-control" name="batchNo" maxlength="60" [(ngModel)]="form.batchNo" /></label>
+              <label>Expiry date<input class="form-control" type="date" name="expiryDate" [(ngModel)]="form.expiryDate" /></label>
+              <p class="small muted full">A date that has already passed takes the batch off sale at once.</p>
+              <div class="b-form-actions">
+                <button type="submit" class="btn btn-primary btn-sm" [disabled]="busy()">Save</button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="panel.set(null)">Cancel</button>
+              </div>
+            </form>
+          }
+
+          @if (isOpen(b, 'writeoff')) {
+            <form class="b-form" (ngSubmit)="writeOff(b)">
+              <label>How many<input class="form-control" type="number" min="1" [max]="b.quantityLeft" name="qty" [(ngModel)]="form.quantity" /></label>
+              <label>Why
+                <select class="custom-select" name="reason" [(ngModel)]="form.reason">
+                  @for (r of reasons; track r) { <option [value]="r">{{ r }}</option> }
+                  <option value="Other">Other...</option>
+                </select>
+              </label>
+              @if (form.reason === 'Other') {
+                <label class="full">Reason<input class="form-control" name="other" maxlength="200" [(ngModel)]="form.otherReason" /></label>
+              }
+              <p class="small muted full">Recorded with its cost (Nu. {{ b.unitCost | number: '1.2-2' }} each) and never deleted.</p>
+              <div class="b-form-actions">
+                <button type="submit" class="btn btn-danger btn-sm" [disabled]="busy()">Write off</button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="panel.set(null)">Cancel</button>
+              </div>
+            </form>
+          }
+
+          @if (isOpen(b, 'count')) {
+            <form class="b-form" (ngSubmit)="count(b)">
+              <label>{{ b.itemName }} on the shelf now<input class="form-control" type="number" min="0" name="count" [(ngModel)]="form.quantity" /></label>
+              <label>Note <span class="muted">(optional)</span><input class="form-control" name="note" maxlength="120" [(ngModel)]="form.note" placeholder="Monthly count" /></label>
+              <p class="small muted full">More than the system has = a new batch at the cost price. Fewer = taken from the batch that expires first.</p>
+              <div class="b-form-actions">
+                <button type="submit" class="btn btn-primary btn-sm" [disabled]="busy()">Save count</button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="panel.set(null)">Cancel</button>
+              </div>
+            </form>
+          }
+        </li>
+      } @empty {
+        <li class="empty-state">
+          <i class="fas fa-boxes-stacked"></i>
+          @if (search()) {
+            Nothing matches "{{ search() }}".
+          } @else if (view() === 'expiring') {
+            Nothing expires within {{ days() }} days.
+          } @else if (view() === 'expired') {
+            No expired batches.
+          } @else {
+            No stock yet. Add it with Restock.
+          }
+        </li>
+      }
+    </ul>
+  }
+</div>

@@ -169,6 +169,58 @@
           </div>
         </div>
 
+        <!-- The batch: kept apart from older stock, sold first-to-expire first -->
+        <div class="two">
+          <div class="field">
+            <label for="batchNo">Batch / lot number <span class="opt">(optional)</span></label>
+            <input id="batchNo" name="batchNo" type="text" maxlength="60" class="form-control" placeholder="As printed on the pack"
+                   [(ngModel)]="purchase.batchNo" />
+          </div>
+          <div class="field">
+            <label for="expiryDate">Expiry date <span class="opt">(optional)</span></label>
+            <input id="expiryDate" name="expiryDate" type="date" class="form-control" [min]="today"
+                   [class.is-invalid]="submitted() && errors().expiry" [(ngModel)]="purchase.expiryDate" />
+            @if (submitted() && errors().expiry) {
+              <p class="err">{{ errors().expiry }}</p>
+            } @else {
+              <p class="hint">Medicines and food: the system sells the batch that expires first and takes it off sale on that date.</p>
+            }
+          </div>
+        </div>
+
+        @if (margin(); as m) {
+          <div class="margin" [class.bad]="m.loss" [class.warn]="!m.loss && m.dearer">
+            <p>
+              <strong>Selling price Nu. {{ m.sell | number: '1.2-2' }}</strong>:
+              @if (m.loss) {
+                each sale would <strong>lose Nu. {{ m.cost - m.sell | number: '1.2-2' }}</strong>.
+              } @else {
+                you keep {{ m.margin }}% of it with this cost.
+              }
+              @if (m.lastCost != null && (m.dearer || m.cheaper)) {
+                <br />Last time one cost Nu. {{ m.lastCost | number: '1.2-2' }} ({{ m.lastMargin }}% kept).
+                This delivery is {{ m.dearer ? 'dearer' : 'cheaper' }}.
+              }
+            </p>
+            <p class="small">The older stock keeps its own cost: profit is worked out batch by batch.</p>
+            <label class="check">
+              <input type="checkbox" name="changePrice" [ngModel]="purchase.changePrice" (ngModelChange)="toggleChangePrice($event)" />
+              <span>Change the selling price from now on
+                @if (m.suggested) { (Nu. {{ m.suggested }} keeps the old margin) }</span>
+            </label>
+            @if (purchase.changePrice) {
+              <div class="field new-price">
+                <label for="newSellingPrice">New selling price (Nu.)</label>
+                <input id="newSellingPrice" name="newSellingPrice" type="number" min="0" step="1" class="form-control"
+                       [class.is-invalid]="submitted() && errors().newPrice" [(ngModel)]="purchase.newSellingPrice" />
+                @if (submitted() && errors().newPrice) {
+                  <p class="err">{{ errors().newPrice }}</p>
+                }
+              </div>
+            }
+          </div>
+        }
+
         <div class="field">
           <label for="supplier">Supplier</label>
           <input id="supplier" name="supplier" type="text" class="form-control" placeholder="e.g. Tech Imports Co."
@@ -199,6 +251,12 @@
           <dt>Quantity</dt>
           <dd>{{ quantityValue || 'None' }}</dd>
         </div>
+        @if (purchase.batchNo.trim() || purchase.expiryDate) {
+          <div>
+            <dt>Batch</dt>
+            <dd>{{ purchase.batchNo.trim() || 'No number' }}@if (purchase.expiryDate) { · expires {{ purchase.expiryDate }} }</dd>
+          </div>
+        }
         <div>
           <dt>Cost of one</dt>
           <dd>

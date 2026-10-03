@@ -11,6 +11,7 @@ import { ItemService } from '../../services/item';
 import { OrderService } from '../../services/order';
 import { PaymentService } from '../../services/payment';
 import { DeliveryService } from '../../services/delivery';
+import { OnlinePaymentsService, PaymentOption } from '../../services/online-payments';
 import { DeliveryLocation } from '../delivery-location/delivery-location';
 import { ToastService } from '../../services/toast';
 import { DeliveryPoint, DeliveryQuote, DirectOrderRequest, Item, OrderItem } from '../../models/models';
@@ -34,6 +35,7 @@ export class Payment implements OnInit {
   private orderService = inject(OrderService);
   private paymentService = inject(PaymentService);
   private delivery = inject(DeliveryService);
+  private onlinePayments = inject(OnlinePaymentsService);
   private toasts = inject(ToastService);
 
   mode: 'order' | 'buyNow' = 'order';
@@ -56,7 +58,10 @@ export class Payment implements OnInit {
 
   // Both
   // Online orders are paid before delivery, so bank transfer is the only way (the server refuses anything else)
-  paymentMethod = signal<'bank'>('bank');
+  // Online (a payment gateway, confirmed at once) when the shop offers it; bank transfer is always possible
+  paymentMethod = signal<'bank' | 'online'>('bank');
+  onlineOptions = signal<PaymentOption[]>([]);
+  provider = signal('');
   deliveryFee = signal(0); // what the customer pays for delivery (cart orders: from the order; buy now: priced by the server)
 
   // Buy now: where to deliver, and the server's price for it (size of the product + distance from the seller)
@@ -91,6 +96,17 @@ export class Payment implements OnInit {
   }
 
   ngOnInit() {
+    this.onlinePayments.options().subscribe({
+      next: options => {
+        this.onlineOptions.set(options);
+        if (options.length > 0) {
+          this.provider.set(options[0].code);
+          this.paymentMethod.set('online'); // the faster way first
+        }
+      },
+      error: () => this.onlineOptions.set([])
+    });
+
     const params = this.route.snapshot.queryParamMap;
     const orderId = Number(params.get('orderId'));
     const itemId = Number(params.get('itemId'));
@@ -198,10 +214,32 @@ export class Payment implements OnInit {
     const journal = this.journalNumber.trim();
 
     if (this.mode === 'order') {
-      this.payExistingOrder(method, journal);
+      if (method === 'online') this.payOnline(this.orderId);
+      else this.payExistingOrder(method, journal);
     } else {
       this.placeBuyNowOrder(method, journal);
     }
+  }
+
+  chooseOnline(code: string) {
+    this.provider.set(code);
+    this.paymentMethod.set('online');
+  }
+
+  // Off to the payment gateway (the test page while testing). The result page checks how it went.
+  private payOnline(orderId: number) {
+    this.submitting.set(true);
+    this.onlinePayments.start(orderId, this.provider()).subscribe({
+      next: started => this.onlinePayments.goTo(started.redirectUrl, path => this.router.navigateByUrl(path)),
+      error: (err: HttpErrorResponse) => {
+        this.submitting.set(false);
+        this.toasts.error(err.status === 0 ? 'Could not reach the server. Is it running?' : errorText(err));
+        if (this.mode === 'buyNow') {
+          // the order exists already: carry on from it, so a second order is never made
+          this.router.navigate(['/payment'], { queryParams: { orderId } });
+        }
+      }
+    });
   }
 
   // Record the payment, then set the order to Pending
@@ -267,6 +305,10 @@ export class Payment implements OnInit {
 
     this.orderService.create(order).subscribe({
       next: res => {
+        if (method === 'online') {
+          this.payOnline(res.orderId);
+          return;
+        }
         this.paymentService.create({
           orderId: res.orderId,
           amount: total,

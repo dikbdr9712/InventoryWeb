@@ -324,3 +324,48 @@
     flex-wrap: wrap;
   }
 }
+
+/* is the selling price still right for this cost? */
+.margin {
+  margin: 4px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #b9dccd;
+  border-radius: 10px;
+  background: var(--green-soft);
+  color: var(--green-deep);
+}
+
+.margin.warn {
+  border-color: #f1d98f;
+  background: var(--saffron-soft);
+  color: #5c3f00;
+}
+
+.margin.bad {
+  border-color: #f0c2bd;
+  background: var(--red-soft);
+  color: #7a1a12;
+}
+
+.margin p {
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.margin .small {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.margin .check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+
+.margin .new-price {
+  max-width: 240px;
+  margin: 10px 0 0;
+}

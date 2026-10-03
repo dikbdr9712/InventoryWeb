@@ -1,4 +1,6 @@
+// ng serve: proxy.conf.json sends /api and /uploads to Spring Boot on port 8080, so the paths stay relative
+// here too (the same as on the live site).
 export const environment = {
-  apiUrl: '',                          // '' = same origin, /api/... goes through the proxy
-  imageBase: 'http://localhost:8080'   // uploaded product images are still served by Spring Boot
+  apiUrl: '',
+  imageBase: ''
 };

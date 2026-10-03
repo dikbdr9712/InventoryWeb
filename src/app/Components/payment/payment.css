@@ -434,3 +434,60 @@
   color: var(--red);
   font-weight: 600;
 }
+
+/* how to pay: online (instant) or bank transfer */
+.methods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.method {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.method:hover {
+  border-color: #9fcdb9;
+}
+
+.method.on {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.method > i {
+  margin-top: 3px;
+  color: var(--green);
+  font-size: 1.15rem;
+}
+
+.method span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.method small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.online-note {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--blue-soft);
+  color: var(--blue);
+}

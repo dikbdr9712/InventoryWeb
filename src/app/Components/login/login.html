@@ -14,7 +14,10 @@
     </div>
 
     <div class="auth-field">
-      <label for="password">Password</label>
+      <div class="label-row">
+        <label for="password">Password</label>
+        <a routerLink="/forgot-password" [queryParams]="email.trim() ? { email: email.trim() } : {}" class="forgot">Forgot password?</a>
+      </div>
       <div class="pw">
         <input id="password" name="password" class="form-control" autocomplete="current-password"
                [type]="showPassword() ? 'text' : 'password'"

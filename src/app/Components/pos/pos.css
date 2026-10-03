@@ -2493,3 +2493,53 @@ kbd {
     white-space: nowrap;
   }
 }
+
+/* Phones: "Current sale" at the top as well, full width and green once something is in it */
+.sale-top {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .sale-top {
+    display: inline-flex;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    gap: 8px;
+    order: -1;
+    min-height: 46px;
+    font-size: 1rem;
+  }
+
+  .sale-top strong {
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .sale-top.has-items {
+    border-color: var(--green);
+    background: var(--green);
+    color: #fff;
+  }
+
+  .sale-top.has-items:hover {
+    color: #fff;
+  }
+
+  .sale-top-count {
+    min-width: 24px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: var(--wash);
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 22px;
+    text-align: center;
+  }
+
+  .sale-top.has-items .sale-top-count {
+    background: #fff;
+    color: var(--green-deep);
+  }
+}
+

@@ -21,6 +21,8 @@ interface PickedItem {
   itemName: string;
   image?: string;
   stock?: number | null;
+  sellingPrice?: number | null;
+  costPrice?: number | null;   // the last cost (only for people who may see costs)
 }
 
 // Record stock coming in from a supplier.
@@ -63,8 +65,45 @@ export class Restock implements OnInit {
     quantity: null as number | null,
     unitPrice: null as number | null,
     supplier: '',
-    notes: ''
+    notes: '',
+    batchNo: '',
+    expiryDate: '',                       // yyyy-mm-dd, optional
+    changePrice: false,
+    newSellingPrice: null as number | null
   };
+  readonly today = new Date().toISOString().slice(0, 10);
+
+  // ---------- Margin: is the selling price still right for what this delivery cost? ----------
+  margin() {
+    const item = this.selected();
+    const cost = Number(this.purchase.unitPrice);
+    const sell = Number(item?.sellingPrice);
+    if (!item || this.isNewItem() || !(cost > 0) || !(sell > 0)) return null;
+    const pct = (s: number, c: number) => Math.round(((s - c) / s) * 1000) / 10;
+    const lastCost = Number(item.costPrice) || null;
+    const lastMargin = lastCost ? pct(sell, lastCost) : null;
+    // the price that keeps the margin we had with the last cost (whole Nu.)
+    const keepMargin = lastMargin != null && lastMargin < 100 ? Math.ceil(cost / (1 - lastMargin / 100)) : null;
+    return {
+      sell,
+      cost,
+      margin: pct(sell, cost),
+      lastCost,
+      lastMargin,
+      dearer: lastCost != null && cost > lastCost,
+      cheaper: lastCost != null && cost < lastCost,
+      loss: cost >= sell,
+      suggested: keepMargin && keepMargin > sell ? keepMargin : null
+    };
+  }
+
+  toggleChangePrice(on: boolean) {
+    this.purchase.changePrice = on;
+    if (on && this.purchase.newSellingPrice == null) {
+      const m = this.margin();
+      this.purchase.newSellingPrice = m?.suggested ?? m?.sell ?? null;
+    }
+  }
 
   saving = signal(false);
   submitted = signal(false);
@@ -113,8 +152,12 @@ export class Restock implements OnInit {
       sku: item.sku ?? '',
       itemName: item.itemName,
       image: this.itemService.imageFor(item),
-      stock: this.itemService.stockOf(item)
+      stock: this.itemService.stockOf(item),
+      sellingPrice: item.sellingPrice ?? null,
+      costPrice: item.costPrice ?? null
     });
+    this.purchase.changePrice = false;
+    this.purchase.newSellingPrice = null;
     this.isNewItem.set(false);
     this.showSuggestions.set(false);
     this.searchText = '';
@@ -156,7 +199,8 @@ export class Restock implements OnInit {
   }
 
   errors() {
-    const e: { item?: string; sku?: string; name?: string; quantity?: string; price?: string; supplier?: string } = {};
+    const e: { item?: string; sku?: string; name?: string; quantity?: string; price?: string; supplier?: string;
+               expiry?: string; newPrice?: string } = {};
 
     if (!this.selected() && !this.isNewItem()) e.item = 'Choose the item you are restocking.';
     if (this.isNewItem()) {
@@ -168,6 +212,12 @@ export class Restock implements OnInit {
       e.price = 'Enter what you paid for one.';
     }
     if (!this.purchase.supplier.trim()) e.supplier = 'Enter who supplied it.';
+    if (this.purchase.expiryDate && this.purchase.expiryDate < this.today) {
+      e.expiry = 'This date has passed: expired stock cannot be put on sale.';
+    }
+    if (this.purchase.changePrice && !(Number(this.purchase.newSellingPrice) > 0)) {
+      e.newPrice = 'Enter the new selling price.';
+    }
     return e;
   }
 
@@ -187,11 +237,16 @@ export class Restock implements OnInit {
     const notes = this.purchase.notes.trim() || null;
     const supplier = this.purchase.supplier.trim();
     const picked = this.selected();
+    const batch = {
+      batchNo: this.purchase.batchNo.trim() || null,
+      expiryDate: this.purchase.expiryDate || null,
+      newSellingPrice: this.purchase.changePrice && !this.isNewItem() ? Number(this.purchase.newSellingPrice) : null
+    };
 
     // These field names are what your backend expects. Do not rename them.
     let request: RestockRequest;
     if (picked && !this.isNewItem()) {
-      request = { sku: picked.sku, quantity, unitPrice, customerOrSupplier: supplier, notes };
+      request = { sku: picked.sku, quantity, unitPrice, customerOrSupplier: supplier, notes, ...batch };
     } else {
       request = {
         sku: this.newItem.sku.trim(),
@@ -204,7 +259,8 @@ export class Restock implements OnInit {
         uom: this.newItem.uom || 'nbr',
         sellingPrice: this.newItem.pricePerUnit != null ? Number(this.newItem.pricePerUnit) : null,
         barcode: this.newItem.barcode.trim() || null,
-        supplierItemCode: this.newItem.supplierItemCode.trim() || null
+        supplierItemCode: this.newItem.supplierItemCode.trim() || null,
+        ...batch
       };
     }
 
@@ -255,6 +311,8 @@ export class Restock implements OnInit {
     this.isNewItem.set(false);
     this.submitted.set(false);
     this.newItem = { sku: '', itemName: '', description: '', uom: 'nbr', pricePerUnit: null, barcode: '', supplierItemCode: '' };
-    this.purchase = { quantity: null, unitPrice: null, supplier: this.purchase.supplier, notes: '' }; // same supplier is likely
+    // same supplier is likely; a new batch number and date for the next product
+    this.purchase = { quantity: null, unitPrice: null, supplier: this.purchase.supplier, notes: '', batchNo: '', expiryDate: '',
+      changePrice: false, newSellingPrice: null };
   }
 }

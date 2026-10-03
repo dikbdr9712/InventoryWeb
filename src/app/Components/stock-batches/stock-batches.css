@@ -1,0 +1,179 @@
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.82rem;
+}
+
+.stat-btn {
+  border: 1px solid var(--line);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stat-btn:hover {
+  border-color: var(--green);
+}
+
+.stat.warn {
+  border-color: #f1d98f;
+  background: var(--saffron-soft);
+}
+
+/* tabs, days and search on one line */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin: 16px 0 12px;
+}
+
+.days {
+  width: auto;
+}
+
+.search {
+  position: relative;
+  flex: 1 1 240px;
+}
+
+.search i {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+
+.search input {
+  padding-left: 36px;
+}
+
+.note {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+/* one card per batch */
+.batches {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.batch {
+  padding: 14px 16px;
+}
+
+.batch.gone {
+  opacity: 0.75;
+}
+
+.b-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.b-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.b-figs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 2fr);
+  gap: 8px 16px;
+  margin-top: 10px;
+}
+
+.b-figs > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.b-figs .b-from {
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.lbl {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.b-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.b-actions .btn.active {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green-deep);
+}
+
+/* the small form under a batch */
+.b-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--wash);
+}
+
+.b-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.b-form .full {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.b-form-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 8px;
+}
+
+@media (max-width: 767px) {
+  .b-figs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .b-figs .b-from {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .b-form {
+    grid-template-columns: 1fr;
+  }
+}

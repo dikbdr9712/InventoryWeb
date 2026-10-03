@@ -12,6 +12,20 @@
       <span [class]="'pill big ' + orderPill(order.orderStatus)">{{ orderLabel(order.orderStatus) }}</span>
     </div>
 
+    <!-- Not paid yet (and nothing sent): pay now, online or by bank transfer -->
+    @if (order.orderStatus === 'CREATED' && (order.paymentStatus || '').toUpperCase() === 'PENDING' && !order.paymentMethod) {
+      <section class="notice pay-now" role="status">
+        <i class="fas fa-wallet"></i>
+        <div>
+          <h2>This order is waiting for your payment</h2>
+          <p>We start packing as soon as it is paid.</p>
+          <a routerLink="/payment" [queryParams]="{ orderId: order.orderId, total: order.totalAmount }" class="btn btn-primary btn-sm">
+            Pay Nu. {{ order.totalAmount | number: '1.2-2' }} now
+          </a>
+        </div>
+      </section>
+    }
+
     <!-- What the shop needs from the customer, or why a payment was refused -->
     @if (needsInfo()) {
       <section class="notice ask" role="alert">

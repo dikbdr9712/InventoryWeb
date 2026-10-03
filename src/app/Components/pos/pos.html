@@ -13,6 +13,15 @@
           <span class="chip-close">Close</span>
         </button>
       }
+      <!-- Phones: the sale is also one tap away from the top (the bar at the bottom can be out of sight) -->
+      @if (shift()) {
+        <button type="button" class="pos-btn sale-top" [class.has-items]="cart().length > 0" (click)="openSale()"
+                aria-label="Open the current sale">
+          <i class="fas fa-receipt"></i> Current sale
+          <span class="sale-top-count">{{ itemCount() }}</span>
+          @if (cart().length > 0) { <strong>Nu. {{ totals().total | number: '1.2-2' }}</strong> }
+        </button>
+      }
       <button type="button" class="pos-btn" (click)="showHeld.set(true)" [disabled]="held().length === 0"
               title="Sales put aside with Hold, waiting to be finished">
         <i class="fas fa-pause"></i> Held sales

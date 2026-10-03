@@ -61,6 +61,10 @@ export interface RestockRequest {
   sellingPrice?: number | null;
   barcode?: string | null;
   supplierItemCode?: string | null;
+  // this delivery's batch (optional) and, optionally, a new selling price for the product
+  batchNo?: string | null;
+  expiryDate?: string | null;     // yyyy-mm-dd
+  newSellingPrice?: number | null;
 }
 
 // ---------- Cart ----------

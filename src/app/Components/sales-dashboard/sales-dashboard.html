@@ -47,6 +47,36 @@
     </section>
   }
 
+  <!-- Profit: what was sold minus what those exact units cost us (old and new stock each at their own cost) -->
+  @if (profit(); as p) {
+    <section class="strip panel profit" aria-label="Profit">
+      <div class="strip-main">
+        <span class="strip-label">Profit on our products</span>
+        <strong [class.minus]="p.netProfit < 0">Nu. {{ p.netProfit | number: '1.2-2' }}</strong>
+        <small>{{ p.marginPercent }}% of sales kept</small>
+      </div>
+      <div>
+        <span class="strip-label">Sold, before tax</span>
+        <strong>Nu. {{ p.revenue | number: '1.2-2' }}</strong>
+      </div>
+      <div>
+        <span class="strip-label">What it cost us</span>
+        <strong>Nu. {{ p.cost | number: '1.2-2' }}</strong>
+      </div>
+      <div>
+        <span class="strip-label">Returns</span>
+        <strong class="minus">Nu. {{ p.returnedRevenue - p.returnedCost | number: '1.2-2' }}</strong>
+      </div>
+      <div>
+        <span class="strip-label">Expired &amp; written off</span>
+        <strong class="minus">Nu. {{ p.stockLosses | number: '1.2-2' }}</strong>
+      </div>
+    </section>
+    @if (p.unitsWithoutCost > 0) {
+      <p class="profit-note">{{ p.unitsWithoutCost }} units sold before costs were kept per batch are not in the profit.</p>
+    }
+  }
+
   <section class="panel table-panel">
     <div class="table-responsive">
       <table class="table mb-0">

@@ -542,7 +542,15 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
   private loadProducts() {
     this.itemService.getAll().subscribe({
       next: items => {
-        this.products.set(items.map(item => ({
+        // A marketplace seller's products are in the seller's own shop and sold online only: the counter never
+        // sells them (the server refuses it too), so they are not offered here at all.
+        const sellerItemIds = new Set(items.filter(item => item.sellerId != null).map(item => item.itemId));
+        const notOurs = this.cart().filter(line => sellerItemIds.has(line.itemId));
+        if (notOurs.length > 0) {
+          this.cart.update(lines => lines.filter(line => !sellerItemIds.has(line.itemId)));
+          this.toasts.info(`${notOurs.map(l => l.itemName).join(', ')} taken out of the sale: a marketplace seller's product, sold online only.`);
+        }
+        this.products.set(items.filter(item => item.sellerId == null).map(item => ({
           itemId: item.itemId,
           itemName: item.itemName || 'Unknown item',
           itemCode: item.sku || item.barcode || '',

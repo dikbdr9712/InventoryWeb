@@ -336,3 +336,12 @@
     align-items: flex-start;
   }
 }
+
+.notice.pay-now {
+  border-color: #b9dccd;
+  background: var(--green-soft);
+}
+
+.notice.pay-now > i {
+  color: var(--green);
+}

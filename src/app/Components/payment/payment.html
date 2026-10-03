@@ -49,7 +49,32 @@
       }
 
       <section class="step panel">
-        <h2><span class="num">{{ paymentStepNumber }}</span> Pay by bank transfer</h2>
+        <h2><span class="num">{{ paymentStepNumber }}</span> {{ onlineOptions().length ? 'Choose how to pay' : 'Pay by bank transfer' }}</h2>
+
+        @if (onlineOptions().length) {
+          <div class="methods" role="radiogroup" aria-label="How to pay">
+            @for (o of onlineOptions(); track o.code) {
+              <button type="button" role="radio" class="method" [class.on]="paymentMethod() === 'online' && provider() === o.code"
+                      [attr.aria-checked]="paymentMethod() === 'online' && provider() === o.code" (click)="chooseOnline(o.code)">
+                <i class="fas fa-bolt"></i>
+                <span><strong>Pay online now</strong><small>{{ o.label }}. Your order is confirmed at once.</small></span>
+              </button>
+            }
+            <button type="button" role="radio" class="method" [class.on]="paymentMethod() === 'bank'"
+                    [attr.aria-checked]="paymentMethod() === 'bank'" (click)="paymentMethod.set('bank')">
+              <i class="fas fa-building-columns"></i>
+              <span><strong>Bank transfer</strong><small>Send the money, then type the journal number. We check it before packing.</small></span>
+            </button>
+          </div>
+        }
+
+        @if (paymentMethod() === 'online') {
+          <p class="online-note">
+            <i class="fas fa-lock"></i>
+            <span>Next you go to the payment page to pay <strong>Nu. {{ amount | number: '1.2-2' }}</strong>.
+              Come back here automatically when it is done.</span>
+          </p>
+        }
 
         <p class="prepay">
           <i class="fas fa-shield-halved"></i>
@@ -182,7 +207,11 @@
         @if (submitting()) {
           <span class="spinner-border spinner-border-sm" role="status"></span> Placing your order...
         } @else {
-          <i class="fas fa-lock"></i> Place order
+          @if (paymentMethod() === 'online') {
+            <i class="fas fa-arrow-right"></i> Continue to payment
+          } @else {
+            <i class="fas fa-lock"></i> Place order
+          }
         }
       </button>
 

@@ -46,7 +46,8 @@ export const STAFF_GROUPS: { title: string; icon: string; items: StaffLink[] }[]
     icon: 'fa-boxes-stacked',
     items: [
       { path: '/products/new', label: 'Add product', icon: 'fa-plus', permission: 'items.manage', hint: 'A new product for the shop' },
-      { path: '/restock', label: 'Restock', icon: 'fa-boxes-stacked', permission: 'stock.restock', hint: 'Stock that arrived' }
+      { path: '/restock', label: 'Restock', icon: 'fa-boxes-stacked', permission: 'stock.restock', hint: 'Stock that arrived' },
+      { path: '/admin/stock', label: 'Stock & expiry', icon: 'fa-calendar-xmark', permission: 'stock.restock', hint: 'Batches, expiry dates, write-offs, counts' }
     ]
   },
   {
