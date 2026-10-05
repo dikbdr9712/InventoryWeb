@@ -39,6 +39,7 @@ interface Invoice {
   customerName: string | null;
   customerPhone: string | null;
   paymentMethod: string;
+  paymentReference: string | null; // journal number / approval code / transaction number
   cashReceived: number | null; // cash sales only
   change: number | null;       // cash sales only: what to give back
   lines: { name: string; qty: number; mrp: number; discountPercent: number; total: number }[];
@@ -133,6 +134,7 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
 
   private searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
   private amountInput = viewChild<ElementRef<HTMLInputElement>>('amountInput');
+  private referenceInput = viewChild<ElementRef<HTMLInputElement>>('referenceInput');
   private invoiceEl = viewChild<ElementRef<HTMLElement>>('invoiceEl');   // the A4 invoice
   private receiptEl = viewChild<ElementRef<HTMLElement>>('receiptEl');   // the narrow receipt
   private invoiceDialog = viewChild<ElementRef<HTMLElement>>('invoiceDialog');
@@ -169,6 +171,9 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
   taxes = signal<PosTax[]>(DEFAULT_TAXES.map(t => ({ ...t })));
   paymentMethod = signal('CASH');
   amountReceived = signal<number | null>(null);
+  // Paid without cash: the journal number from the customer's banking app (required for bank transfers),
+  // the card machine's approval code or the UPI transaction number (optional). Printed on the receipt.
+  paymentReference = signal('');
 
   // A discount on the whole sale, as a percentage or as an amount of money
   saleDiscountMode = signal<'percent' | 'amount'>('percent');
@@ -839,12 +844,27 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
 
   // ---------- Payment ----------
   choosePayment(method: string) {
+    if (method !== this.paymentMethod()) this.paymentReference.set('');
     this.paymentMethod.set(method);
     if (method === 'CASH') {
       setTimeout(() => this.amountInput()?.nativeElement.select(), 50);
     } else {
       this.amountReceived.set(null);
+      setTimeout(() => this.referenceInput()?.nativeElement.focus(), 50);
     }
+  }
+
+  // What the number is called for each way of paying
+  referenceLabel(method: string): string {
+    switch ((method ?? '').toUpperCase()) {
+      case 'BANK_TRANSFER': return 'Journal no.';
+      case 'CARD': return 'Approval code';
+      default: return 'Transaction no.';
+    }
+  }
+
+  onReferenceInput(value: string) {
+    this.paymentReference.set(value.toUpperCase().replace(/[^A-Z0-9 /._-]/g, '').slice(0, 40));
   }
 
   // Only digits and one decimal point, with at most 2 decimals. It is a text box, not a number box,
@@ -889,6 +909,7 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
     }
     this.showPay.set(true);
     if (this.paymentMethod() === 'CASH') setTimeout(() => this.amountInput()?.nativeElement.focus(), 50);
+    else setTimeout(() => this.referenceInput()?.nativeElement.focus(), 50);
   }
 
   closePay() {
@@ -934,6 +955,13 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
+    const reference = this.paymentReference().trim();
+    if (method === 'BANK_TRANSFER' && reference.length < 4) {
+      this.toasts.error('Type the journal number from the customer\'s banking app first.');
+      this.referenceInput()?.nativeElement.focus();
+      return;
+    }
+
     if (!this.saleRef) this.saleRef = newRef();
     const request: PosSaleRequest = {
       clientRef: this.saleRef,
@@ -941,6 +969,7 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
       customerName: this.customerName.trim() || null,
       customerPhone: this.customerPhone.trim() || null,
       paymentMethod: method,
+      paymentReference: method === 'CASH' ? null : reference || null,
       taxes: this.taxes().filter(t => t.type !== 'NONE').map(t => ({ type: t.type, rate: t.rate })),
       items: lines.map(l => ({ itemId: l.itemId, quantity: l.quantity, mrp: l.mrp, discountPercent: this.effectiveDiscount(l) }))
     };
@@ -957,6 +986,7 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
           customerName: order.customerName ?? request.customerName,
           customerPhone: order.customerPhone ?? request.customerPhone,
           paymentMethod: order.paymentMethod ?? method,
+          paymentReference: order.paymentReference ?? request.paymentReference,
           cashReceived: received,
           change: received !== null ? Math.max(0, Math.round((received - totals.total) * 100) / 100) : null,
           lines: lines.map(l => ({
@@ -1002,6 +1032,7 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
     this.cart.set([]);
     this.taxes.set(DEFAULT_TAXES.map(t => ({ ...t })));
     this.paymentMethod.set('CASH');
+    this.paymentReference.set('');
     this.customerName = '';
     this.customerPhone = '';
     this.syncCustomer();

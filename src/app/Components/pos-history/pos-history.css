@@ -201,3 +201,17 @@ tr.open > td {
   font-size: 0.85rem;
   font-weight: 400;
 }
+
+/* journal / reference number under the payment method */
+.ref {
+  display: block;
+  width: fit-content;
+  margin-top: 2px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--wash);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}

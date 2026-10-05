@@ -12,7 +12,7 @@
       <span [class]="'pill big ' + orderPill(order.orderStatus)">{{ orderLabel(order.orderStatus) }}</span>
     </div>
 
-    <!-- Not paid yet (and nothing sent): pay now, online or by bank transfer -->
+    <!-- Not paid yet (and nothing sent): pay now from the bank account -->
     @if (order.orderStatus === 'CREATED' && (order.paymentStatus || '').toUpperCase() === 'PENDING' && !order.paymentMethod) {
       <section class="notice pay-now" role="status">
         <i class="fas fa-wallet"></i>
@@ -177,6 +177,9 @@
         }
 
         <div class="buttons">
+          @if ((order.paymentStatus || '').toUpperCase() === 'PAID') {
+            <a class="btn btn-primary" [routerLink]="['/receipt', order.orderId]"><i class="fas fa-receipt"></i> Payment receipt</a>
+          }
           @if (canCancel()) {
             <button type="button" class="btn btn-outline-danger" [disabled]="cancelling()" (click)="cancel(order)">Cancel order</button>
           }

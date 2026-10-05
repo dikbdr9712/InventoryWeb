@@ -109,6 +109,20 @@
                 </dl>
               </div>
             </div>
+            @if (s.nonCashSales?.length) {
+              <div class="refs">
+                <h4>Paid without cash (match with the bank statement)</h4>
+                <dl>
+                  @for (n of s.nonCashSales; track n.orderId) {
+                    <div>
+                      <dt>#{{ n.orderId }} · {{ n.method === 'BANK_TRANSFER' ? 'Bank transfer' : n.method === 'CARD' ? 'Card' : n.method }}
+                        · <span [class.missing]="!n.reference">{{ n.reference || 'no number' }}</span></dt>
+                      <dd>Nu. {{ n.amount | number: '1.2-2' }}</dd>
+                    </div>
+                  }
+                </dl>
+              </div>
+            }
             @if (s.closingNote) {
               <p class="note"><i class="fas fa-comment-dots"></i> {{ s.closingNote }}</p>
             }

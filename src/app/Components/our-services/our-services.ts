@@ -21,7 +21,7 @@ export class OurServices {
       title: 'Delivery and payment',
       points: [
         'A wide range of products, with same-day shipping, store pickup and safe delivery.',
-        'Pay by bank transfer or in cash when your order arrives.'
+        'Pay online from your own bank account through the RMA Payment Gateway, before delivery.'
       ],
       button: 'Read more',
       link: '/about'

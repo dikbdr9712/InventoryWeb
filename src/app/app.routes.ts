@@ -35,12 +35,14 @@ export const routes: Routes = [
   { path: 'payment', loadComponent: () => import('./Components/payment/payment').then(m => m.Payment), canActivate: [authGuard] },
   { path: 'order-success', loadComponent: () => import('./Components/order-success/order-success').then(m => m.OrderSuccess), canActivate: [authGuard] },
   // online payment: the test gateway's page, and where every gateway sends the customer back
+  { path: 'pay/bank', loadComponent: () => import('./Components/pay-bank/pay-bank').then(m => m.PayBank), canActivate: [authGuard] },
   { path: 'pay/test', loadComponent: () => import('./Components/pay-sandbox/pay-sandbox').then(m => m.PaySandbox), canActivate: [authGuard] },
   { path: 'payment/result', loadComponent: () => import('./Components/payment-result/payment-result').then(m => m.PaymentResult), canActivate: [authGuard] },
 
   // ---------- Customer account ----------
   { path: 'profile', loadComponent: () => import('./Components/profile/profile').then(m => m.Profile), canActivate: [authGuard] },
   { path: 'orders', loadComponent: () => import('./Components/my-orders/my-orders').then(m => m.MyOrders), canActivate: [authGuard] },
+  { path: 'receipt/:orderId', loadComponent: () => import('./Components/receipt/receipt').then(m => m.Receipt), canActivate: [authGuard] },
   { path: 'orders/:id', loadComponent: () => import('./Components/order-details/order-details').then(m => m.OrderDetails), canActivate: [authGuard] },
 
   // ---------- Staff ----------
@@ -48,14 +50,14 @@ export const routes: Routes = [
   { path: 'admin/stock', loadComponent: () => import('./Components/stock-batches/stock-batches').then(m => m.StockBatches), canActivate: [permissionGuard('stock.restock')] },
   { path: 'pos', loadComponent: () => import('./Components/pos/pos').then(m => m.Pos), canActivate: [permissionGuard('pos.use')] },
   { path: 'pos-history', loadComponent: () => import('./Components/pos-history/pos-history').then(m => m.PosHistory), canActivate: [permissionGuard('pos.use')] },
-  { path: 'admin/orders', loadComponent: () => import('./Components/order-list/order-list').then(m => m.OrderList), canActivate: [permissionGuard('orders.view')] },
+  { path: 'admin/orders', loadComponent: () => import('./Components/order-board/order-board').then(m => m.OrderBoardPage), canActivate: [permissionGuard('orders.view')] },
   { path: 'order-verification', loadComponent: () => import('./Components/order-verification/order-verification').then(m => m.OrderVerification), canActivate: [permissionGuard('payments.verify')] },
   { path: 'admin/messages', loadComponent: () => import('./Components/contact-messages/contact-messages').then(m => m.ContactMessages), canActivate: [permissionGuard('messages.view')] },
 
   { path: 'admin/dashboard', loadComponent: () => import('./Components/sales-dashboard/sales-dashboard').then(m => m.SalesDashboard), canActivate: [permissionGuard('reports.view')] },
 
   { path: 'admin/customers', loadComponent: () => import('./Components/customers/customers').then(m => m.Customers), canActivate: [permissionGuard('customers.view')] },
-  { path: 'admin/deliveries', loadComponent: () => import('./Components/deliveries/deliveries').then(m => m.Deliveries), canActivate: [permissionGuard('orders.view')] },
+  { path: 'admin/deliveries', redirectTo: 'admin/orders' }, // the deliveries board is part of the order board now
 
   // ---------- Sellers and riders ----------
   { path: 'seller', loadComponent: () => import('./Components/seller-hub/seller-hub').then(m => m.SellerHub), canActivate: [permissionGuard('seller.portal')] },

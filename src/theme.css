@@ -131,6 +131,16 @@ a:hover {
   color: #fff;
 }
 
+/* Bootstrap paints disabled buttons its own blue: keep them green, only faded */
+.btn-primary:disabled,
+.btn-primary.disabled,
+.btn-success:disabled,
+.btn-success.disabled {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
 .btn-primary:hover,
 .btn-success:hover,
 .btn-primary:focus,

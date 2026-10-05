@@ -49,86 +49,50 @@
       }
 
       <section class="step panel">
-        <h2><span class="num">{{ paymentStepNumber }}</span> {{ onlineOptions().length ? 'Choose how to pay' : 'Pay by bank transfer' }}</h2>
+        <h2><span class="num">{{ paymentStepNumber }}</span> Payment</h2>
 
-        @if (onlineOptions().length) {
-          <div class="methods" role="radiogroup" aria-label="How to pay">
-            @for (o of onlineOptions(); track o.code) {
-              <button type="button" role="radio" class="method" [class.on]="paymentMethod() === 'online' && provider() === o.code"
-                      [attr.aria-checked]="paymentMethod() === 'online' && provider() === o.code" (click)="chooseOnline(o.code)">
-                <i class="fas fa-bolt"></i>
-                <span><strong>Pay online now</strong><small>{{ o.label }}. Your order is confirmed at once.</small></span>
-              </button>
-            }
-            <button type="button" role="radio" class="method" [class.on]="paymentMethod() === 'bank'"
-                    [attr.aria-checked]="paymentMethod() === 'bank'" (click)="paymentMethod.set('bank')">
-              <i class="fas fa-building-columns"></i>
-              <span><strong>Bank transfer</strong><small>Send the money, then type the journal number. We check it before packing.</small></span>
-            </button>
+        @if (bankOption(); as bank) {
+          <!-- The one way to pay: from the customer's own bank account through the RMA Payment Gateway -->
+          <div class="pay-method">
+            <span class="pm-icon"><i class="fas fa-building-columns"></i></span>
+            <div class="pm-text">
+              <strong>Pay with your bank account</strong>
+              <small>Secure online payment through the RMA Payment Gateway (Royal Monetary Authority of Bhutan).</small>
+              @if (banks().length) {
+                <ul class="pm-banks" aria-label="Banks you can pay from">
+                  @for (b of banks(); track b.code) {
+                    <li [title]="b.name">{{ b.shortName }}</li>
+                  }
+                </ul>
+              }
+            </div>
+            <i class="fas fa-circle-check pm-on" aria-hidden="true"></i>
           </div>
-        }
 
-        @if (paymentMethod() === 'online') {
-          <p class="online-note">
-            <i class="fas fa-lock"></i>
-            <span>Next you go to the payment page to pay <strong>Nu. {{ amount | number: '1.2-2' }}</strong>.
-              Come back here automatically when it is done.</span>
+          <ol class="account-steps">
+            <li><span class="n">1</span><span>Place the order, then choose your bank and type your account number.</span></li>
+            <li><span class="n">2</span><span>Your bank texts a one-time code to the phone registered with that account.</span></li>
+            <li><span class="n">3</span><span>Type the code to pay <strong>Nu. {{ amount | number: '1.2-2' }}</strong>. Your order is confirmed at once and you get a receipt.</span></li>
+          </ol>
+          @if (bank.label.includes('TEST')) {
+            <p class="test-note"><i class="fas fa-flask"></i> Test mode on this computer: no real money moves.</p>
+          }
+
+          <p class="prepay">
+            <i class="fas fa-shield-halved"></i>
+            <span>We never see your bank password or code: your bank checks them. Our riders never carry cash.</span>
           </p>
-        }
-
-        <p class="prepay">
-          <i class="fas fa-shield-halved"></i>
-          <span>
-            Pay now with mobile banking. We check your transfer, then your order is packed and delivered.
-            Our riders never carry cash.
-          </span>
-        </p>
-
-        @if (paymentMethod() === 'bank') {
-          <div class="bank">
-            <div class="bank-details">
-              <h3>Send Nu. {{ amount | number: '1.2-2' }} to</h3>
-              <dl>
-                <div><dt>Account name</dt><dd>{{ account.name }}</dd></div>
-                <div>
-                  <dt>Account number</dt>
-                  <dd>
-                    {{ account.number }}
-                    <button type="button" class="copy" (click)="copy(account.number, 'Account number')">
-                      <i class="fas fa-copy"></i> Copy
-                    </button>
-                  </dd>
-                </div>
-                <div><dt>Bank</dt><dd>{{ account.bank }}</dd></div>
-                <div>
-                  <dt>Reference</dt>
-                  <dd>
-                    @if (mode === 'order') {
-                      Order #{{ orderId }}
-                    } @else {
-                      Your full name
-                    }
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <div class="qr">
-              <img src="Images/QR.jpeg" alt="Bank QR code" />
-              <span>Scan to pay</span>
+        } @else if (optionsLoaded()) {
+          <div class="unavailable" role="alert">
+            <i class="fas fa-circle-exclamation"></i>
+            <div>
+              <strong>Online payment is not available right now</strong>
+              <p>Please try again in a little while. Your order is saved{{ mode === 'order' ? ' as #' + orderId : '' }}.
+                If it keeps happening, <a routerLink="/contact">contact us</a>.</p>
             </div>
           </div>
-
-          <div class="field journal">
-            <label for="journalNumber">Journal number from your receipt</label>
-            <input id="journalNumber" type="text" class="form-control" placeholder="e.g. TXN20260109ABC"
-                   [class.is-invalid]="submitted() && errors().journal" [(ngModel)]="journalNumber" name="journalNumber" />
-            @if (submitted() && errors().journal) {
-              <p class="err">{{ errors().journal }}</p>
-            } @else {
-              <p class="hint">We use this to check your payment. You can also send the receipt to us by email or WhatsApp.</p>
-            }
-          </div>
+        } @else {
+          <p class="hint">Loading the payment options...</p>
         }
       </section>
     </div>
@@ -203,20 +167,16 @@
       </div>
 
       <button type="button" class="btn btn-primary btn-lg place" (click)="submit()"
-              [disabled]="submitting() || (mode === 'buyNow' && (!item() || stock() <= 0 || !!quote()?.problem))">
+              [disabled]="submitting() || !bankOption() || (mode === 'buyNow' && (!item() || stock() <= 0 || !!quote()?.problem))">
         @if (submitting()) {
           <span class="spinner-border spinner-border-sm" role="status"></span> Placing your order...
         } @else {
-          @if (paymentMethod() === 'online') {
-            <i class="fas fa-arrow-right"></i> Continue to payment
-          } @else {
-            <i class="fas fa-lock"></i> Place order
-          }
+          <i class="fas fa-lock"></i> Place order and pay
         }
       </button>
 
       <p class="after">
-        We check your transfer before we ship your order.
+        Confirmed as soon as your bank approves. You get a receipt with the bank's journal number.
       </p>
 
       <a class="back" [routerLink]="mode === 'order' ? '/cart' : '/products'">

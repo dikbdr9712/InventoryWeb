@@ -5,6 +5,8 @@ import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../services/auth';
 import { OrderService } from '../../services/order';
 import { ItemService } from '../../services/item';
+import { ConfirmService } from '../../services/confirm';
+import { ToastService } from '../../services/toast';
 import { Order, OrderItem } from '../../models/models';
 import { errorText } from '../../utils/http-error';
 
@@ -20,6 +22,8 @@ export class MyOrders implements OnInit {
   private auth = inject(AuthService);
   private orderService = inject(OrderService);
   private itemService = inject(ItemService);
+  private dialog = inject(ConfirmService);
+  private toasts = inject(ToastService);
 
   // The stages of a normal order, in the order they happen
   steps = ['Placed', 'Confirmed', 'Shipped', 'Delivered'];
@@ -107,13 +111,22 @@ export class MyOrders implements OnInit {
     }
   }
 
-  cancelOrder(order: Order) {
-    if (!confirm('Cancel this order?')) return;
+  async cancelOrder(order: Order) {
+    const ok = await this.dialog.ask({
+      title: 'Cancel order #' + order.orderId + '?',
+      message: 'If you have already paid, we will contact you about the refund.',
+      confirmLabel: 'Cancel the order',
+      danger: true
+    });
+    if (!ok) return;
 
     this.orderService.runAction(order.orderId, 'cancel').subscribe({
-      next: () => this.load(),
-      error: err => alert(err.status === 0
-        ? 'Could not reach the server. Is it running?'
+      next: () => {
+        this.toasts.success('Order #' + order.orderId + ' was cancelled.');
+        this.load();
+      },
+      error: err => this.toasts.error(err.status === 0
+        ? 'Could not reach the server. Please try again.'
         : 'We could not cancel the order: ' + errorText(err))
     });
   }

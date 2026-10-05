@@ -7,6 +7,7 @@
 export type Permission =
   | 'orders.view'       // see the staff order list
   | 'orders.fulfil'     // confirm, ship, deliver and cancel orders
+  | 'orders.assign'     // give orders to packers and deliveries to drivers
   | 'payments.verify'   // check payments and confirm that money arrived
   | 'items.manage'      // add and edit products
   | 'stock.restock'     // add stock
@@ -29,7 +30,7 @@ export type Permission =
   | 'rider.earnings';   // the driver's earnings and payouts
 
 const EVERYTHING: Permission[] = [
-  'orders.view', 'orders.fulfil', 'payments.verify', 'items.manage',
+  'orders.view', 'orders.fulfil', 'orders.assign', 'payments.verify', 'items.manage',
   'stock.restock', 'pos.use', 'pos.discount', 'pos.shifts.manage', 'sales.return', 'reports.view', 'messages.view',
   'customers.view', 'customers.manage', 'users.manage', 'marketplace.manage'
 ];
@@ -58,6 +59,7 @@ export function permissionsFor(role: string | null | undefined): Permission[] {
 export const PERMISSION_LABELS: Record<Permission, string> = {
   'orders.view': 'See the order list',
   'orders.fulfil': 'Confirm, ship and deliver orders',
+  'orders.assign': 'Plan and assign orders',
   'payments.verify': 'Verify payments',
   'items.manage': 'Add and edit products',
   'stock.restock': 'Restock',

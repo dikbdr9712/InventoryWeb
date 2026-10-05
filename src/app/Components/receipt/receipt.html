@@ -1,0 +1,134 @@
+<div class="page receipt-page">
+  <div class="toolbar">
+    <a class="back" [routerLink]="backLink"><i class="fas fa-arrow-left"></i> Back</a>
+    @if (receipt()) {
+      <div class="tools">
+        <button type="button" class="btn btn-outline-secondary" (click)="print()">
+          <i class="fas fa-print"></i> <span>Print</span>
+        </button>
+        <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="download()">
+          @if (saving()) {
+            <span class="spinner-border spinner-border-sm" role="status"></span> <span>Saving...</span>
+          } @else {
+            <i class="fas fa-file-arrow-down"></i> <span>Download PDF</span>
+          }
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (receipt(); as r) {
+    <!-- Everything inside #sheet is what prints and goes into the PDF -->
+    <article #sheet class="sheet" aria-label="Payment receipt">
+      <header class="top">
+        <div class="brand">
+          <img src="Images/logo-112.png" width="64" height="64" alt="" />
+          <div>
+            <div class="brand-name">{{ shop.name }}</div>
+            <div class="brand-meta">{{ shop.address }} · Phone {{ shop.phone }}</div>
+            <div class="brand-meta">{{ shop.email }}</div>
+          </div>
+        </div>
+        <div class="doc">
+          <div class="doc-title">Payment receipt</div>
+          <div class="doc-no">Order #{{ r.orderId }}</div>
+          <div class="paid-stamp"><i class="fas fa-circle-check"></i> Paid</div>
+        </div>
+      </header>
+
+      <section class="amount-band">
+        <div>
+          <span class="band-label">Amount paid</span>
+          <strong class="band-amount">Nu. {{ r.total | number: '1.2-2' }}</strong>
+        </div>
+        <div class="band-when">
+          <span class="band-label">Paid on</span>
+          <span>{{ (r.payment.paidAt || r.orderedAt) | date: 'd MMM y, h:mm a' }}</span>
+        </div>
+      </section>
+
+      <section class="info">
+        <div class="box">
+          <h3>{{ r.source === 'POS' ? 'Customer' : 'Billed to' }}</h3>
+          <p class="strong">{{ r.customerName || 'Walk-in customer' }}</p>
+          @if (r.customerPhone) { <p>{{ r.customerPhone }}</p> }
+          @if (r.customerEmail) { <p class="wrap">{{ r.customerEmail }}</p> }
+          @if (r.address) { <p class="muted">{{ r.address }}</p> }
+        </div>
+        <div class="box">
+          <h3>Payment</h3>
+          <dl>
+            <div><dt>Method</dt><dd>{{ r.payment.method }}</dd></div>
+            @if (r.payment.journal) {
+              <div class="journal"><dt>{{ r.payment.journalLabel }}</dt><dd class="mono">{{ r.payment.journal }}</dd></div>
+            }
+            @if (r.payment.account) {
+              <div><dt>From</dt><dd>{{ r.payment.account }}</dd></div>
+            }
+            @if (r.payment.cashReceived !== null && r.payment.cashReceived !== undefined) {
+              <div><dt>Cash received</dt><dd>Nu. {{ r.payment.cashReceived | number: '1.2-2' }}</dd></div>
+              @if (r.payment.change) {
+                <div><dt>Change</dt><dd>Nu. {{ r.payment.change | number: '1.2-2' }}</dd></div>
+              }
+            }
+            <div><dt>{{ r.source === 'POS' ? 'Sold' : 'Ordered' }}</dt><dd>{{ r.orderedAt | date: 'd MMM y' }}{{ r.source === 'POS' ? ' at the counter' : ' online' }}</dd></div>
+            @if (r.servedBy) {
+              <div><dt>Served by</dt><dd>{{ r.servedBy }}</dd></div>
+            }
+          </dl>
+        </div>
+      </section>
+
+      <table class="lines">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="num qty">Qty</th>
+            <th class="num unit">Unit price</th>
+            <th class="num">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of r.lines; track $index) {
+            <tr>
+              <td>
+                <span class="item">{{ l.name }}</span>
+                <span class="item-sub">{{ l.quantity }} × Nu. {{ l.unitPrice | number: '1.2-2' }}</span>
+              </td>
+              <td class="num qty">{{ l.quantity }}</td>
+              <td class="num unit">{{ l.unitPrice | number: '1.2-2' }}</td>
+              <td class="num strong">{{ l.amount | number: '1.2-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <section class="totals">
+        <div><span>Items</span><span>Nu. {{ r.itemsTotal | number: '1.2-2' }}</span></div>
+        @for (t of r.taxes; track $index) {
+          <div><span>{{ t.label }}</span><span>Nu. {{ t.amount | number: '1.2-2' }}</span></div>
+        }
+        @if (r.deliveryFee) {
+          <div><span>Delivery</span><span>Nu. {{ r.deliveryFee | number: '1.2-2' }}</span></div>
+        }
+        <div class="grand"><span>Total paid</span><span>Nu. {{ r.total | number: '1.2-2' }}</span></div>
+        @if (r.savings) {
+          <p class="saved">You saved Nu. {{ r.savings | number: '1.2-2' }} on this order.</p>
+        }
+      </section>
+
+      <div class="foot">
+        <p>Thank you for shopping with us!</p>
+        <p class="muted">This receipt was made from the shop's records. Keep it with the journal number for any question about this payment.</p>
+      </div>
+    </article>
+  } @else if (error()) {
+    <div class="panel state">
+      <i class="fas fa-receipt"></i>
+      <p>{{ error() }}</p>
+      <a class="btn btn-secondary" [routerLink]="['/orders', orderId]">Go to the order</a>
+    </div>
+  } @else {
+    <div class="panel state"><span class="spinner-border spinner-border-sm" role="status"></span> Loading the receipt...</div>
+  }
+</div>

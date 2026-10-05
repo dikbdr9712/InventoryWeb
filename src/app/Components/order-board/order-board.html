@@ -1,0 +1,551 @@
+<div class="page board-page">
+  <div class="page-head">
+    <div>
+      <h1>Orders</h1>
+      <p>Every online order from payment to the customer's door: where it is, who has it, and what is late.
+        Counter sales are in <a routerLink="/pos-history">Sales history</a>.</p>
+    </div>
+    <div class="head-tools">
+      @if (board(); as b) { <span class="updated">Updated {{ b.generatedAt | date: 'h:mm a' }}</span> }
+      <button type="button" class="btn btn-secondary" (click)="load()" [disabled]="loading()"><i class="fas fa-rotate"></i> Refresh</button>
+    </div>
+  </div>
+
+  <!-- ============ Which orders: by the day they were placed ============ -->
+  <div class="period-bar">
+    <div class="period-tabs" role="group" aria-label="Orders placed">
+      @for (p of periods; track p.key) {
+        <button type="button" [class.on]="period() === p.key" (click)="choosePeriod(p.key)">{{ p.label }}</button>
+      }
+    </div>
+    @if (period() === 'custom') {
+      <form class="period-range" (submit)="$event.preventDefault(); applyPeriod()">
+        <label>From <input type="date" class="form-control form-control-sm" [value]="customFrom()" [max]="customTo()"
+                           (change)="setCustom('from', $any($event.target).value)" /></label>
+        <label>To <input type="date" class="form-control form-control-sm" [value]="customTo()" [min]="customFrom()"
+                         (change)="setCustom('to', $any($event.target).value)" /></label>
+        <button type="submit" class="btn btn-primary btn-sm">Show</button>
+      </form>
+    }
+    @if (board(); as b) {
+      <span class="period-info"><i class="fas fa-calendar-days"></i> Placed {{ periodLabel() }} · <b>{{ b.counts.placed }}</b> {{ b.counts.placed === 1 ? 'order' : 'orders' }}</span>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+
+  @if (counts(); as c) {
+    @if (c.olderOpen > 0) {
+      <div class="older-alert" [class.on]="board()?.includeOlder">
+        <i class="fas fa-clock-rotate-left"></i>
+        @if (board()?.includeOlder) {
+          <span><b>{{ c.olderOpen }} older {{ c.olderOpen === 1 ? 'order' : 'orders' }}</b> (placed before this period, still not delivered) {{ c.olderOpen === 1 ? 'is' : 'are' }} included, marked "older".</span>
+          <button type="button" class="btn btn-link btn-sm" (click)="toggleOlder()">Hide them</button>
+        } @else {
+          <span><b>{{ c.olderOpen }} {{ c.olderOpen === 1 ? 'order' : 'orders' }} placed before this period {{ c.olderOpen === 1 ? 'is' : 'are' }} still not delivered.</b></span>
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="toggleOlder()">Show them</button>
+        }
+      </div>
+    }
+
+    <!-- ============ The pipeline: every step and how many orders are in it ============ -->
+    <ol class="pipeline" aria-label="Orders by step">
+      <li>
+        <button type="button" [class.on]="group() === 'PAYMENT_DUE'" (click)="showGroup('PAYMENT_DUE')">
+          <i class="fas fa-hourglass-start"></i>
+          <strong>{{ c.awaitingPayment }}</strong>
+          <span>Awaiting payment</span>
+          <small>customer has not paid</small>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="act" [class.on]="group() === 'VERIFY'" [class.hot]="c.verify > 0" (click)="showGroup('VERIFY')">
+          <i class="fas fa-magnifying-glass-dollar"></i>
+          <strong>{{ c.verify }}</strong>
+          <span>Verify payment</span>
+          <small>{{ c.verify ? 'to check' : 'nothing to check' }}</small>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="act" [class.on]="group() === 'PACK'" [class.hot]="c.toPack > 0" (click)="showGroup('PACK')">
+          <i class="fas fa-box-open"></i>
+          <strong>{{ c.toPack }}</strong>
+          <span>To pack</span>
+          <small>{{ c.toPackNotStarted }} not started</small>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="act" [class.on]="group() === 'PACKED'" [class.hot]="c.ready > 0" (click)="showGroup('PACKED')">
+          <i class="fas fa-box"></i>
+          <strong>{{ c.ready + c.riderComing }}</strong>
+          <span>Packed</span>
+          <small>{{ c.ready }} need a driver · {{ c.riderComing }} driver coming</small>
+        </button>
+      </li>
+      <li>
+        <button type="button" [class.on]="group() === 'ON_THE_WAY'" (click)="showGroup('ON_THE_WAY')">
+          <i class="fas fa-truck-fast"></i>
+          <strong>{{ c.onTheWay }}</strong>
+          <span>On the way</span>
+          <small>with a driver or our staff</small>
+        </button>
+      </li>
+      <li>
+        <button type="button" class="done" [class.on]="group() === 'DELIVERED'" (click)="showGroup('DELIVERED')">
+          <i class="fas fa-circle-check"></i>
+          <strong>{{ c.delivered }}</strong>
+          <span>Delivered</span>
+          <small>{{ c.cancelled }} cancelled</small>
+        </button>
+      </li>
+    </ol>
+
+    @if (c.late > 0) {
+      <button type="button" class="late-alert" (click)="showView('late')">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span><strong>{{ c.late }} {{ c.late === 1 ? 'order is' : 'orders are' }} late</strong> (longer than the target for their step).
+          See them first.</span>
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    }
+  }
+
+  <div class="board-grid">
+    <!-- ============ The work ============ -->
+    <section class="work" aria-label="Orders">
+      <div class="toolbar">
+        @if (group(); as g) {
+          <div class="chosen">
+            <span>Showing: <strong>{{ groupTitle(g) }}</strong></span>
+            <button type="button" class="btn btn-link btn-sm" (click)="clearGroup()">Show all steps <i class="fas fa-xmark"></i></button>
+          </div>
+        } @else {
+          <div class="tabs" role="tablist" aria-label="Which orders">
+            <button type="button" role="tab" [attr.aria-selected]="view() === 'action'" [class.on]="view() === 'action'" (click)="showView('action')">
+              Needs action <span class="n">{{ counts()?.needsAction ?? 0 }}</span>
+            </button>
+            @if (canFulfil) {
+              <button type="button" role="tab" [attr.aria-selected]="view() === 'mine'" [class.on]="view() === 'mine'" (click)="showView('mine')">
+                Mine <span class="n">{{ mine().length }}</span>
+              </button>
+            }
+            <button type="button" role="tab" [attr.aria-selected]="view() === 'late'" [class.on]="view() === 'late'" (click)="showView('late')">
+              Late <span class="n" [class.bad]="late().length > 0">{{ late().length }}</span>
+            </button>
+            <button type="button" role="tab" [attr.aria-selected]="view() === 'active'" [class.on]="view() === 'active'" (click)="showView('active')">
+              All in progress
+            </button>
+            <button type="button" role="tab" [attr.aria-selected]="view() === 'drivers'" [class.on]="view() === 'drivers'" (click)="showView('drivers')">
+              <i class="fas fa-motorcycle"></i> Drivers
+            </button>
+            <button type="button" role="tab" [attr.aria-selected]="view() === 'done'" [class.on]="view() === 'done'" (click)="showView('done')">
+              Done
+            </button>
+          </div>
+        }
+        <div class="search">
+          <i class="fas fa-magnifying-glass"></i>
+          <input #q type="search" class="form-control" placeholder="Order #, customer, phone, journal, driver..."
+                 [value]="search()" (input)="search.set(q.value)" aria-label="Search orders" />
+        </div>
+      </div>
+
+      @if (loading() && !board()) {
+        <p class="muted pad">Loading the orders...</p>
+      } @else if (view() === 'drivers' && !group()) {
+        <div class="drivers-head">
+          <h2 class="sec-title"><i class="fas fa-motorcycle"></i> Deliveries by driver <span class="n">{{ deliveries().length }}</span>
+            <small>Who has each package, from where to where. Orders placed {{ periodLabel() }}.</small></h2>
+          <select #rf class="custom-select custom-select-sm" [value]="riderFilter()" (change)="riderFilter.set(rf.value)" aria-label="Driver">
+            <option value="">All drivers</option>
+            @for (r of board()?.riders ?? []; track r.id) { <option [value]="r.id">{{ r.name }} ({{ r.vehicleType }})</option> }
+            <option value="staff">Our staff (no driver)</option>
+          </select>
+        </div>
+        @for (i of deliveries(); track i.key) {
+          <article class="trip" [class.late]="i.late">
+            <header class="trip-head">
+              <button type="button" class="ci-title" (click)="show(i)">
+                <strong>#{{ i.orderId }}</strong>
+                @if (i.packageCount > 1) { <span class="pkg-no">package {{ i.packageNo }} of {{ i.packageCount }}</span> }
+              </button>
+              <span class="stage-pill" [class.bad]="i.late" [class.ok]="i.stage === 'DELIVERED'">{{ stageTitle(i.stage) }}</span>
+            </header>
+
+            <div class="trip-driver">
+              <i class="fas" [class]="'fas ' + (i.riderId ? 'fa-motorcycle' : 'fa-person-walking')"></i>
+              @if (i.riderName) {
+                <span><b>{{ i.riderName }}</b> · {{ i.riderVehicle }}
+                  @if (i.riderPhone) { · <a [href]="'tel:' + i.riderPhone">{{ i.riderPhone }}</a> }
+                  @if (i.riderAssignedByName) { <span class="muted"> · given by {{ i.riderAssignedByName }}</span> } @else { <span class="muted"> · took it from the job board</span> }</span>
+              } @else {
+                <span><b>{{ i.courierName }}</b> <span class="muted">(our staff)</span></span>
+              }
+            </div>
+
+            <ol class="route" aria-label="Route">
+              <li>
+                <span class="pin from"><i class="fas fa-store"></i></span>
+                <div><b>From {{ fromLabel(i) }}</b>
+                  @if (i.pickupAddress) { <a class="addr" [href]="mapLink(i.pickupAddress)" target="_blank" rel="noopener">{{ i.pickupAddress }}</a> }
+                  @if (i.pickedUpAt) { <small class="muted">collected {{ i.pickedUpAt | date: 'd MMM, h:mm a' }}</small> }
+                  @else if (i.assignedAt) { <small class="muted">driver on the way since {{ i.assignedAt | date: 'h:mm a' }}</small> }</div>
+              </li>
+              <li>
+                <span class="pin to"><i class="fas fa-location-dot"></i></span>
+                <div><span><b>To {{ i.customerName }}</b>@if (i.customerPhone) { · <a [href]="'tel:' + i.customerPhone">{{ i.customerPhone }}</a> }</span>
+                  @if (i.dropAddress) { <a class="addr" [href]="mapLink(i.dropAddress)" target="_blank" rel="noopener">{{ i.dropAddress }}</a> }
+                  @if (i.deliveredAt) { <small class="muted">delivered {{ i.deliveredAt | date: 'd MMM, h:mm a' }}</small> }</div>
+              </li>
+            </ol>
+
+            <p class="trip-meta">
+              <span>{{ summary(i) }}</span>
+              <span>{{ sizeLabel(i.deliverySize) }}@if (i.distanceKm != null) { · {{ i.distanceKm | number: '1.0-1' }} km}</span>
+              @if (i.riderPay != null && i.riderId) { <span>Driver earns Nu. {{ i.riderPay | number: '1.2-2' }}</span> }
+            </p>
+          </article>
+        } @empty {
+          <div class="empty">
+            <i class="fas fa-motorcycle"></i>
+            <h2>No deliveries {{ riderFilter() ? 'for ' + riderName(riderFilter()) : '' }}</h2>
+            <p class="muted">No package from orders placed {{ periodLabel() }} has been taken by {{ riderFilter() ? 'them' : 'a driver' }} yet.</p>
+          </div>
+        }
+      } @else {
+        @for (sec of sections(); track sec.info.key) {
+          <div class="section">
+            <h2 class="sec-title">
+              <i class="fas" [class]="'fas ' + sec.info.icon"></i> {{ sec.info.title }}
+              <span class="n">{{ sec.items.length }}</span>
+              <small>{{ sec.info.help }}</small>
+            </h2>
+
+            @for (i of sec.items; track i.key) {
+              <article class="card-item" [class.late]="i.late && i.stage !== 'PAYMENT_DUE'" [class.mine]="isMine(i)" [class.busy]="busy() === i.key">
+                <header class="ci-head">
+                  <button type="button" class="ci-title" (click)="show(i)" [attr.aria-label]="'Details of order ' + i.orderId">
+                    <strong>#{{ i.orderId }}</strong>
+                    @if (i.packageCount > 1) { <span class="pkg-no">package {{ i.packageNo }} of {{ i.packageCount }}</span> }
+                    @if (i.packageId) { <span class="from" [class.seller]="!!i.sellerId">{{ i.sellerName }}</span> }
+                    @if (i.older) { <span class="older-tag" title="Placed before the chosen period">older · {{ i.placedAt | date: 'd MMM' }}</span> }
+                  </button>
+                  @if (i.stage !== 'DELIVERED' && i.stage !== 'CANCELLED') {
+                    <span class="age" [class.bad]="i.late && i.stage !== 'PAYMENT_DUE'"
+                          [title]="i.targetMinutes ? 'Target: ' + duration(i.targetMinutes) : ''">
+                      @if (i.late && i.stage !== 'PAYMENT_DUE') { <i class="fas fa-triangle-exclamation"></i> Late · }
+                      {{ duration(i.minutesInStage) }} {{ waitLabel(i) ? 'since ' + waitLabel(i) : '' }}
+                    </span>
+                  } @else if (i.deliveredAt) {
+                    <span class="age ok">{{ i.deliveredAt | date: 'd MMM, h:mm a' }}</span>
+                  }
+                </header>
+
+                <div class="ci-body">
+                  <div class="who">
+                    <span class="cust">{{ i.customerName || 'Customer' }}</span>
+                    @if (i.customerPhone) { <a [href]="'tel:' + i.customerPhone" class="tel"><i class="fas fa-phone"></i> {{ i.customerPhone }}</a> }
+                  </div>
+                  @if (hasRoute(i)) {
+                    <p class="route-line">
+                      <a [href]="mapLink(i.pickupAddress || fromLabel(i))" target="_blank" rel="noopener"><i class="fas fa-store"></i> {{ fromLabel(i) }}</a>
+                      <i class="fas fa-arrow-right-long"></i>
+                      <a [href]="mapLink(i.dropAddress)" target="_blank" rel="noopener"><i class="fas fa-location-dot"></i> {{ i.dropAddress }}</a>
+                      @if (i.distanceKm != null) { <span class="muted">· {{ i.distanceKm | number: '1.0-1' }} km</span> }
+                    </p>
+                  } @else if (i.dropAddress) {
+                    <a class="addr" [href]="mapLink(i.dropAddress)" target="_blank" rel="noopener"><i class="fas fa-location-dot"></i> {{ i.dropAddress }}</a>
+                  }
+                  <p class="lines">{{ summary(i) }} <span class="amt">· Nu. {{ i.amount | number: '1.2-2' }}</span></p>
+
+                  <!-- who has it: the chain of people for this order -->
+                  <ul class="chain">
+                    @if (i.verifiedBy) {
+                      <li><i class="fas fa-check"></i> Paid · checked by <b>{{ i.verifiedBy }}</b></li>
+                    } @else if (i.journal) {
+                      <li><i class="fas fa-receipt"></i> Journal <b>{{ i.journal }}</b></li>
+                    }
+                    @if (i.stage === 'PACK' && ownShop(i)) {
+                      @if (i.packerName) {
+                        <li [class.me]="isMine(i)"><i class="fas fa-user"></i> Packing: <b>{{ isMine(i) ? 'you' : i.packerName }}</b>
+                          @if (i.packingStartedAt) { <span class="muted">since {{ i.packingStartedAt | date: 'h:mm a' }}</span> }</li>
+                      } @else {
+                        <li class="warn"><i class="fas fa-user-slash"></i> Nobody is packing it yet</li>
+                      }
+                    } @else if (i.stage === 'PACK' && i.sellerId) {
+                      <li><i class="fas fa-store"></i> The seller packs it
+                        @if (i.sellerPhone) { · <a [href]="'tel:' + i.sellerPhone">{{ i.sellerPhone }}</a> }</li>
+                    } @else if (i.packerName) {
+                      <li><i class="fas fa-box"></i> Packed by <b>{{ i.packerName }}</b></li>
+                    }
+                    @if (i.riderName) {
+                      <li><i class="fas fa-motorcycle"></i> Driver <b>{{ i.riderName }}</b> <span class="muted">{{ i.riderVehicle }}</span>
+                        @if (i.riderPhone) { · <a [href]="'tel:' + i.riderPhone">{{ i.riderPhone }}</a> }
+                        @if (i.riderAssignedByName) { <span class="muted">· given by {{ i.riderAssignedByName }}</span> }</li>
+                    } @else if (i.courierName) {
+                      <li><i class="fas fa-person-walking"></i> Delivered by our staff: <b>{{ i.courierName }}</b></li>
+                    } @else if (i.stage === 'READY') {
+                      <li class="warn"><i class="fas fa-motorcycle"></i> No driver yet · {{ sizeLabel(i.deliverySize) }}@if (i.distanceKm != null) {, {{ i.distanceKm | number: '1.0-1' }} km}</li>
+                    }
+                  </ul>
+
+                  @if (i.paymentNote) {
+                    <p class="note"><i class="fas fa-circle-info"></i> {{ i.paymentNote }}</p>
+                  }
+                </div>
+
+                <!-- the next step -->
+                <div class="ci-actions">
+                  @switch (i.stage) {
+                    @case ('PAYMENT_DUE') {
+                      @if (i.customerPhone) { <a class="btn btn-outline-secondary btn-sm" [href]="'tel:' + i.customerPhone"><i class="fas fa-phone"></i> Call</a> }
+                      @if (canFulfil && i.targetMinutes && i.minutesInStage > i.targetMinutes) {
+                        <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="busy() === i.key" (click)="cancel(i)">Cancel unpaid order</button>
+                      }
+                    }
+                    @case ('VERIFY') {
+                      @if (canVerify) {
+                        <a class="btn btn-secondary btn-sm" routerLink="/order-verification"><i class="fas fa-magnifying-glass-dollar"></i> Check payment</a>
+                        @if (i.journal && i.paymentStatus === 'PENDING') {
+                          <button type="button" class="btn btn-primary btn-sm" [disabled]="busy() === i.key" (click)="paymentReceived(i)">Money arrived</button>
+                        }
+                      } @else {
+                        <span class="muted">A manager checks the payment.</span>
+                      }
+                    }
+                    @case ('PACK') {
+                      @if (i.legacy) {
+                        @if (canFulfil) { <button type="button" class="btn btn-primary btn-sm" [disabled]="busy() === i.key" (click)="ship(i)"><i class="fas fa-truck"></i> Packed and sent</button> }
+                      } @else if (ownShop(i)) {
+                        @if (canFulfil && !i.packerEmail) {
+                          <button type="button" class="btn btn-primary btn-sm" [disabled]="busy() === i.key" (click)="take(i)"><i class="fas fa-hand"></i> Take it</button>
+                        }
+                        @if (canFulfil && i.packerEmail) {
+                          <button type="button" class="btn btn-primary btn-sm" [disabled]="busy() === i.key" (click)="packed(i)"><i class="fas fa-box"></i> Packed</button>
+                        }
+                        @if (canFulfil && i.packerEmail && (isMine(i) || board()?.canAssign)) {
+                          <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === i.key" (click)="giveBack(i)">Give back</button>
+                        }
+                        @if (board()?.canAssign) {
+                          <select #pk class="custom-select custom-select-sm assign" [disabled]="busy() === i.key"
+                                  (change)="assignPacker(i, pk.value, pk)" [attr.aria-label]="'Give order ' + i.orderId + ' to'">
+                            <option value="">{{ i.packerEmail ? 'Give to someone else...' : 'Give to...' }}</option>
+                            @for (p of board()!.packers; track p.email) {
+                              @if (p.email !== i.packerEmail) { <option [value]="p.email">{{ p.name }} ({{ p.packing }} packing)</option> }
+                            }
+                          </select>
+                        }
+                      } @else {
+                        @if (i.sellerPhone) { <a class="btn btn-outline-secondary btn-sm" [href]="'tel:' + i.sellerPhone"><i class="fas fa-phone"></i> Call seller</a> }
+                        @if (canFulfil) { <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === i.key" (click)="packed(i)">Mark packed for seller</button> }
+                      }
+                    }
+                    @case ('READY') {
+                      @if (board()?.canAssign) {
+                        <select #rd class="custom-select custom-select-sm assign" [disabled]="busy() === i.key"
+                                (change)="assignRider(i, rd.value, rd)" [attr.aria-label]="'Give order ' + i.orderId + ' to a driver'">
+                          <option value="">Give to a driver...</option>
+                          @for (r of ridersFor(i); track r.id) {
+                            <option [value]="r.id" [disabled]="!r.available">{{ r.name }} · {{ r.vehicleType }} · {{ r.active }}/{{ r.max }} jobs{{ r.available ? '' : ' (full)' }}</option>
+                          } @empty {
+                            <option value="" disabled>No driver can carry {{ sizeLabel(i.deliverySize).toLowerCase() }} packages</option>
+                          }
+                        </select>
+                      }
+                      @if (canFulfil) { <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === i.key" (click)="weDeliver(i)"><i class="fas fa-person-walking"></i> We deliver it</button> }
+                      @if (!board()?.canAssign) { <span class="muted">Drivers see it on their job board.</span> }
+                    }
+                    @case ('ASSIGNED') {
+                      @if (i.riderPhone) { <a class="btn btn-outline-secondary btn-sm" [href]="'tel:' + i.riderPhone"><i class="fas fa-phone"></i> Call driver</a> }
+                      @if (canFulfil) { <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === i.key" (click)="collected(i)">Collected</button> }
+                      @if (board()?.canAssign) {
+                        <select #ch class="custom-select custom-select-sm assign" [disabled]="busy() === i.key"
+                                (change)="assignRider(i, ch.value, ch)" [attr.aria-label]="'Change the driver of order ' + i.orderId">
+                          <option value="">Change driver...</option>
+                          @for (r of ridersFor(i); track r.id) {
+                            <option [value]="r.id" [disabled]="!r.available">{{ r.name }} · {{ r.vehicleType }} · {{ r.active }}/{{ r.max }} jobs</option>
+                          }
+                        </select>
+                        <button type="button" class="btn btn-link btn-sm text-danger" [disabled]="busy() === i.key" (click)="removeRider(i)">Take off driver</button>
+                      }
+                    }
+                    @case ('ON_THE_WAY') {
+                      @if (i.customerPhone) { <a class="btn btn-outline-secondary btn-sm" [href]="'tel:' + i.customerPhone"><i class="fas fa-phone"></i> Call customer</a> }
+                      @if (canFulfil) { <button type="button" class="btn btn-primary btn-sm" [disabled]="busy() === i.key" (click)="delivered(i)"><i class="fas fa-circle-check"></i> Delivered</button> }
+                    }
+                    @case ('DELIVERED') {
+                      <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/receipt', i.orderId]"><i class="fas fa-receipt"></i> Receipt</a>
+                    }
+                  }
+                  <button type="button" class="btn btn-link btn-sm details" (click)="show(i)">Details <i class="fas fa-chevron-right"></i></button>
+                </div>
+              </article>
+            }
+          </div>
+        } @empty {
+          <div class="empty">
+            <i class="fas fa-circle-check"></i>
+            <h2>{{ search() ? 'No orders match' : view() === 'action' && !group() ? 'All caught up' : 'Nothing here' }}</h2>
+            <p class="muted">{{ search() ? 'Try another number or name.' : view() === 'action' && !group() ? 'No order needs anyone right now.' : 'No orders in this list.' }}</p>
+          </div>
+        }
+      }
+    </section>
+
+    <!-- ============ The team ============ -->
+    <aside class="team" aria-label="The team today">
+      @if (board(); as b) {
+        <section class="panel tbox">
+          <h2><i class="fas fa-people-carry-box"></i> Packing</h2>
+          @for (p of b.packers; track p.email) {
+            <div class="person" [class.me]="p.email.toLowerCase() === me()">
+              <span class="pname">{{ p.name }}<small>{{ p.role.toLowerCase() }}</small></span>
+              <span class="pstat"><b [class.busy]="p.packing > 0">{{ p.packing }}</b> packing now · {{ p.packed }} packed in the period</span>
+            </div>
+          } @empty {
+            <p class="muted small">Nobody can pack orders yet: give a role "Pack, send and cancel orders" in People.</p>
+          }
+        </section>
+
+        <section class="panel tbox">
+          <h2><i class="fas fa-motorcycle"></i> Drivers</h2>
+          @for (r of b.riders; track r.id) {
+            <div class="person">
+              <button type="button" class="pname link" (click)="showDriver(r)" [title]="'See ' + r.name + '\'s deliveries'">
+                <span class="dot" [class.free]="r.available && r.active === 0" [class.busy]="r.active > 0 && r.available" [class.full]="!r.available"></span>
+                {{ r.name }}<small>{{ r.vehicle }}</small>
+              </button>
+              <span class="pstat"><b>{{ r.active }}/{{ r.max }}</b> jobs now · {{ r.delivered }} delivered in the period
+                @if (r.phone) { · <a [href]="'tel:' + r.phone">call</a> }</span>
+            </div>
+          } @empty {
+            <p class="muted small">No approved drivers. Approve them in Sellers & drivers, or deliver with our staff.</p>
+          }
+        </section>
+
+        <section class="panel tbox targets">
+          <h2><i class="fas fa-stopwatch"></i> Targets</h2>
+          <p class="muted small">An order is late when it stays longer than this in a step:</p>
+          <ul>
+            <li><span>Check a payment</span><b>{{ duration(b.targets.verifyMinutes) }}</b></li>
+            <li><span>Pack after payment</span><b>{{ duration(b.targets.packMinutes) }}</b></li>
+            <li><span>Collect after packing</span><b>{{ duration(b.targets.pickupMinutes) }}</b></li>
+            <li><span>Deliver after collecting</span><b>{{ duration(b.targets.deliverMinutes) }}</b></li>
+          </ul>
+        </section>
+      }
+    </aside>
+  </div>
+</div>
+
+<!-- ============ One order: everything about it, and its history ============ -->
+@if (open(); as i) {
+  <div class="drawer-scrim" (click)="close()"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <header class="dr-head">
+      <div>
+        <h2 id="drawer-title">Order #{{ i.orderId }}@if (i.packageCount > 1) { <small>· package {{ i.packageNo }} of {{ i.packageCount }}</small> }</h2>
+        <span class="stage-pill">{{ stageTitle(i.stage) }}</span>
+        @if (i.late && i.stage !== 'PAYMENT_DUE') { <span class="stage-pill bad">Late</span> }
+      </div>
+      <button type="button" class="dr-x" (click)="close()" aria-label="Close"><i class="fas fa-xmark"></i></button>
+    </header>
+
+    <div class="dr-body">
+      <section>
+        <h3>Customer</h3>
+        <p><b>{{ i.customerName }}</b>@if (i.customerPhone) { · <a [href]="'tel:' + i.customerPhone">{{ i.customerPhone }}</a> }</p>
+        @if (i.customerEmail) { <p class="muted">{{ i.customerEmail }}</p> }
+        @if (i.dropAddress) { <p><a [href]="mapLink(i.dropAddress)" target="_blank" rel="noopener"><i class="fas fa-location-dot"></i> {{ i.dropAddress }}</a></p> }
+      </section>
+
+      <section>
+        <h3>Items @if (i.packageId) { <span class="muted">from {{ i.sellerName }}</span> }</h3>
+        <table class="items">
+          <tbody>
+            @for (l of i.lines; track $index) {
+              <tr><td class="q">{{ l.quantity }} ×</td><td>{{ l.name }}</td><td class="num">Nu. {{ l.unitPrice * l.quantity | number: '1.2-2' }}</td></tr>
+            }
+          </tbody>
+        </table>
+        <p class="tot"><span>{{ i.packageId ? 'This package (with delivery)' : 'Order total' }}</span><b>Nu. {{ i.amount | number: '1.2-2' }}</b></p>
+        @if (i.packageId && i.packageCount > 1) { <p class="muted small">Whole order: Nu. {{ i.orderTotal | number: '1.2-2' }} in {{ i.packageCount }} packages.</p> }
+      </section>
+
+      @if (i.packageId && (i.riderName || i.courierName || hasRoute(i))) {
+        <section>
+          <h3>Delivery</h3>
+          @if (i.riderName) {
+            <p><i class="fas fa-motorcycle"></i> <b>{{ i.riderName }}</b> · {{ i.riderVehicle }}@if (i.riderPhone) { · <a [href]="'tel:' + i.riderPhone">{{ i.riderPhone }}</a> }</p>
+            <p class="muted small">{{ i.riderAssignedByName ? 'Given to the driver by ' + i.riderAssignedByName : 'The driver took it from the job board' }}@if (i.riderPay != null) { · earns Nu. {{ i.riderPay | number: '1.2-2' }}}</p>
+          } @else if (i.courierName) {
+            <p><i class="fas fa-person-walking"></i> <b>{{ i.courierName }}</b> <span class="muted">(our staff, no driver)</span></p>
+          } @else {
+            <p class="muted">No driver yet.</p>
+          }
+          <ol class="route compact">
+            <li><span class="pin from"><i class="fas fa-store"></i></span>
+              <div><span><b>From {{ fromLabel(i) }}</b>@if (i.sellerPhone) { · <a [href]="'tel:' + i.sellerPhone">{{ i.sellerPhone }}</a> }</span>
+                @if (i.pickupAddress) { <a class="addr" [href]="mapLink(i.pickupAddress)" target="_blank" rel="noopener">{{ i.pickupAddress }}</a> }</div></li>
+            <li><span class="pin to"><i class="fas fa-location-dot"></i></span>
+              <div><b>To {{ i.customerName }}</b>
+                @if (i.dropAddress) { <a class="addr" [href]="mapLink(i.dropAddress)" target="_blank" rel="noopener">{{ i.dropAddress }}</a> }</div></li>
+          </ol>
+          <p class="muted small">{{ sizeLabel(i.deliverySize) }} package@if (i.distanceKm != null) { · {{ i.distanceKm | number: '1.0-1' }} km}@if (i.deliveryFee != null) { · customer paid Nu. {{ i.deliveryFee | number: '1.2-2' }} for delivery}</p>
+        </section>
+      }
+
+      <section>
+        <h3>History</h3>
+        <ol class="timeline">
+          <li class="done"><b>Placed</b><span>{{ i.placedAt | date: 'd MMM, h:mm a' }}</span></li>
+          @if (i.journal) { <li class="done"><b>Payment sent</b><span>journal {{ i.journal }}</span></li> }
+          @if (i.verifiedBy) {
+            <li class="done"><b>Payment confirmed</b><span>{{ i.verifiedAt | date: 'd MMM, h:mm a' }} · by {{ i.verifiedBy }}</span></li>
+          } @else if (i.stage === 'PAYMENT_DUE' || i.stage === 'VERIFY') {
+            <li class="now"><b>{{ i.stage === 'VERIFY' ? 'Payment to check' : 'Waiting for payment' }}</b><span>{{ duration(i.minutesInStage) }}</span></li>
+          }
+          @if (i.packingStartedAt) {
+            <li [class.done]="!!i.packedAt" [class.now]="!i.packedAt"><b>Packing</b><span>{{ i.packerName }} · since {{ i.packingStartedAt | date: 'h:mm a' }}</span></li>
+          } @else if (i.stage === 'PACK') {
+            <li class="now"><b>To pack</b><span>{{ i.sellerId ? 'by the seller' : 'nobody has taken it yet' }}</span></li>
+          }
+          @if (i.packedAt) { <li class="done"><b>Packed</b><span>{{ i.packedAt | date: 'd MMM, h:mm a' }}@if (i.packerName) { · {{ i.packerName }} }</span></li> }
+          @if (i.assignedAt) { <li class="done"><b>Driver assigned</b><span>{{ i.assignedAt | date: 'h:mm a' }} · {{ i.riderName }}@if (i.riderAssignedByName) { (by {{ i.riderAssignedByName }}) }</span></li> }
+          @if (i.pickedUpAt) { <li class="done"><b>On the way</b><span>{{ i.pickedUpAt | date: 'd MMM, h:mm a' }} · {{ i.riderName || i.courierName }}</span></li> }
+          @if (i.deliveredAt) { <li class="done"><b>Delivered</b><span>{{ i.deliveredAt | date: 'd MMM, h:mm a' }}</span></li> }
+          @if (i.stage === 'CANCELLED') { <li class="bad"><b>Cancelled</b><span>{{ (i.cancelledAt || i.stageSince) | date: 'd MMM, h:mm a' }}</span></li> }
+        </ol>
+      </section>
+
+      @if (i.paymentNote) { <p class="note"><i class="fas fa-circle-info"></i> {{ i.paymentNote }}</p> }
+    </div>
+
+    <div class="dr-foot">
+      @if (i.stage === 'PACK' && i.packageId) {
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="printSlip()"><i class="fas fa-print"></i> Packing slip</button>
+      }
+      <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/orders', i.orderId]">Order page</a>
+      @if (i.verifiedBy) { <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/receipt', i.orderId]">Receipt</a> }
+    </div>
+
+    <!-- what prints for the packer: hidden on screen (only the inner sheet is copied for printing) -->
+    <div class="slip-holder"><div #slip class="sheet">
+      <h1 style="margin:0 0 4px;font-size:20px">Packing slip · Order #{{ i.orderId }}@if (i.packageCount > 1) { (package {{ i.packageNo }} of {{ i.packageCount }}) }</h1>
+      <p style="margin:0 0 12px;color:#555">{{ shop.name }} · printed {{ board()?.generatedAt | date: 'd MMM y, h:mm a' }}</p>
+      <p style="margin:0"><b>Deliver to:</b> {{ i.customerName }} · {{ i.customerPhone }}</p>
+      <p style="margin:0 0 12px">{{ i.dropAddress }}</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <thead><tr><th style="text-align:left;border-bottom:2px solid #000;padding:6px">Done</th><th style="text-align:left;border-bottom:2px solid #000;padding:6px">Qty</th><th style="text-align:left;border-bottom:2px solid #000;padding:6px">Item</th></tr></thead>
+        <tbody>
+          @for (l of i.lines; track $index) {
+            <tr><td style="padding:8px 6px;border-bottom:1px solid #ccc">☐</td><td style="padding:8px 6px;border-bottom:1px solid #ccc"><b>{{ l.quantity }}</b></td><td style="padding:8px 6px;border-bottom:1px solid #ccc">{{ l.name }}</td></tr>
+          }
+        </tbody>
+      </table>
+      <p style="margin:16px 0 0">Packed by: ______________________ &nbsp; Checked: ____________</p>
+    </div></div>
+  </aside>
+}

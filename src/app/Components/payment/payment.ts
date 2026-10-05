@@ -6,12 +6,10 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
-import { CartService } from '../../services/cart';
 import { ItemService } from '../../services/item';
 import { OrderService } from '../../services/order';
-import { PaymentService } from '../../services/payment';
 import { DeliveryService } from '../../services/delivery';
-import { OnlinePaymentsService, PaymentOption } from '../../services/online-payments';
+import { Bank, OnlinePaymentsService, PaymentOption } from '../../services/online-payments';
 import { DeliveryLocation } from '../delivery-location/delivery-location';
 import { ToastService } from '../../services/toast';
 import { DeliveryPoint, DeliveryQuote, DirectOrderRequest, Item, OrderItem } from '../../models/models';
@@ -30,10 +28,8 @@ export class Payment implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private auth = inject(AuthService);
-  private cart = inject(CartService);
   private itemService = inject(ItemService);
   private orderService = inject(OrderService);
-  private paymentService = inject(PaymentService);
   private delivery = inject(DeliveryService);
   private onlinePayments = inject(OnlinePaymentsService);
   private toasts = inject(ToastService);
@@ -57,11 +53,12 @@ export class Payment implements OnInit {
   billing = { name: '', phone: '', address: '' };
 
   // Both
-  // Online orders are paid before delivery, so bank transfer is the only way (the server refuses anything else)
-  // Online (a payment gateway, confirmed at once) when the shop offers it; bank transfer is always possible
-  paymentMethod = signal<'bank' | 'online'>('bank');
+  // Online orders are paid before delivery, from the customer's own bank account through the RMA Payment Gateway
+  // (the "BANK" way to pay). There is no other way: without it the order cannot be paid for now.
   onlineOptions = signal<PaymentOption[]>([]);
-  provider = signal('');
+  optionsLoaded = signal(false);
+  bankOption = computed(() => this.onlineOptions().find(o => o.code === 'BANK') ?? null);
+  banks = signal<Bank[]>([]);
   deliveryFee = signal(0); // what the customer pays for delivery (cart orders: from the order; buy now: priced by the server)
 
   // Buy now: where to deliver, and the server's price for it (size of the product + distance from the seller)
@@ -80,11 +77,8 @@ export class Payment implements OnInit {
       this.deliveryFee.set(Number(q?.totalFee) || 0);
     });
   }
-  journalNumber = '';
   submitting = signal(false);
   submitted = signal(false); // field errors only show after the first attempt
-
-  readonly account = { name: 'Pharmith Lepcha', number: '216358950', bank: 'Bank of Bhutan' };
 
   get amount(): number {
     return this.mode === 'order' ? this.total() : this.price() * this.quantity() + this.deliveryFee();
@@ -99,12 +93,15 @@ export class Payment implements OnInit {
     this.onlinePayments.options().subscribe({
       next: options => {
         this.onlineOptions.set(options);
-        if (options.length > 0) {
-          this.provider.set(options[0].code);
-          this.paymentMethod.set('online'); // the faster way first
+        this.optionsLoaded.set(true);
+        if (this.bankOption()) {
+          this.onlinePayments.banks().subscribe({ next: b => this.banks.set(b), error: () => this.banks.set([]) });
         }
       },
-      error: () => this.onlineOptions.set([])
+      error: () => {
+        this.onlineOptions.set([]);
+        this.optionsLoaded.set(true);
+      }
     });
 
     const params = this.route.snapshot.queryParamMap;
@@ -181,23 +178,13 @@ export class Payment implements OnInit {
 
   // ---------- Validation ----------
   errors() {
-    const e: { name?: string; phone?: string; address?: string; journal?: string } = {};
+    const e: { name?: string; phone?: string; address?: string } = {};
     if (this.mode === 'buyNow') {
       if (!this.billing.name.trim()) e.name = 'Enter the name for this order.';
       if (!/^[0-9]{8}$/.test(this.billing.phone.trim())) e.phone = 'Enter an 8-digit phone number.';
       if (!this.billing.address.trim()) e.address = 'Enter the delivery address.';
     }
-    if (this.paymentMethod() === 'bank' && !this.journalNumber.trim()) {
-      e.journal = 'Enter the journal number from your bank receipt.';
-    }
     return e;
-  }
-
-  copy(text: string, what: string) {
-    navigator.clipboard?.writeText(text).then(
-      () => this.toasts.success(`${what} copied`),
-      () => this.toasts.error('Could not copy. Please select and copy it by hand.')
-    );
   }
 
   // ---------- Submit ----------
@@ -210,26 +197,19 @@ export class Payment implements OnInit {
       return;
     }
 
-    const method = this.paymentMethod();
-    const journal = this.journalNumber.trim();
-
-    if (this.mode === 'order') {
-      if (method === 'online') this.payOnline(this.orderId);
-      else this.payExistingOrder(method, journal);
-    } else {
-      this.placeBuyNowOrder(method, journal);
+    if (!this.bankOption()) {
+      this.toasts.error('Online payment is not available right now. Please try again in a little while.');
+      return;
     }
+
+    if (this.mode === 'order') this.payOnline(this.orderId);
+    else this.placeBuyNowOrder();
   }
 
-  chooseOnline(code: string) {
-    this.provider.set(code);
-    this.paymentMethod.set('online');
-  }
-
-  // Off to the payment gateway (the test page while testing). The result page checks how it went.
+  // Off to the bank payment page (/pay/bank): bank, account number, code. The result page says how it went.
   private payOnline(orderId: number) {
     this.submitting.set(true);
-    this.onlinePayments.start(orderId, this.provider()).subscribe({
+    this.onlinePayments.start(orderId, 'BANK').subscribe({
       next: started => this.onlinePayments.goTo(started.redirectUrl, path => this.router.navigateByUrl(path)),
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false);
@@ -242,35 +222,8 @@ export class Payment implements OnInit {
     });
   }
 
-  // Record the payment, then set the order to Pending
-  private payExistingOrder(method: string, journal: string) {
-    this.submitting.set(true);
-
-    this.paymentService.create({
-      orderId: this.orderId,
-      amount: this.total(), // the server ignores this and uses the order's real total
-      paymentMethod: method,
-      status: 'pending',
-      journalNumber: method === 'bank' ? journal : ''
-    }).subscribe({
-      next: () => {
-        this.orderService.updateStatus(this.orderId, 'Pending').subscribe({
-          error: () => console.warn('Order status update failed, but payment was recorded.')
-        });
-        this.cart.clear();
-        this.router.navigate(['/order-success'], { queryParams: { orderId: this.orderId } });
-      },
-      error: (err: HttpErrorResponse) => {
-        this.submitting.set(false);
-        this.toasts.error(err.status === 0
-          ? 'Could not reach the server. Is it running?'
-          : 'We could not record your payment. ' + errorText(err));
-      }
-    });
-  }
-
-  // Create the order, then record the payment
-  private placeBuyNowOrder(method: string, journal: string) {
+  // Create the order, then pay for it
+  private placeBuyNowOrder() {
     const item = this.item();
     if (!item) return;
 
@@ -304,25 +257,7 @@ export class Payment implements OnInit {
     this.submitting.set(true);
 
     this.orderService.create(order).subscribe({
-      next: res => {
-        if (method === 'online') {
-          this.payOnline(res.orderId);
-          return;
-        }
-        this.paymentService.create({
-          orderId: res.orderId,
-          amount: total,
-          paymentMethod: method,
-          status: 'pending',
-          journalNumber: method === 'bank' ? journal : null
-        }).subscribe({
-          next: () => this.router.navigate(['/order-success'], { queryParams: { orderId: res.orderId } }),
-          error: () => {
-            this.submitting.set(false);
-            this.toasts.error(`Order #${res.orderId} was created, but its payment was not saved. Please contact us.`);
-          }
-        });
-      },
+      next: res => this.payOnline(res.orderId),
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false);
         this.toasts.error('We could not place your order: ' + errorText(err));

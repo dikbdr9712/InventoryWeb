@@ -348,9 +348,25 @@
         @switch (paymentMethod()) {
           @case ('CARD') { Take the card payment on the card machine first, then complete the sale. }
           @case ('UPI') { Check that the payment shows on your phone or account, then complete the sale. }
-          @default { Check that the transfer has arrived in the shop's account, then complete the sale. }
+          @default { Check that the transfer has arrived in the shop's account, then type the journal number from the customer's banking app. }
         }
       </p>
+      <div class="pay-ref">
+        <label for="paymentReference">
+          @switch (paymentMethod()) {
+            @case ('BANK_TRANSFER') { Journal number <span class="req">required</span> }
+            @case ('CARD') { Approval code from the card machine <span class="opt">optional</span> }
+            @default { Transaction number <span class="opt">optional</span> }
+          }
+        </label>
+        <input #referenceInput id="paymentReference" type="text" autocomplete="off" spellcheck="false"
+               [placeholder]="paymentMethod() === 'BANK_TRANSFER' ? 'e.g. 1234567890' : ''"
+               [value]="paymentReference()" (input)="onReferenceInput($any($event.target).value)"
+               (keydown.enter)="$event.preventDefault(); completeSale()" />
+        @if (paymentMethod() === 'BANK_TRANSFER') {
+          <small>Each journal number can be used once: the same transfer cannot pay for two sales.</small>
+        }
+      </div>
     }
 
     <div class="dw-actions pay-actions">
@@ -377,7 +393,7 @@
         <div class="inv-head-text">
           <h2 id="inv-title">Sale #{{ inv.orderId }} completed</h2>
           <p>
-            Total Nu. {{ inv.total | number: '1.2-2' }}, paid by {{ methodLabel(inv.paymentMethod) }}
+            Total Nu. {{ inv.total | number: '1.2-2' }}, paid by {{ methodLabel(inv.paymentMethod) }}@if (inv.paymentReference) {, {{ referenceLabel(inv.paymentMethod) }} {{ inv.paymentReference }}}
           </p>
         </div>
         @if (inv.change !== null && inv.change > 0) {
@@ -422,6 +438,9 @@
             <div>
               <div class="meta-label">Payment</div>
               <div class="meta-value">{{ methodLabel(inv.paymentMethod) }}</div>
+              @if (inv.paymentReference) {
+                <div class="meta-sub">{{ referenceLabel(inv.paymentMethod) }} <strong>{{ inv.paymentReference }}</strong></div>
+              }
               @if (inv.cashReceived !== null) {
                 <div class="meta-sub">
                   Received Nu. {{ inv.cashReceived | number: '1.2-2' }}
@@ -506,6 +525,9 @@
           <div class="r-row r-total"><span>TOTAL</span><span>Nu. {{ inv.total | number: '1.2-2' }}</span></div>
           <div class="r-rule"></div>
           <div class="r-row"><span>Paid by</span><span>{{ methodLabel(inv.paymentMethod) }}</span></div>
+          @if (inv.paymentReference) {
+            <div class="r-row"><span>{{ referenceLabel(inv.paymentMethod) }}</span><span>{{ inv.paymentReference }}</span></div>
+          }
           @if (inv.cashReceived !== null) {
             <div class="r-row"><span>Cash received</span><span>{{ inv.cashReceived | number: '1.2-2' }}</span></div>
             @if (inv.change !== null && inv.change > 0) {
@@ -598,6 +620,15 @@
         <div><dt>- Cash refunds</dt><dd>Nu. {{ r.cashRefunds | number: '1.2-2' }}</dd></div>
         <div class="total"><dt>Cash that should be in the drawer</dt><dd>Nu. {{ r.expectedCash | number: '1.2-2' }}</dd></div>
       </dl>
+      @if (r.nonCashSales?.length) {
+        <h3 class="dw-sub">Paid without cash: match with the bank statement</h3>
+        <dl class="dw-report refs">
+          @for (n of r.nonCashSales; track n.orderId) {
+            <div><dt>#{{ n.orderId }} {{ methodLabel(n.method) }} · <span [class.missing]="!n.reference">{{ n.reference || 'no number' }}</span></dt>
+              <dd>Nu. {{ n.amount | number: '1.2-2' }}</dd></div>
+          }
+        </dl>
+      }
 
       <form (ngSubmit)="closeDrawer()">
         <label for="countedCash">Count the cash in the drawer</label>
@@ -648,6 +679,15 @@
       </div>
       @if (r.closingNote) { <div><dt>Note</dt><dd>{{ r.closingNote }}</dd></div> }
     </dl>
+    @if (r.nonCashSales?.length) {
+      <h3 class="dw-sub">Paid without cash</h3>
+      <dl class="dw-report refs">
+        @for (n of r.nonCashSales; track n.orderId) {
+          <div><dt>#{{ n.orderId }} {{ methodLabel(n.method) }} · {{ n.reference || 'no number' }}</dt>
+            <dd>Nu. {{ n.amount | number: '1.2-2' }}</dd></div>
+        }
+      </dl>
+    }
     <div class="dw-actions">
       <button type="button" class="btn btn-secondary" (click)="printShiftReport()"><i class="fas fa-print"></i> Print</button>
       <button type="button" class="btn btn-primary" (click)="closedReport.set(null)">Done</button>

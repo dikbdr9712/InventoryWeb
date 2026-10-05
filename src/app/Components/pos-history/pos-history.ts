@@ -7,7 +7,7 @@ import { ToastService } from '../../services/toast';
 import { AuthService } from '../../services/auth';
 import { ReturnDialog } from '../return-dialog/return-dialog';
 import { CashDrawers } from '../cash-drawers/cash-drawers';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ReturnService, SaleRefund } from '../../services/return';
 import { Order, OrderItem, ShiftReport } from '../../models/models';
 import { errorText } from '../../utils/http-error';
@@ -16,7 +16,7 @@ type Range = 'today' | 'week' | 'month' | 'all' | 'custom';
 
 @Component({
   selector: 'app-pos-history',
-  imports: [DatePipe, DecimalPipe, ReturnDialog, CashDrawers],
+  imports: [DatePipe, DecimalPipe, RouterLink, ReturnDialog, CashDrawers],
   templateUrl: './pos-history.html',
   styleUrl: './pos-history.css'
 })
@@ -77,7 +77,8 @@ export class PosHistory implements OnInit {
           if (to && when > to) return false;
         }
         if (!term) return true;
-        return String(sale.orderId).includes(term) || (sale.customerName || 'walk-in').toLowerCase().includes(term);
+        return String(sale.orderId).includes(term) || (sale.customerName || 'walk-in').toLowerCase().includes(term)
+          || (sale.paymentReference || '').toLowerCase().includes(term);
       })
       .sort((a, b) => (b.orderId || 0) - (a.orderId || 0));
   });

@@ -66,7 +66,7 @@
 
     <div class="search">
       <i class="fas fa-magnifying-glass"></i>
-      <input #search type="search" class="form-control" placeholder="Search by sale number or customer name"
+      <input #search type="search" class="form-control" placeholder="Search by sale number, customer or journal number"
              [value]="searchTerm()" (input)="searchTerm.set(search.value)" aria-label="Search sales" />
     </div>
 
@@ -89,7 +89,12 @@
                 <td><strong>#{{ sale.orderId }}</strong></td>
                 <td>{{ sale.customerName || 'Walk-in customer' }}</td>
                 <td>{{ sale.createdAt | date: 'd MMM y, h:mm a' }}</td>
-                <td>{{ paymentLabel(sale.paymentMethod) || 'Not recorded' }}</td>
+                <td>
+                  {{ paymentLabel(sale.paymentMethod) || 'Not recorded' }}
+                  @if (sale.paymentReference) {
+                    <span class="ref" title="Journal / reference number">{{ sale.paymentReference }}</span>
+                  }
+                </td>
                 <td class="num strong">
                   Nu. {{ sale.totalAmount | number: '1.2-2' }}
                   @if (refundOf(sale.orderId); as refund) {
@@ -103,6 +108,9 @@
                           [attr.aria-expanded]="openOrderId() === sale.orderId">
                     {{ openOrderId() === sale.orderId ? 'Hide items' : 'View items' }}
                   </button>
+                  <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/receipt', sale.orderId]" title="Receipt (view, print or download)">
+                    <i class="fas fa-receipt"></i> Receipt
+                  </a>
                   @if (auth.can('sales.return') && !isFullyReturned(sale.orderId)) {
                     <button type="button" class="btn btn-outline-danger btn-sm" (click)="returnOrderId.set(sale.orderId)">
                       <i class="fas fa-rotate-left"></i> Return

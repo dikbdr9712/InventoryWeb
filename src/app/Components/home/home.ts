@@ -35,7 +35,7 @@ export class Home implements OnInit, OnDestroy {
     {
       icon: 'fa-wallet',
       title: 'Simple payment',
-      text: 'Pay by bank transfer, or pay in cash when your order arrives.'
+      text: 'Pay online from your bank account through the RMA Payment Gateway. Your order is confirmed at once.'
     }
   ];
 

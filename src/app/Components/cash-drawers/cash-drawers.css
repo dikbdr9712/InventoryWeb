@@ -304,3 +304,9 @@
     grid-row: 2;
   }
 }
+
+/* the shift's non-cash sales with their journal numbers */
+.refs { margin-top: 12px; }
+.refs dl > div { display: flex; justify-content: space-between; gap: 12px; }
+.refs dt { font-weight: 400; overflow-wrap: anywhere; }
+.refs .missing { color: var(--red); }

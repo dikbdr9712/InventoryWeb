@@ -11,6 +11,31 @@
     </div>
   </div>
 
+  @if (bankChecks().length) {
+    <section class="panel bank-checks" aria-labelledby="bank-checks-title">
+      <h2 id="bank-checks-title"><i class="fas fa-hourglass-half"></i> Bank payments to check ({{ bankChecks().length }})</h2>
+      <p class="muted">The customer's bank was asked to take the money, but its answer never came. Ask the bank (give it the
+        gateway transaction number) whether the money arrived, then settle the payment here.</p>
+      @for (c of bankChecks(); track c.reference) {
+        <div class="check">
+          <div class="check-info">
+            <strong>Order #{{ c.orderId }} · Nu. {{ c.amount | number: '1.2-2' }}</strong>
+            <span>{{ c.bankName }}, account ending {{ c.accountLast4 }} · {{ c.customerEmail }}</span>
+            <span class="muted small">Gateway transaction {{ c.gatewayTransactionId }} · asked {{ c.askedAt | date: 'd MMM, h:mm a' }}</span>
+          </div>
+          <div class="check-actions">
+            <button type="button" class="btn btn-primary btn-sm" [disabled]="settling() === c.reference" (click)="settleBank(c, true)">
+              <i class="fas fa-check"></i> Money arrived
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="settling() === c.reference" (click)="settleBank(c, false)">
+              Nothing was taken
+            </button>
+          </div>
+        </div>
+      }
+    </section>
+  }
+
   <div class="search">
     <i class="fas fa-magnifying-glass"></i>
     <input #search type="search" class="form-control" placeholder="Search by order number, customer, email or journal number"

@@ -160,3 +160,16 @@
   background: var(--blue-soft);
   color: var(--blue);
 }
+
+/* Bank payments whose answer never came */
+.bank-checks { margin-bottom: 16px; padding: 16px; border-left: 4px solid var(--saffron); }
+.bank-checks h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.bank-checks h2 i { color: var(--saffron); }
+.bank-checks .muted { color: var(--muted); }
+.bank-checks .small { font-size: 0.85rem; }
+.check {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 0; border-top: 1px solid var(--line);
+}
+.check-info { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.check-actions { display: flex; gap: 8px; flex-wrap: wrap; }

@@ -28,9 +28,11 @@ export const sessionExpiredInterceptor: HttpInterceptorFn = (req, next) => {
       if (sessionEnded && !handling) {
         handling = true;
         const backTo = router.url;
+        // never "come back to" the sign-in pages themselves
+        const authPage = /^\/(login|signup|register|forgot-password|reset-password)(\/|\?|$)/.test(backTo);
         auth.logout();
         toasts.info('Your session has ended. Please sign in again.');
-        router.navigate(['/login'], { queryParams: { returnUrl: backTo } }).finally(() => (handling = false));
+        router.navigate(['/login'], authPage ? {} : { queryParams: { returnUrl: backTo } }).finally(() => (handling = false));
       }
       return throwError(() => error); // the screen that asked still gets its error
     })

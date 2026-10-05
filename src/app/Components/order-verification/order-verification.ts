@@ -5,6 +5,7 @@ import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { OrderService } from '../../services/order';
 import { PaymentService } from '../../services/payment';
 import { ConfirmService } from '../../services/confirm';
+import { BankPaymentToCheck, OnlinePaymentsService } from '../../services/online-payments';
 import { ToastService } from '../../services/toast';
 import { Order, PaymentRecord } from '../../models/models';
 import { errorText } from '../../utils/http-error';
@@ -60,6 +61,11 @@ export class OrderVerification implements OnInit {
   private paymentService = inject(PaymentService);
   private confirm = inject(ConfirmService);
   private toasts = inject(ToastService);
+  private onlinePayments = inject(OnlinePaymentsService);
+
+  // Payments from a bank account whose result the bank never sent: ask the bank, then settle them here
+  bankChecks = signal<BankPaymentToCheck[]>([]);
+  settling = signal<string | null>(null);
 
   decisions = DECISIONS;
 
@@ -88,6 +94,46 @@ export class OrderVerification implements OnInit {
 
   ngOnInit() {
     this.load();
+    this.loadBankChecks();
+  }
+
+  loadBankChecks() {
+    this.onlinePayments.bankToCheck().subscribe({ next: list => this.bankChecks.set(list), error: () => this.bankChecks.set([]) });
+  }
+
+  async settleBank(check: BankPaymentToCheck, paid: boolean) {
+    let journal: string | null = null;
+    if (paid) {
+      journal = await this.confirm.prompt({
+        title: `The money for order #${check.orderId} arrived`,
+        message: `Type the journal number the bank gave for Nu. ${check.amount} from ${check.bankName} account ending ${check.accountLast4}. The order is then confirmed and the customer gets a receipt.`,
+        label: 'Journal number from the bank',
+        placeholder: 'For example: 1234567890',
+        confirmLabel: 'Confirm the payment'
+      });
+      if (!journal) return;
+    } else {
+      const ok = await this.confirm.ask({
+        title: `No money was taken for order #${check.orderId}`,
+        message: 'The bank confirmed that this payment did not go through? The customer can then pay again.',
+        confirmLabel: 'Nothing was taken',
+        danger: true
+      });
+      if (!ok) return;
+    }
+    this.settling.set(check.reference);
+    this.onlinePayments.bankSettle(check.reference, paid, journal).subscribe({
+      next: () => {
+        this.settling.set(null);
+        this.toasts.success(paid ? `Order #${check.orderId} is paid and confirmed.` : `Order #${check.orderId}: the customer can pay again.`);
+        this.loadBankChecks();
+        this.load();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.settling.set(null);
+        this.toasts.error(errorText(err));
+      }
+    });
   }
 
   load() {

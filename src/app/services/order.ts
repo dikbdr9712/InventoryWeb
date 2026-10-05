@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { AdminOrder, DirectOrderRequest, Order, OrderAction, OrderItem, OrderRequest } from '../models/models';
+import { AdminOrder, DirectOrderRequest, Order, OrderAction, OrderItem, OrderRequest, Receipt } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
@@ -27,6 +27,11 @@ export class OrderService {
 
   getItems(orderId: number) {
     return this.http.get<OrderItem[]>(`${this.api}/${orderId}/items`);
+  }
+
+  // The payment receipt of a paid order (the customer's own, or any for staff)
+  receipt(orderId: number) {
+    return this.http.get<Receipt>(`${this.api}/${orderId}/receipt`);
   }
 
   // ---------- Admin ----------

@@ -22,9 +22,10 @@ import { errorText } from '../../utils/http-error';
               <h1>Payment received</h1>
               <p>Nu. {{ a.amount | number: '1.2-2' }} for order #{{ a.orderId }}. Your order is confirmed and we are getting it ready.
                  We will tell you when it is on the way.</p>
-              <p class="muted small">Payment reference {{ a.providerReference || a.reference }}</p>
+              <p class="muted small">Journal no. {{ a.providerReference || a.reference }}</p>
               <div class="actions">
-                <a class="btn btn-primary" [routerLink]="['/orders', a.orderId]">See my order</a>
+                <a class="btn btn-primary" [routerLink]="['/receipt', a.orderId]"><i class="fas fa-receipt"></i> Get the receipt</a>
+                <a class="btn btn-secondary" [routerLink]="['/orders', a.orderId]">See my order</a>
                 <a class="btn btn-secondary" routerLink="/products">Keep shopping</a>
               </div>
             }
@@ -41,8 +42,8 @@ import { errorText } from '../../utils/http-error';
             @default {
               <i class="fas fa-circle-xmark big"></i>
               <h1>{{ a.status === 'CANCELLED' ? 'Payment cancelled' : 'The payment did not go through' }}</h1>
-              <p>{{ a.message || 'No money was taken.' }} Your order #{{ a.orderId }} is saved: you can try again,
-                 or pay by bank transfer.</p>
+              <p>{{ a.message || 'No money was taken.' }} Your order #{{ a.orderId }} is saved: you can try again
+                 (also from another bank account).</p>
               <div class="actions">
                 <a class="btn btn-primary" routerLink="/payment" [queryParams]="{ orderId: a.orderId }">Try again</a>
                 <a class="btn btn-secondary" [routerLink]="['/orders', a.orderId]">See my order</a>

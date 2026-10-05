@@ -3,6 +3,8 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ReportService } from '../../services/report';
+import { ToastService } from '../../services/toast';
+import { errorText } from '../../utils/http-error';
 import { ProfitReport, StockService } from '../../services/stock';
 import { SalesRow, SalesSummary } from '../../models/models';
 
@@ -14,6 +16,7 @@ import { SalesRow, SalesSummary } from '../../models/models';
 })
 export class SalesDashboard implements OnInit {
   private reportService = inject(ReportService);
+  private toasts = inject(ToastService);
   private stock = inject(StockService);
 
   // profit on our own products: what each sold unit really cost (batch by batch)
@@ -76,11 +79,11 @@ export class SalesDashboard implements OnInit {
       return;
     }
     if (!this.startDate || !this.endDate) {
-      alert('Please choose both a start date and an end date.');
+      this.toasts.error('Please choose both a start date and an end date.');
       return;
     }
     if (new Date(this.startDate) > new Date(this.endDate)) {
-      alert('The start date cannot be after the end date.');
+      this.toasts.error('The start date cannot be after the end date.');
       return;
     }
     this.load('custom', this.startDate, this.endDate);
@@ -98,12 +101,15 @@ export class SalesDashboard implements OnInit {
         this.loading.set(false);
         this.reportService.getSummary(period, start, end).subscribe({
           next: summary => this.summary.set(summary),
-          error: () => alert('Could not load the summary figures.')
+          error: (err: HttpErrorResponse) => {
+            if (err.status !== 401) this.toasts.error('Could not load the summary figures: ' + errorText(err));
+          }
         });
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
-        alert(`Could not load sales data. Status: ${err.status} ${err.statusText ?? ''}`);
+        // 401 = the sign-in ended: the app already goes to the sign-in page, no need for a second message
+        if (err.status !== 401) this.toasts.error('Could not load the sales: ' + errorText(err));
         console.error('Sales report error:', err.error);
       }
     });

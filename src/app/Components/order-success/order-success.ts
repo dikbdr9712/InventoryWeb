@@ -17,8 +17,8 @@ export class OrderSuccess {
 
   // The path an order follows after it is placed
   steps = [
-    { title: 'We review your order', text: 'We check the items and, for bank transfers, your payment.' },
+    { title: 'We review your order', text: 'We check the items and your payment.' },
     { title: 'We pack and ship it', text: 'Your order is prepared and sent out to you.' },
-    { title: 'It arrives', text: 'You receive your order. If you chose cash on delivery, you pay then.' }
+    { title: 'It arrives', text: 'You receive your order. It is already paid: our riders never carry cash.' }
   ];
 }

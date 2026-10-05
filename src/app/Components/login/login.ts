@@ -50,11 +50,16 @@ export class Login {
     this.auth.login(this.email.trim(), this.password).subscribe({
       next: user => {
         this.toasts.success(`Welcome back, ${user.name.split(' ')[0]}.`);
-        // only follow paths inside this site
+        // only follow paths inside this site, and never back to a sign-in page
         const target = this.returnUrl && this.returnUrl.startsWith('/') && !this.returnUrl.startsWith('//')
+          && !/^\/(login|signup|register|forgot-password|reset-password)(\/|\?|$)/.test(this.returnUrl)
           ? this.returnUrl
           : homeFor(this.auth).path; // each person starts on their own dashboard
-        this.router.navigateByUrl(target);
+        // if the way there is stopped (for example the server forgot the sign-in at once), the button works again
+        this.router.navigateByUrl(target).then(
+          arrived => { if (!arrived) this.loading.set(false); },
+          () => this.loading.set(false)
+        );
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);

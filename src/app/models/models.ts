@@ -119,6 +119,7 @@ export interface Order {
   orderStatus?: string;
   paymentStatus?: string;
   paymentMethod?: string;
+  paymentReference?: string | null; // counter sales: journal number / card approval code / UPI number
   createdAt?: string;
   updatedAt?: string;
   updatedBy?: string;
@@ -147,7 +148,7 @@ export interface AdminOrder extends Order {
   paymentSubmitted?: boolean;   // the customer sent a payment that waits to be checked
   journalNumber?: string | null;
   paymentAmount?: number | null;
-  hasPackages?: boolean;        // goes out package by package through the Deliveries board
+  hasPackages?: boolean;        // goes out package by package (the order board)
 }
 
 export type OrderAction = 'confirm-payment' | 'confirm' | 'cancel' | 'ship' | 'complete';
@@ -182,6 +183,7 @@ export interface PosSaleRequest {
   customerName: string | null;
   customerPhone: string | null;
   paymentMethod: string;
+  paymentReference: string | null; // journal number (bank transfer, required), card approval code or UPI number
   taxes: { type: string; rate: number }[];
   items: { itemId: number; quantity: number; mrp: number; discountPercent: number }[];
 }
@@ -514,6 +516,42 @@ export interface ShiftReport {
   countedCash?: number | null;
   difference?: number | null;
   closingNote?: string | null;
+  nonCashSales?: NonCashSale[]; // to match against the bank statement
+}
+
+export interface NonCashSale {
+  orderId: number;
+  method: string;
+  reference?: string | null;
+  amount: number;
+  at: string;
+}
+
+// ---------- Payment receipt (/api/orders/{id}/receipt) ----------
+export interface Receipt {
+  orderId: number;
+  source: 'ONLINE' | 'POS';
+  orderedAt: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
+  address?: string | null;
+  servedBy?: string | null;
+  lines: { name: string; quantity: number; unitPrice: number; amount: number }[];
+  itemsTotal: number;
+  savings?: number | null;
+  taxes: { label: string; amount: number }[];
+  deliveryFee?: number | null;
+  total: number;
+  payment: {
+    method: string;
+    journal?: string | null;
+    journalLabel: string;
+    account?: string | null;   // "Bank of Bhutan, account ending 4321"
+    paidAt?: string | null;
+    cashReceived?: number | null;
+    change?: number | null;
+  };
 }
 
 // ---------- Agreements (terms) ----------

@@ -36,9 +36,8 @@ export const STAFF_GROUPS: { title: string; icon: string; items: StaffLink[] }[]
     title: 'Orders',
     icon: 'fa-list-check',
     items: [
-      { path: '/admin/orders', label: 'Order list', icon: 'fa-list-check', permission: 'orders.view', hint: 'Online orders and what to do next' },
-      { path: '/order-verification', label: 'Verify payments', icon: 'fa-circle-check', permission: 'payments.verify', hint: 'Check bank transfers' },
-      { path: '/admin/deliveries', label: 'Deliveries', icon: 'fa-truck-fast', permission: 'orders.view', hint: 'Packages, drivers and drop-offs' }
+      { path: '/admin/orders', label: 'Orders', icon: 'fa-list-check', permission: 'orders.view', hint: 'Payment to door: who has each order, what is late' },
+      { path: '/order-verification', label: 'Verify payments', icon: 'fa-circle-check', permission: 'payments.verify', hint: 'Check payments and bank answers' }
     ]
   },
   {
