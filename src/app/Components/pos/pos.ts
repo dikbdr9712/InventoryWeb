@@ -100,7 +100,7 @@ const SHOP = {
   name: 'DP DrukBazaars',
   address: 'Thimphu, Bhutan',
   phone: '77269712',
-  email: 'dikbdrghalley12@gmail.com'
+  email: 'dpdrukbazaars@gmail.com'
 };
 
 
