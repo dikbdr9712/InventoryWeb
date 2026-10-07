@@ -579,7 +579,9 @@ export class UserManagement implements OnInit {
       USER_REACTIVATED: 'Switched an account on', USER_PASSWORD_RESET: 'Reset a password', ROLE_CREATED: 'Created a role',
       ROLE_PERMISSIONS_CHANGED: 'Changed what a role can do', ROLE_DELETED: 'Deleted a role', PAYOUT: 'Recorded a payout',
       MARKETPLACE_SETTINGS: 'Changed marketplace settings', SELLER_COMMISSION: 'Changed a seller\'s commission',
-      SHIFT_OPENED: 'Opened a cash drawer', SHIFT_CLOSED: 'Closed a cash drawer'
+      SHIFT_OPENED: 'Opened a cash drawer', SHIFT_CLOSED: 'Closed a cash drawer',
+      PASSWORD_RESET_CODE_OK: 'Confirmed a forgot-password code', PASSWORD_RESET_SELF: 'Chose a new password (forgot password)',
+      PASSWORD_RESET_BY_EMAIL: 'Chose a new password (forgot password)'
     };
     if (labels[action]) return labels[action];
     if (/^(SELLER|RIDER)_(APPROVED|REJECTED|SUSPENDED)$/.test(action)) {

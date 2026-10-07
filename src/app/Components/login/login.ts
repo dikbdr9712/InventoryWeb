@@ -20,7 +20,8 @@ export class Login {
   private route = inject(ActivatedRoute);
   private toasts = inject(ToastService);
 
-  email = '';
+  // after choosing a new password, the account's email comes along (in the browser's memory, not the address)
+  email = (history.state as { email?: string } | null)?.email ?? '';
   password = '';
   showPassword = signal(false);
   loading = signal(false);

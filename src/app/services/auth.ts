@@ -5,6 +5,9 @@ import { environment } from '../../environments/environment';
 import { LoginResponse, SignupRequest } from '../models/models';
 import { Permission, permissionsFor } from '../utils/permissions';
 
+export type ResetMethod = 'email' | 'sms';
+export interface ResetWays { email: boolean; sms: boolean; }
+
 function readPermissions(): string[] | null {
   try {
     const raw = localStorage.getItem('userPermissions');
@@ -64,22 +67,31 @@ export class AuthService {
   }
 
   // ---------- Forgot password ----------
-  // The answer is the same whether or not the email has an account
-  // Can the server send the reset email? (No email account set up = ask the shop instead.)
-  resetByEmailAvailable() {
-    return this.http.get<{ email: boolean }>(`${environment.apiUrl}/api/auth/forgot-password`);
+  // 1. a 6-digit code by email or text message, 2. the code gives a one-time ticket, 3. the new password.
+  // The answers are the same whether or not the email or phone number has an account.
+
+  // Which ways can send the code now (a way the server cannot use is not offered; neither = ask the shop)
+  resetWays() {
+    return this.http.get<ResetWays>(`${environment.apiUrl}/api/auth/forgot-password`);
   }
 
-  forgotPassword(email: string) {
-    return this.http.post<{ message: string }>(`${environment.apiUrl}/api/auth/forgot-password`, { email });
+  sendResetCode(method: ResetMethod, to: string) {
+    return this.http.post<{ message: string; resendAfter: number }>(`${environment.apiUrl}/api/auth/forgot-password`,
+      method === 'email' ? { method, email: to } : { method, phone: to });
+  }
+
+  verifyResetCode(method: ResetMethod, to: string, code: string) {
+    return this.http.post<{ token: string }>(`${environment.apiUrl}/api/auth/forgot-password/verify`,
+      method === 'email' ? { method, email: to, code } : { method, phone: to, code });
   }
 
   checkResetLink(token: string) {
     return this.http.get<{ valid: boolean }>(`${environment.apiUrl}/api/auth/reset-password/check`, { params: { token } });
   }
 
+  // With the ticket (after the code) or the token from the email link. Gives back the account's email, to sign in with.
   resetPassword(token: string, newPassword: string) {
-    return this.http.post<{ message: string }>(`${environment.apiUrl}/api/auth/reset-password`, { token, newPassword });
+    return this.http.post<{ message: string; email?: string }>(`${environment.apiUrl}/api/auth/reset-password`, { token, newPassword });
   }
 
   signup(data: SignupRequest) {

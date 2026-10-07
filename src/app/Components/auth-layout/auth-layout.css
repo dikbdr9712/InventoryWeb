@@ -130,6 +130,12 @@
   padding-right: 68px;
 }
 
+/* Bootstrap's red warning icon would sit under the Show button: the red border and the message are enough */
+.auth .pw .form-control.is-invalid {
+  padding-right: 68px;
+  background-image: none;
+}
+
 .auth .pw button {
   position: absolute;
   top: 50%;

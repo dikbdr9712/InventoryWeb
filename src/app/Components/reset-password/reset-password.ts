@@ -10,6 +10,7 @@ import { errorText } from '../../utils/http-error';
 const MIN_LENGTH = 6;
 
 // The page the email link opens: choose a new password. The link works once, for 30 minutes.
+// (The same email also holds a 6-digit code for the Forgot password page.)
 @Component({
   selector: 'app-reset-password',
   imports: [FormsModule, RouterLink, AuthLayout],
@@ -23,7 +24,7 @@ const MIN_LENGTH = 6;
           <div class="alert alert-warning" role="alert">
             <strong>This link has expired or was already used.</strong> Links work once, for 30 minutes.
           </div>
-          <a routerLink="/forgot-password" class="btn btn-primary btn-lg auth-submit">Send me a new link</a>
+          <a routerLink="/forgot-password" class="btn btn-primary btn-lg auth-submit">Ask for a new code</a>
           <p class="auth-alt"><a routerLink="/login">Back to sign in</a></p>
         }
         @default {
@@ -108,11 +109,11 @@ export class ResetPassword implements OnInit {
     if (Object.keys(this.errors()).length > 0 || this.saving()) return;
     this.saving.set(true);
     this.auth.resetPassword(this.token, this.password).subscribe({
-      next: () => {
+      next: r => {
         this.saving.set(false);
         if (this.auth.isLoggedIn()) this.auth.logout(); // this browser starts fresh too
         this.toasts.success('Password changed. Sign in with your new password.');
-        this.router.navigate(['/login']);
+        this.router.navigate(['/login'], { state: { email: r.email ?? '' } });
       },
       error: (err: HttpErrorResponse) => {
         this.saving.set(false);
