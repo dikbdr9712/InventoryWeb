@@ -70,7 +70,7 @@ export class TermsPage implements OnInit, OnDestroy {
       next: t => {
         this.terms.set(t);
         this.isOld.set(v > 0);
-        if (t?.title) document.title = t.title + ' · DK/Phar';
+        if (t?.title) document.title = t.title + ' · DP DrukBazaars';
       },
       error: () => this.error.set('This agreement could not be loaded. Please try again later.')
     });

@@ -28,7 +28,7 @@ const RESEND_WAIT = 30;
           }
 
           <header class="head">
-            <p class="muted small">DK/Phar order #{{ v.orderId }}</p>
+            <p class="muted small">DP DrukBazaars order #{{ v.orderId }}</p>
             <h1>Pay Nu. {{ v.amount | number: '1.2-2' }}</h1>
             <p class="gateway"><i class="fas fa-lock"></i> Secure payment through the RMA Payment Gateway
               (Royal Monetary Authority of Bhutan)</p>

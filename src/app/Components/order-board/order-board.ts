@@ -285,7 +285,7 @@ export class OrderBoardPage implements OnInit {
   }
 
   fromLabel(i: BoardItem): string {
-    return (i.sellerName ?? 'DK/Phar') + (i.pickupTown ? ', ' + i.pickupTown : '');
+    return (i.sellerName ?? 'DP DrukBazaars') + (i.pickupTown ? ', ' + i.pickupTown : '');
   }
 
   duration(minutes: number): string {

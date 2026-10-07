@@ -145,7 +145,7 @@ export class CashDrawers implements OnInit {
     document.getElementById('print-style')?.remove();
     const root = document.createElement('div');
     root.id = 'print-root';
-    root.innerHTML = '<h2 style="margin:0 0 4px;font-size:16px">DK/Phar · Cash drawer report</h2>' + source.outerHTML;
+    root.innerHTML = '<h2 style="margin:0 0 4px;font-size:16px">DP DrukBazaars · Cash drawer report</h2>' + source.outerHTML;
     root.querySelectorAll('.no-print').forEach(e => e.remove());
     const style = document.createElement('style');
     style.id = 'print-style';

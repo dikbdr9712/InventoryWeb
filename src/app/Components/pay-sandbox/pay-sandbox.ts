@@ -16,7 +16,7 @@ import { errorText } from '../../utils/http-error';
         <p class="badge-test"><i class="fas fa-flask"></i> Test payment page: no real money moves</p>
         @if (attempt(); as a) {
           <h1>Pay Nu. {{ a.amount | number: '1.2-2' }}</h1>
-          <p class="muted">DK/Phar order #{{ a.orderId }} · payment {{ a.reference }}</p>
+          <p class="muted">DP DrukBazaars order #{{ a.orderId }} · payment {{ a.reference }}</p>
 
           @if (a.status === 'CREATED') {
             <p>On the live site, this is where the bank's page asks for your account and one-time code.

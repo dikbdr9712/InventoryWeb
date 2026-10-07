@@ -97,7 +97,7 @@ function newRef(): string {
 
 // Printed at the top of every invoice and receipt
 const SHOP = {
-  name: 'DK/Phar Inventory Management System',
+  name: 'DP DrukBazaars',
   address: 'Thimphu, Bhutan',
   phone: '77269712',
   email: 'dikbdrghalley12@gmail.com'

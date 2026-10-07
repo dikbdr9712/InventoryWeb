@@ -61,7 +61,7 @@ export class ContactMessages implements OnInit {
   // Opens the person's email app with the reply address and a subject already filled in
   mailto(message: ContactMessage): string {
     const ref = this.orderRef(message);
-    const subject = ref ? `Re: your message about order #${ref}` : 'Re: your message to DK/Phar';
+    const subject = ref ? `Re: your message about order #${ref}` : 'Re: your message to DP DrukBazaars';
     return `mailto:${message.email}?subject=${encodeURIComponent(subject)}`;
   }
 }

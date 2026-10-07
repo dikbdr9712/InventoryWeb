@@ -1,10 +1,10 @@
 <!-- Hero -->
 <section class="hero">
   <div class="hero-copy">
-    <h1>Quality natural products, delivered fast.</h1>
+    <h1>Shop online in Bhutan, delivered to your door.</h1>
     <p>
-      We buy and sell natural products you can trust, from skincare and haircare to supplements.
-      Browse the shelf, order online, and we will take care of the rest.
+      Everyday products from DP DrukBazaars and trusted local sellers. Order in a few taps, pay from your own bank
+      account, and follow your order until it reaches you.
     </p>
     <div class="hero-actions">
       <a routerLink="/products" class="btn btn-primary btn-lg">Shop products</a>
@@ -12,18 +12,18 @@
     </div>
   </div>
 
-  <div class="banner" role="region" aria-roledescription="carousel" aria-label="Shop photos">
-    @for (slide of slides; track slide; let i = $index) {
+  <div class="banner" role="region" aria-roledescription="carousel" aria-label="Pictures">
+    @for (slide of slides; track slide.src; let i = $index) {
       @if (ready()[i]) {
-        <img class="banner-img" [class.on]="i === current()" [src]="slide" [attr.fetchpriority]="i === 0 ? 'high' : null"
-             [alt]="'Inside the shop, photo ' + (i + 1)" [attr.aria-hidden]="i !== current()" />
+        <img class="banner-img" [class.on]="i === current()" [src]="slide.src" [attr.fetchpriority]="i === 0 ? 'high' : null"
+             [alt]="slide.alt" [attr.aria-hidden]="i !== current()" />
       }
     }
-    <button type="button" class="banner-btn prev" (click)="prev()" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>
-    <button type="button" class="banner-btn next" (click)="next()" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>
+    <button type="button" class="banner-btn prev" (click)="prev()" aria-label="Previous picture"><i class="fas fa-chevron-left"></i></button>
+    <button type="button" class="banner-btn next" (click)="next()" aria-label="Next picture"><i class="fas fa-chevron-right"></i></button>
     <div class="banner-dots">
-      @for (slide of slides; track slide; let i = $index) {
-        <button type="button" [class.on]="i === current()" (click)="goTo(i)" [attr.aria-label]="'Show photo ' + (i + 1)"></button>
+      @for (slide of slides; track slide.src; let i = $index) {
+        <button type="button" [class.on]="i === current()" (click)="goTo(i)" [attr.aria-label]="'Show picture ' + (i + 1)"></button>
       }
     </div>
   </div>
@@ -72,13 +72,13 @@
 
   <!-- Mission -->
   <section class="mission">
-    <img src="Images/alternative-medicine-capsules.jpg" alt="Natural capsules and supplements" loading="lazy" />
+    <img src="Images/art/together.svg" alt="Colourful drops falling together into a wave that carries a shopping bag" loading="lazy" />
     <div>
       <blockquote>Individually, we are one drop. Together, we are an ocean.</blockquote>
       <p>
-        We are here to help you get everything you need in a short time, with the best quality and natural
-        products that help you look after your health. Our team is dedicated to giving you the best service,
-        so you can be sure your order will be handled with care.
+        We are here to help you get everything you need in a short time, from sellers you can trust. Our team
+        checks every payment, packs every order with care and follows it until it is delivered, so you always
+        know where your order is.
       </p>
       <a routerLink="/about" class="btn btn-outline-primary">About us</a>
     </div>

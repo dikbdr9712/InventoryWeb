@@ -13,7 +13,13 @@ import { Item } from '../../models/models';
 export class Home implements OnInit, OnDestroy {
   private itemService = inject(ItemService);
 
-  slides = [1, 2, 3, 4, 5].map(n => `Images/cors-${n}.jpg`);
+  // Pictures drawn for DP DrukBazaars (public/Images/art)
+  slides = [
+    { src: 'Images/art/banner-market.svg', alt: 'A market street with Bhutanese-style shops and shoppers carrying bags' },
+    { src: 'Images/art/banner-delivery.svg', alt: 'A rider on a scooter taking a package up a mountain road to a house' },
+    { src: 'Images/art/banner-pay.svg', alt: 'Paying from your own bank account on a phone, kept safe' },
+    { src: 'Images/art/banner-track.svg', alt: 'A map with the route of an order, and its steps from packed to delivered' }
+  ];
   current = signal(0);
   // Only the first photo is downloaded with the page; each other photo is fetched just before it is shown
   ready = signal<boolean[]>(this.slides.map((_, i) => i === 0));
@@ -23,9 +29,9 @@ export class Home implements OnInit, OnDestroy {
 
   values = [
     {
-      icon: 'fa-leaf',
-      title: 'Carefully selected',
-      text: 'Gentle, natural ingredients, with clear descriptions of what is in each product.'
+      icon: 'fa-store',
+      title: 'Trusted sellers',
+      text: 'Products from DP DrukBazaars and checked local sellers, with clear descriptions and reviews from real buyers.'
     },
     {
       icon: 'fa-truck-fast',

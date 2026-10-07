@@ -18,6 +18,6 @@ export class AuthLayout {
   points = [
     'Follow every order from placed to delivered',
     'Check out in a few taps',
-    'Natural products, handled with care'
+    'Pay safely from your own bank account'
   ];
 }

@@ -30,8 +30,8 @@
         }
         <p class="sold-by">
           <i class="fas fa-store"></i>
-          Sold by <strong>{{ item.sellerName || 'DK/Phar' }}</strong>
-          @if (item.sellerName) { <span>· delivered by DK/Phar riders</span> }
+          Sold by <strong>{{ item.sellerName || 'DP DrukBazaars' }}</strong>
+          @if (item.sellerName) { <span>· delivered by DP DrukBazaars riders</span> }
         </p>
 
         <div class="price-row">
@@ -142,7 +142,7 @@
                 </div>
                 @if (r.comment) { <p class="rv-text">{{ r.comment }}</p> }
                 @if (r.reply) {
-                  <div class="rv-reply"><strong>DK/Phar replied:</strong> {{ r.reply }}</div>
+                  <div class="rv-reply"><strong>DP DrukBazaars replied:</strong> {{ r.reply }}</div>
                 }
               </li>
             }

@@ -11,8 +11,12 @@ export class OurServices {
   services = [
     {
       icon: 'fa-globe',
-      title: 'Online services',
-      points: ['Online payment', 'Online marketplace', 'Online booking platforms', 'Online grocery shopping'],
+      title: 'Shop online',
+      points: [
+        'Order any time, from your phone or computer.',
+        'Products from DP DrukBazaars and checked local sellers.',
+        'Follow every order, from packed to delivered.'
+      ],
       button: 'Order now',
       link: '/products'
     },
@@ -20,7 +24,7 @@ export class OurServices {
       icon: 'fa-handshake',
       title: 'Delivery and payment',
       points: [
-        'A wide range of products, with same-day shipping, store pickup and safe delivery.',
+        'Our riders bring your order to your door. Give them the delivery code from your order page, so the package reaches the right person.',
         'Pay online from your own bank account through the RMA Payment Gateway, before delivery.'
       ],
       button: 'Read more',
@@ -29,7 +33,7 @@ export class OurServices {
     {
       icon: 'fa-star',
       title: 'Reviews and ratings',
-      points: ['Customer reviews and ratings build trust, help people decide, and show how others found us.'],
+      points: ['Every review comes from a customer who received their order, so you can trust what you read.'],
       button: 'Read the reviews',
       link: '/reviews'
     }
