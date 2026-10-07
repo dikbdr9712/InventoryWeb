@@ -22,6 +22,7 @@ export type Permission =
   | 'sales.return'      // take items back from a sale and refund them
   | 'users.manage'      // change other people's roles
   | 'marketplace.manage' // approve sellers and riders, commission, delivery settings, payouts
+  | 'site.manage'       // the About page: texts, live numbers, team members
   | 'seller.portal'     // a seller's dashboard (My shop)
   | 'seller.products'   // the seller's own products, prices, photos, stock
   | 'seller.orders'     // pack the seller's paid orders
@@ -33,7 +34,7 @@ export type Permission =
 const EVERYTHING: Permission[] = [
   'orders.view', 'orders.fulfil', 'orders.assign', 'payments.verify', 'items.manage',
   'stock.restock', 'pos.use', 'pos.discount', 'pos.shifts.manage', 'sales.return', 'reports.view', 'messages.view',
-  'customers.view', 'customers.manage', 'reviews.manage', 'users.manage', 'marketplace.manage'
+  'customers.view', 'customers.manage', 'reviews.manage', 'users.manage', 'marketplace.manage', 'site.manage'
 ];
 
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
@@ -75,6 +76,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'sales.return': 'Take items back from a sale and refund',
   'users.manage': 'Manage users and roles',
   'marketplace.manage': 'Run the marketplace: sellers, riders, commission and payouts',
+  'site.manage': 'Edit the website pages (About page and team)',
   'seller.portal': 'Open My shop',
   'seller.products': 'Manage your own products',
   'seller.orders': 'Pack your orders',

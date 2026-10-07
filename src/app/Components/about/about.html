@@ -1,50 +1,109 @@
-<div class="page">
+<div class="page about-page">
+  <!-- who we are -->
   <section class="intro">
     <div class="intro-text">
-      <h1>About us</h1>
-      <p>
-        DP DrukBazaars is an online marketplace from Bhutan. We connect people with products they can trust,
-        and with the local sellers and riders who bring them to their door.
-      </p>
-      <a routerLink="/contact" class="btn btn-primary">Get in touch</a>
+      <span class="eyebrow">About us</span>
+      <h1>Online shopping, made in Bhutan</h1>
+      @if (page(); as p) {
+        <p class="lead">{{ p.intro }}</p>
+      } @else {
+        <p class="lead"><span class="sk w90"></span><span class="sk w75"></span><span class="sk w60"></span></p>
+      }
+      <div class="intro-actions">
+        <a routerLink="/products" class="btn btn-primary">Start shopping</a>
+        <a routerLink="/contact" class="btn btn-secondary">Get in touch</a>
+      </div>
     </div>
     <img class="intro-art" src="Images/art/about.svg" alt="" (error)="hide($event)" />
   </section>
 
+  <!-- live numbers from the shop -->
+  @if (numbers().length) {
+    <section class="numbers" aria-label="DP DrukBazaars in numbers">
+      @for (n of numbers(); track n.label) {
+        <div class="number">
+          <i class="fas" [class]="'fas ' + n.icon" aria-hidden="true"></i>
+          <strong>{{ n.value }}</strong>
+          <span>{{ n.label }}</span>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- mission and vision -->
   <section class="pillars">
     <article class="panel pillar">
       <span class="icon"><i class="fas fa-bullseye"></i></span>
       <h2>Our mission</h2>
-      <p>
-        Our mission is to make online shopping in Bhutan simple, safe and reliable: easy ordering, safe payment
-        from your own bank account, and delivery you can follow from start to finish. We help local businesses
-        and makers reach more customers.
-      </p>
+      @if (page(); as p) { <p>{{ p.mission }}</p> } @else { <p><span class="sk w90"></span><span class="sk w80"></span><span class="sk w50"></span></p> }
     </article>
-
     <article class="panel pillar">
       <span class="icon"><i class="fas fa-eye"></i></span>
       <h2>Our vision</h2>
-      <p>
-        Our vision is a marketplace where every local business in Bhutan can sell to customers across the
-        country, and every customer can shop with confidence, wherever they live.
-      </p>
+      @if (page(); as p) { <p>{{ p.vision }}</p> } @else { <p><span class="sk w90"></span><span class="sk w70"></span></p> }
     </article>
   </section>
 
-  <section class="team">
-    <h2>Meet the team</h2>
-    <div class="people">
-      @for (person of team; track person.name) {
-        <article class="person">
-          <span class="photo">
-            <span class="fallback">{{ initials(person.name) }}</span>
-            <img [src]="person.photo" [alt]="person.name" loading="lazy" (error)="hide($event)" />
-          </span>
-          <h3>{{ person.name }}</h3>
-          <span>{{ person.role }}</span>
+  <!-- the three ways to take part -->
+  <section class="ways" aria-labelledby="ways-title">
+    <h2 id="ways-title">How DP DrukBazaars works</h2>
+    <div class="ways-grid">
+      @for (w of ways; track w.title; let i = $index) {
+        <article class="panel way">
+          <span class="way-step">{{ i + 1 }}</span>
+          <span class="icon"><i class="fas" [class]="'fas ' + w.icon"></i></span>
+          <h3>{{ w.title }}</h3>
+          <p>{{ w.text }}</p>
+          <a [routerLink]="w.link" class="way-link">{{ w.action }} <i class="fas fa-arrow-right"></i></a>
         </article>
       }
+    </div>
+  </section>
+
+  <!-- the people behind it -->
+  @if (page(); as p) {
+    @if (p.team.length) {
+      <section class="team" aria-labelledby="team-title">
+        <h2 id="team-title">Meet the team</h2>
+        <p class="section-sub">The people who run DP DrukBazaars and look after your orders.</p>
+        <div class="people">
+          @for (person of p.team; track person.id) {
+            <article class="panel person">
+              <span class="photo">
+                <span class="fallback" aria-hidden="true">{{ initials(person.name) }}</span>
+                @if (photo(person); as src) {
+                  <img [src]="src" [alt]="person.name" loading="lazy" (error)="hide($event)" />
+                }
+              </span>
+              <h3>{{ person.name }}</h3>
+              <span class="role">{{ person.role }}</span>
+              @if (person.bio) { <p class="bio">{{ person.bio }}</p> }
+            </article>
+          }
+        </div>
+      </section>
+    }
+  } @else {
+    <section class="team" aria-hidden="true">
+      <h2>Meet the team</h2>
+      <div class="people">
+        @for (n of [1, 2, 3]; track n) {
+          <div class="panel person"><span class="photo"></span><span class="sk w60"></span><span class="sk w40"></span></div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- help -->
+  <section class="help" aria-labelledby="help-title">
+    <div>
+      <h2 id="help-title">Need help?</h2>
+      <p>Questions about an order, a payment, or selling and delivering with us? We are happy to help.</p>
+    </div>
+    <div class="help-actions">
+      <a class="btn btn-light" [href]="'tel:' + shop.phone"><i class="fas fa-phone"></i> Call {{ shop.phone }}</a>
+      <a class="btn btn-light" routerLink="/contact"><i class="fas fa-envelope"></i> Send a message</a>
+      <a class="btn btn-outline-light" routerLink="/orders"><i class="fas fa-box"></i> Find my order</a>
     </div>
   </section>
 </div>

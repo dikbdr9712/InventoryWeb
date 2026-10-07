@@ -581,7 +581,9 @@ export class UserManagement implements OnInit {
       MARKETPLACE_SETTINGS: 'Changed marketplace settings', SELLER_COMMISSION: 'Changed a seller\'s commission',
       SHIFT_OPENED: 'Opened a cash drawer', SHIFT_CLOSED: 'Closed a cash drawer',
       PASSWORD_RESET_CODE_OK: 'Confirmed a forgot-password code', PASSWORD_RESET_SELF: 'Chose a new password (forgot password)',
-      PASSWORD_RESET_BY_EMAIL: 'Chose a new password (forgot password)'
+      PASSWORD_RESET_BY_EMAIL: 'Chose a new password (forgot password)',
+      SITE_ABOUT_CHANGED: 'Changed the About page', TEAM_MEMBER_ADDED: 'Added a team member',
+      TEAM_MEMBER_CHANGED: 'Changed a team member', TEAM_MEMBER_REMOVED: 'Removed a team member'
     };
     if (labels[action]) return labels[action];
     if (/^(SELLER|RIDER)_(APPROVED|REJECTED|SUSPENDED)$/.test(action)) {

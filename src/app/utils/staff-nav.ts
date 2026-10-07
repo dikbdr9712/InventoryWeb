@@ -72,5 +72,10 @@ export const STAFF_GROUPS: { title: string; icon: string; items: StaffLink[] }[]
     title: 'People',
     icon: 'fa-users',
     items: [{ path: '/admin/users', label: 'People & access', icon: 'fa-users', permission: 'users.manage' }]
+  },
+  {
+    title: 'Website',
+    icon: 'fa-globe',
+    items: [{ path: '/admin/about', label: 'About page', icon: 'fa-pen-to-square', permission: 'site.manage', hint: 'Texts, live numbers and the team' }]
   }
 ];

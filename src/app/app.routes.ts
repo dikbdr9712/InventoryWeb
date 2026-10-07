@@ -57,6 +57,7 @@ export const routes: Routes = [
   { path: 'admin/dashboard', loadComponent: () => import('./Components/sales-dashboard/sales-dashboard').then(m => m.SalesDashboard), canActivate: [permissionGuard('reports.view')] },
 
   { path: 'admin/reviews', loadComponent: () => import('./Components/reviews-admin/reviews-admin').then(m => m.ReviewsAdmin), canActivate: [permissionGuard('reviews.manage')] },
+  { path: 'admin/about', loadComponent: () => import('./Components/about-admin/about-admin').then(m => m.AboutAdmin), canActivate: [permissionGuard('site.manage')] },
   { path: 'admin/customers', loadComponent: () => import('./Components/customers/customers').then(m => m.Customers), canActivate: [permissionGuard('customers.view')] },
   { path: 'admin/deliveries', redirectTo: 'admin/orders' }, // the deliveries board is part of the order board now
 

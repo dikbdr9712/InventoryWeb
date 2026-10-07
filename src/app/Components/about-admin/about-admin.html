@@ -1,0 +1,174 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>About page</h1>
+      <p>What visitors read on the About page, and who is on the team. Changes show on the website at once.</p>
+    </div>
+    <a routerLink="/about" class="btn btn-secondary"><i class="fas fa-up-right-from-square"></i> See the page</a>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }} <button type="button" class="btn btn-link p-0" (click)="load()">Try again</button></div>
+  }
+
+  @if (data(); as d) {
+    <!-- the texts -->
+    <section class="panel block" aria-labelledby="texts-title">
+      <header class="block-head">
+        <h2 id="texts-title">Texts</h2>
+        @if (d.updatedAt) {
+          <span class="muted small">Last changed {{ d.updatedAt | date: 'd MMM y, h:mm a' }}@if (d.updatedBy) { by {{ d.updatedBy }} }</span>
+        } @else {
+          <span class="muted small">Still the original wording</span>
+        }
+      </header>
+
+      @for (f of fields; track f.key) {
+        <div class="field">
+          <div class="field-top">
+            <label [for]="'t-' + f.key">{{ f.label }}</label>
+            @if (!isOriginal(f.key)) {
+              <button type="button" class="btn btn-link btn-sm p-0" (click)="useOriginal(f.key)">Use the original wording</button>
+            }
+          </div>
+          <textarea class="form-control" [id]="'t-' + f.key" [name]="f.key" [rows]="f.rows"
+                    [class.is-invalid]="textsTried() && textError(f.key)"
+                    [ngModel]="text(f.key)" (ngModelChange)="setText(f.key, $event)"></textarea>
+          <div class="field-foot">
+            @if (textsTried() && textError(f.key)) {
+              <span class="err">{{ textError(f.key) }}</span>
+            } @else {
+              <span class="muted small">{{ f.hint }} Press Enter for a new paragraph.</span>
+            }
+            <span class="count" [class.over]="text(f.key).length > limits[f.key]">{{ text(f.key).length }} / {{ limits[f.key] }}</span>
+          </div>
+        </div>
+      }
+
+      <label class="check">
+        <input type="checkbox" name="showNumbers" [ngModel]="showNumbers" (ngModelChange)="showNumbers = $event; touched()" />
+        <span>
+          <strong>Show the live numbers</strong>
+          <span class="muted small">Products to choose from, local sellers, orders delivered and the average rating, counted from the shop. A number that is 0 is never shown.</span>
+        </span>
+      </label>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" [disabled]="!changed() || savingTexts()" (click)="saveTexts()">
+          {{ savingTexts() ? 'Saving...' : 'Save texts' }}
+        </button>
+        @if (changed()) {
+          <button type="button" class="btn btn-link" (click)="undoTexts()">Undo changes</button>
+        }
+      </div>
+    </section>
+
+    <!-- the team -->
+    <section class="panel block" aria-labelledby="team-title">
+      <header class="block-head">
+        <div>
+          <h2 id="team-title">Meet the team</h2>
+          <span class="muted small">Shown in this order. Hidden people stay here but are not on the page.</span>
+        </div>
+        @if (editing() !== 'new') {
+          <button type="button" class="btn btn-primary btn-sm" (click)="add()"><i class="fas fa-plus"></i> Add a person</button>
+        }
+      </header>
+
+      <ng-template #personForm>
+        <form class="person-form" (ngSubmit)="savePerson()" novalidate>
+          <div class="pf-photo">
+            <span class="avatar big">
+              @if (draftPhoto(); as src) { <img [src]="src" alt="" /> } @else { {{ initials(draft.name || '?') }} }
+            </span>
+            <label class="btn btn-outline-secondary btn-sm">
+              <i class="fas fa-camera"></i> {{ draftPhoto() ? 'Change photo' : 'Add a photo' }}
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="pickPhoto($event)" hidden />
+            </label>
+            @if (draftPhoto()) {
+              <button type="button" class="btn btn-link btn-sm text-danger p-0" (click)="removePhoto()">Remove photo</button>
+            }
+            <span class="muted small">A square photo of the face works best. JPG, PNG or WEBP, up to 5 MB.</span>
+          </div>
+          <div class="pf-fields">
+            <div class="two">
+              <div class="field">
+                <label for="person-name">Name</label>
+                <input id="person-name" name="name" class="form-control" maxlength="80" [(ngModel)]="draft.name"
+                       [class.is-invalid]="draftTried() && draftError('name')" />
+                @if (draftTried() && draftError('name')) { <span class="err">{{ draftError('name') }}</span> }
+              </div>
+              <div class="field">
+                <label for="person-role">Role</label>
+                <input id="person-role" name="role" class="form-control" maxlength="80" placeholder="For example: Delivery manager"
+                       [(ngModel)]="draft.role" [class.is-invalid]="draftTried() && draftError('role')" />
+                @if (draftTried() && draftError('role')) { <span class="err">{{ draftError('role') }}</span> }
+              </div>
+            </div>
+            <div class="field">
+              <label for="person-bio">About them <span class="muted small">(optional)</span></label>
+              <textarea id="person-bio" name="bio" rows="3" class="form-control" [(ngModel)]="draft.bio"
+                        placeholder="A sentence or two: what they look after, and what they enjoy about it."
+                        [class.is-invalid]="draftTried() && draftError('bio')"></textarea>
+              <div class="field-foot">
+                @if (draftTried() && draftError('bio')) { <span class="err">{{ draftError('bio') }}</span> } @else { <span></span> }
+                <span class="count" [class.over]="draft.bio.length > limits.bio">{{ draft.bio.length }} / {{ limits.bio }}</span>
+              </div>
+            </div>
+            <label class="check">
+              <input type="checkbox" name="visible" [(ngModel)]="draft.visible" />
+              <span><strong>Show on the About page</strong></span>
+            </label>
+            <div class="actions">
+              <button type="submit" class="btn btn-primary" [disabled]="savingPerson()">
+                {{ savingPerson() ? 'Saving...' : editing() === 'new' ? 'Add to the team' : 'Save' }}
+              </button>
+              <button type="button" class="btn btn-link" (click)="cancelEdit()">Cancel</button>
+            </div>
+          </div>
+        </form>
+      </ng-template>
+
+      @if (editing() === 'new') {
+        <div class="new-person"><ng-container [ngTemplateOutlet]="personForm" /></div>
+      }
+
+      <ul class="people">
+        @for (p of team(); track p.id; let i = $index, first = $first, last = $last) {
+          <li class="person" [class.hidden-person]="!p.visible">
+            @if (editing() === p.id) {
+              <ng-container [ngTemplateOutlet]="personForm" />
+            } @else {
+              <span class="order">
+                <button type="button" class="btn btn-light btn-sm" [disabled]="first || busy() !== null" (click)="move(i, -1)" [attr.aria-label]="'Move ' + p.name + ' up'"><i class="fas fa-chevron-up"></i></button>
+                <button type="button" class="btn btn-light btn-sm" [disabled]="last || busy() !== null" (click)="move(i, 1)" [attr.aria-label]="'Move ' + p.name + ' down'"><i class="fas fa-chevron-down"></i></button>
+              </span>
+              <span class="avatar">
+                <span>{{ initials(p.name) }}</span>
+                @if (photo(p); as src) { <img [src]="src" alt="" (error)="$any($event.target).style.display = 'none'" /> }
+              </span>
+              <span class="who">
+                <span class="who-top"><strong>{{ p.name }}</strong> @if (!p.visible) { <span class="tag">Hidden</span> }</span>
+                <span class="muted">{{ p.role }}</span>
+                @if (p.bio) { <span class="muted small bio">{{ p.bio }}</span> }
+              </span>
+              <span class="row-actions">
+                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === p.id" (click)="edit(p)"><i class="fas fa-pen"></i> Edit</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === p.id" (click)="toggleVisible(p)">
+                  <i class="fas" [class.fa-eye-slash]="p.visible" [class.fa-eye]="!p.visible"></i> {{ p.visible ? 'Hide' : 'Show' }}
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="busy() === p.id" (click)="remove(p)" [attr.aria-label]="'Remove ' + p.name"><i class="fas fa-trash"></i></button>
+              </span>
+            }
+          </li>
+        } @empty {
+          @if (editing() !== 'new') {
+            <li class="empty">No one is on the team yet. "Meet the team" is left off the About page until you add someone.</li>
+          }
+        }
+      </ul>
+    </section>
+  } @else if (!error()) {
+    <p class="muted">Loading...</p>
+  }
+</div>

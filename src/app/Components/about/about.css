@@ -1,12 +1,24 @@
-/* Complete replacement: this page no longer uses your old About.css. */
-
+/* ---------- who we are ---------- */
 .intro {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   align-items: center;
-  gap: 32px;
-  margin-bottom: 44px;
+  gap: 36px;
+  margin-bottom: 36px;
   padding: 12px 0;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .intro-text h1 {
@@ -15,20 +27,72 @@
   line-height: 1.1;
 }
 
-.intro-text p {
-  max-width: 48ch;
+.lead {
+  max-width: 52ch;
   margin: 0 0 24px;
   color: var(--muted);
   font-size: 1.1rem;
-  line-height: 1.6;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
+.intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .intro-art {
   width: 100%;
-  max-height: 280px;
+  max-height: 300px;
   object-fit: contain;
 }
 
+/* ---------- live numbers ---------- */
+.numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--green-deep);
+  color: #fff;
+}
+
+.number {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  padding: 6px 8px;
+}
+
+.number i {
+  grid-row: span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--saffron);
+  font-size: 1.1rem;
+}
+
+.number strong {
+  font-size: 1.7rem;
+  line-height: 1.1;
+}
+
+.number span {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.88rem;
+}
+
+/* ---------- mission and vision ---------- */
 .pillars {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -61,47 +125,124 @@
   margin: 0;
   color: var(--muted);
   line-height: 1.7;
+  white-space: pre-line;
 }
 
+/* ---------- how it works ---------- */
+.ways,
 .team {
   margin-top: 52px;
 }
 
+.ways h2,
 .team h2 {
-  margin: 0 0 22px;
+  margin: 0 0 6px;
   font-size: 1.5rem;
 }
 
-.people {
+.ways h2 {
+  margin-bottom: 20px;
+}
+
+.section-sub {
+  margin: 0 0 22px;
+  color: var(--muted);
+}
+
+.ways-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.way {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
+  flex-direction: column;
+  padding: 24px;
+}
+
+.way-step {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  color: var(--line);
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.way h3 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.way p {
+  flex: 1;
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.way-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.way-link i {
+  font-size: 0.8rem;
+  transition: transform 0.15s;
+}
+
+.way-link:hover i {
+  transform: translateX(3px);
+}
+
+/* ---------- the team ---------- */
+.people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
 }
 
 .person {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 2px;
-  max-width: 220px;
+  padding: 24px 18px;
+  text-align: center;
 }
 
 .person h3 {
-  margin: 12px 0 0;
+  margin: 14px 0 0;
   font-size: 1.1rem;
 }
 
-.person > span:last-child {
+.role {
+  color: var(--green);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.bio {
+  margin: 10px 0 0;
   color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .photo {
   position: relative;
   display: inline-block;
-  width: 160px;
-  height: 160px;
+  width: 132px;
+  height: 132px;
   border-radius: 50%;
+  border: 4px solid #fff;
   background: var(--green-soft);
+  box-shadow: 0 0 0 2px var(--green-soft);
   overflow: hidden;
 }
 
@@ -120,8 +261,87 @@
   align-items: center;
   justify-content: center;
   color: var(--green-deep);
-  font-size: 2.4rem;
+  font-size: 2.2rem;
   font-weight: 700;
+}
+
+/* ---------- help ---------- */
+.help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px 28px;
+  margin-top: 52px;
+  padding: 28px;
+  border-radius: 16px;
+  background: var(--green);
+  color: #fff;
+}
+
+.help h2 {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+}
+
+.help p {
+  max-width: 52ch;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.help-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.help-actions .btn-light {
+  color: var(--green-deep);
+}
+
+/* ---------- while loading ---------- */
+.sk {
+  display: block;
+  height: 0.9em;
+  margin: 0.5em 0;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--wash) 25%, #e9eeec 50%, var(--wash) 75%);
+  background-size: 200% 100%;
+  animation: sk 1.2s linear infinite;
+}
+
+.w90 { width: 90%; }
+.w80 { width: 80%; }
+.w75 { width: 75%; }
+.w70 { width: 70%; }
+.w60 { width: 60%; }
+.w50 { width: 50%; }
+.w40 { width: 40%; }
+
+.person .sk {
+  align-self: center;
+}
+
+@keyframes sk {
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk { animation: none; }
+}
+
+@media (max-width: 900px) {
+  .ways-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 800px) {
@@ -133,5 +353,37 @@
   .intro-art {
     max-height: 200px;
     order: -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .help {
+    padding: 22px 18px;
+  }
+
+  .help-actions,
+  .help-actions .btn {
+    width: 100%;
+  }
+
+  .help-actions .btn {
+    justify-content: center;
+  }
+
+  .numbers {
+    grid-template-columns: 1fr 1fr;
+    padding: 12px;
+  }
+
+  .number {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+
+  .number i {
+    grid-row: auto;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 6px;
   }
 }
