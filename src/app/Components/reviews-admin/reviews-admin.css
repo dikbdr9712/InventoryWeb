@@ -1,0 +1,62 @@
+.muted { color: var(--muted); }
+.small { font-size: 0.82rem; }
+
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.tabs, .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.tabs button, .filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.tabs button.on { background: var(--green); color: #fff; }
+.filters button.on { background: var(--ink); color: #fff; }
+.n { min-width: 22px; padding: 0 6px; border-radius: 999px; background: var(--wash); color: var(--ink); font-size: 0.75rem; font-weight: 700; text-align: center; }
+.tabs button.on .n { background: rgba(255, 255, 255, 0.25); color: #fff; }
+.n.bad { background: var(--red); color: #fff; }
+
+.rv { margin-bottom: 10px; padding: 14px 16px; border-left: 4px solid var(--line); }
+.rv.low { border-left-color: var(--red); }
+.rv.hidden-rv { opacity: 0.65; }
+.rv-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.rv-head .what { font-weight: 700; color: var(--ink); }
+.rv-head .when { margin-left: auto; }
+.pair { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.85rem; }
+.tag { padding: 0 8px; border-radius: 999px; background: var(--wash); color: var(--muted); font-size: 0.75rem; font-weight: 700; }
+.who { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
+.text { margin: 8px 0 0; overflow-wrap: anywhere; }
+.reply { margin-top: 8px; padding: 8px 12px; border-left: 3px solid var(--green); border-radius: 6px; background: var(--green-soft); font-size: 0.9rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+
+.drivers { padding: 14px 16px; }
+.driver { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; padding: 8px 0; border-top: 1px solid var(--line); }
+.driver.low strong { color: var(--red); }
+.dr-score { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+.empty i { font-size: 1.6rem; color: #e2a012; }
+
+@media (max-width: 560px) {
+  /* even rows on a phone: the three tabs side by side, the filters two by two */
+  .tabs, .filters { display: grid; width: 100%; }
+  .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tabs button, .filters button { flex-wrap: wrap; justify-content: center; padding: 6px; text-align: center; }
+  .rv-head .when { margin-left: 0; width: 100%; }
+}

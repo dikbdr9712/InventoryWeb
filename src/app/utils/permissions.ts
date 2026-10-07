@@ -17,6 +17,7 @@ export type Permission =
   | 'reports.view'      // sales dashboard
   | 'customers.view'    // the customer list and each customer's history
   | 'customers.manage'  // correct customer details and notes
+  | 'reviews.manage'    // see all ratings, hide abusive reviews, reply
   | 'messages.view'     // customer messages
   | 'sales.return'      // take items back from a sale and refund them
   | 'users.manage'      // change other people's roles
@@ -32,7 +33,7 @@ export type Permission =
 const EVERYTHING: Permission[] = [
   'orders.view', 'orders.fulfil', 'orders.assign', 'payments.verify', 'items.manage',
   'stock.restock', 'pos.use', 'pos.discount', 'pos.shifts.manage', 'sales.return', 'reports.view', 'messages.view',
-  'customers.view', 'customers.manage', 'users.manage', 'marketplace.manage'
+  'customers.view', 'customers.manage', 'reviews.manage', 'users.manage', 'marketplace.manage'
 ];
 
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
@@ -69,6 +70,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'reports.view': 'See the sales dashboard',
   'customers.view': 'See customers and their history',
   'customers.manage': 'Edit customer details',
+  'reviews.manage': 'Manage reviews',
   'messages.view': 'Read customer messages',
   'sales.return': 'Take items back from a sale and refund',
   'users.manage': 'Manage users and roles',

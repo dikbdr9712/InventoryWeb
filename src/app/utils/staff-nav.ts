@@ -54,7 +54,8 @@ export const STAFF_GROUPS: { title: string; icon: string; items: StaffLink[] }[]
     icon: 'fa-address-book',
     items: [
       { path: '/admin/customers', label: 'Customers', icon: 'fa-address-book', permission: 'customers.view', hint: 'Who buys from us, and their history' },
-      { path: '/admin/messages', label: 'Customer messages', icon: 'fa-envelope', permission: 'messages.view', hint: 'Messages from the Contact page' }
+      { path: '/admin/messages', label: 'Customer messages', icon: 'fa-envelope', permission: 'messages.view', hint: 'Messages from the Contact page' },
+      { path: '/admin/reviews', label: 'Reviews', icon: 'fa-star', permission: 'reviews.manage', hint: 'Ratings of products, service and drivers' }
     ]
   },
   {

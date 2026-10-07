@@ -1,39 +1,56 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { ItemService } from '../../services/item';
+import { ItemRating, ReviewsService, ServiceReviews } from '../../services/reviews';
+import { Item } from '../../models/models';
+import { Stars } from '../stars/stars';
 
-type Star = 'full' | 'half' | 'empty';
-
+// The Customer reviews page: real ratings from customers whose orders were delivered.
+// How they rate our service and the delivery, what they wrote, and the best-rated products.
 @Component({
   selector: 'app-product-rating',
-  imports: [RouterLink],
+  imports: [RouterLink, DatePipe, Stars],
   templateUrl: './product-rating.html',
   styleUrl: './product-rating.css'
 })
-export class ProductRating {
-  reviews = [
-    {
-      photo: 'Images/Cost(1).jpg',
-      rating: 4.5,
-      text: 'I love this website! The natural products they offer are of exceptional quality, and the customer service is top-notch. The website is easy to navigate, and I appreciate the detailed information provided about each product. The shipping was fast, and the packaging was eco-friendly. My only suggestion would be to offer more discounts and promotions. Thank you.'
-    },
-    {
-      photo: 'Images/Cost(2).jpg',
-      rating: 3,
-      text: 'The natural products available on this website are good, but I have had some issues with customer service. It took a while for them to respond to my inquiries, and when I had an issue with a product, the resolution process was slow. The website itself is okay, but it could be more user-friendly. However, their pricing is competitive compared to other sites. Thank you.'
-    },
-    {
-      photo: 'Images/Cost(3).jpg',
-      rating: 5,
-      text: 'I am extremely satisfied with this website! The natural products I have purchased have been fantastic, and the customer service team is quick to respond and resolve any issues. The website is intuitive and visually appealing, making it enjoyable to browse and shop. The shipping is prompt, and I appreciate the attention to detail in the packaging. Highly recommended!'
-    }
-  ];
+export class ProductRating implements OnInit {
+  private reviews = inject(ReviewsService);
+  private itemService = inject(ItemService);
 
-  // 4.5 becomes: full, full, full, full, half
-  stars(rating: number): Star[] {
-    return [1, 2, 3, 4, 5].map(n => (rating >= n ? 'full' : rating >= n - 0.5 ? 'half' : 'empty'));
+  service = signal<ServiceReviews | null>(null);
+  ratings = signal<ItemRating[]>([]);
+  products = signal<Item[]>([]);
+  error = signal(false);
+
+  // the best-rated products (at least one review), best first, then the most reviewed
+  topProducts = computed(() => {
+    const byId = new Map(this.products().map(p => [p.itemId, p]));
+    return this.ratings()
+      .filter(r => byId.has(r.itemId))
+      .sort((a, b) => b.average - a.average || b.count - a.count)
+      .slice(0, 6)
+      .map(r => ({ rating: r, item: byId.get(r.itemId)! }));
+  });
+
+  ngOnInit() {
+    forkJoin({ service: this.reviews.service(), ratings: this.reviews.summary(), products: this.itemService.getAll() }).subscribe({
+      next: ({ service, ratings, products }) => {
+        this.service.set(service);
+        this.ratings.set(ratings);
+        this.products.set(products);
+      },
+      error: () => this.error.set(true)
+    });
   }
 
-  hide(event: Event) {
-    (event.target as HTMLImageElement).style.display = 'none';
+  image(item: Item) {
+    return this.itemService.imageFor(item);
+  }
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (!img.src.endsWith('Images/default.jpg')) img.src = 'Images/default.jpg';
   }
 }

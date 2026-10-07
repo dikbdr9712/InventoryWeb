@@ -1,0 +1,109 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Reviews</h1>
+      <p>Ratings from customers whose orders were delivered. Answer them in public; hide only abusive ones.</p>
+    </div>
+    <button type="button" class="btn btn-secondary" (click)="load()"><i class="fas fa-rotate"></i> Refresh</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+
+  @if (data(); as d) {
+    <div class="bar">
+      <div class="tabs" role="tablist" aria-label="Which reviews">
+        <button type="button" role="tab" [class.on]="tab() === 'products'" [attr.aria-selected]="tab() === 'products'" (click)="tab.set('products')">
+          Products <span class="n">{{ d.productReviews.length }}</span>
+        </button>
+        <button type="button" role="tab" [class.on]="tab() === 'service'" [attr.aria-selected]="tab() === 'service'" (click)="tab.set('service')">
+          Service & delivery <span class="n">{{ d.feedback.length }}</span>
+        </button>
+        <button type="button" role="tab" [class.on]="tab() === 'drivers'" [attr.aria-selected]="tab() === 'drivers'" (click)="tab.set('drivers')">
+          Drivers <span class="n">{{ d.riders.length }}</span>
+        </button>
+      </div>
+      @if (tab() !== 'drivers') {
+        <div class="filters" role="group" aria-label="Show">
+          <button type="button" [class.on]="filter() === 'all'" (click)="filter.set('all')">All</button>
+          <button type="button" [class.on]="filter() === 'low'" (click)="filter.set('low')">Low (1–2 stars) @if (lowCount()) { <span class="n bad">{{ lowCount() }}</span> }</button>
+          <button type="button" [class.on]="filter() === 'unanswered'" (click)="filter.set('unanswered')">Not answered</button>
+          <button type="button" [class.on]="filter() === 'hidden'" (click)="filter.set('hidden')">Hidden</button>
+        </div>
+      }
+    </div>
+
+    @switch (tab()) {
+      @case ('products') {
+        @for (r of products(); track r.id) {
+          <article class="panel rv" [class.hidden-rv]="r.hidden" [class.low]="r.rating <= 2">
+            <header class="rv-head">
+              <app-stars [value]="r.rating" />
+              <a [routerLink]="['/products', r.itemId]" class="what">{{ r.itemName }}</a>
+              @if (r.hidden) { <span class="tag">Hidden</span> }
+              <span class="muted small when">{{ (r.updatedAt || r.createdAt) | date: 'd MMM y, h:mm a' }}</span>
+            </header>
+            <p class="who">{{ r.displayName }} · {{ r.userEmail }} · <a [routerLink]="['/orders', r.orderId]">order #{{ r.orderId }}</a></p>
+            @if (r.comment) { <p class="text">{{ r.comment }}</p> } @else { <p class="muted small">No comment, stars only.</p> }
+            @if (r.reply) { <div class="reply"><strong>Shop's answer:</strong> {{ r.reply }}</div> }
+            <div class="actions">
+              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === 'products' + r.id" (click)="reply('products', r)">
+                <i class="fas fa-reply"></i> {{ r.reply ? 'Change answer' : 'Answer' }}
+              </button>
+              <button type="button" class="btn btn-sm" [class.btn-outline-danger]="!r.hidden" [class.btn-outline-secondary]="r.hidden"
+                      [disabled]="busy() === 'products' + r.id" (click)="toggleHidden('products', r)">
+                {{ r.hidden ? 'Show again' : 'Hide' }}
+              </button>
+            </div>
+          </article>
+        } @empty {
+          <div class="panel empty"><i class="fas fa-star"></i><p>No product reviews {{ filter() === 'all' ? 'yet' : 'here' }}.</p></div>
+        }
+      }
+      @case ('service') {
+        @for (f of service(); track f.id) {
+          <article class="panel rv" [class.hidden-rv]="f.hidden" [class.low]="f.serviceRating <= 2 || f.deliveryRating <= 2">
+            <header class="rv-head">
+              <span class="pair">Service <app-stars [value]="f.serviceRating" /></span>
+              <span class="pair">Delivery <app-stars [value]="f.deliveryRating" /></span>
+              @if (f.hidden) { <span class="tag">Hidden</span> }
+              <span class="muted small when">{{ (f.updatedAt || f.createdAt) | date: 'd MMM y, h:mm a' }}</span>
+            </header>
+            <p class="who">{{ f.displayName }} · {{ f.userEmail }} · <a [routerLink]="['/orders', f.orderId]">order #{{ f.orderId }}</a>
+              @if (f.riderName) { · delivered by <b>{{ f.riderName }}</b> }</p>
+            @if (f.comment) { <p class="text">{{ f.comment }}</p> } @else { <p class="muted small">No comment, stars only.</p> }
+            @if (f.reply) { <div class="reply"><strong>Shop's answer:</strong> {{ f.reply }}</div> }
+            <div class="actions">
+              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === 'service' + f.id" (click)="reply('service', f)">
+                <i class="fas fa-reply"></i> {{ f.reply ? 'Change answer' : 'Answer' }}
+              </button>
+              <button type="button" class="btn btn-sm" [class.btn-outline-danger]="!f.hidden" [class.btn-outline-secondary]="f.hidden"
+                      [disabled]="busy() === 'service' + f.id" (click)="toggleHidden('service', f)">
+                {{ f.hidden ? 'Show again' : 'Hide' }}
+              </button>
+            </div>
+          </article>
+        } @empty {
+          <div class="panel empty"><i class="fas fa-star"></i><p>No service feedback {{ filter() === 'all' ? 'yet' : 'here' }}.</p></div>
+        }
+      }
+      @case ('drivers') {
+        <section class="panel drivers">
+          <p class="muted small">Average delivery rating per driver, lowest first, from customers' feedback on the orders they delivered.</p>
+          @for (r of d.riders; track r.riderId) {
+            <div class="driver" [class.low]="r.average < 3">
+              <strong>{{ r.name }}</strong>
+              <span class="dr-score"><app-stars [value]="r.average" /> {{ r.average }}</span>
+              <span class="muted small">{{ r.count }} {{ r.count === 1 ? 'rating' : 'ratings' }}</span>
+            </div>
+          } @empty {
+            <p class="muted">No delivery ratings for drivers yet.</p>
+          }
+        </section>
+      }
+    }
+  } @else if (!error()) {
+    <p class="muted">Loading reviews...</p>
+  }
+</div>

@@ -13,11 +13,12 @@ import { packageLabel, packagePill, packageStage } from '../../utils/package-sta
 import { errorText } from '../../utils/http-error';
 import { orderLabel, orderPill, orderStage, paymentLabel, paymentPill } from '../../utils/order-status';
 import { OrderTracker } from '../order-tracker/order-tracker';
+import { OrderRatingPanel } from '../order-rating/order-rating';
 
 // URL: /orders/12
 @Component({
   selector: 'app-order-details',
-  imports: [RouterLink, DatePipe, DecimalPipe, OrderTracker],
+  imports: [RouterLink, DatePipe, DecimalPipe, OrderTracker, OrderRatingPanel],
   templateUrl: './order-details.html',
   styleUrl: './order-details.css'
 })

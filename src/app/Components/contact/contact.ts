@@ -39,6 +39,12 @@ export class Contact implements OnInit {
       this.orderRef.set(order);
       this.form.message = `About order #${order}: `;
     }
+
+    // Coming from "Forgot password": say so, so the team knows to reset it
+    const subject = this.route.snapshot.queryParamMap.get('subject');
+    if (!this.form.message && subject === 'Forgot my password') {
+      this.form.message = 'I forgot my password. Please reset it. My account email or phone: ';
+    }
   }
 
   errors() {

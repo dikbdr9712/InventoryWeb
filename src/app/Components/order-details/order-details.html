@@ -187,6 +187,9 @@
         </div>
       </aside>
     </div>
+
+    <!-- once something was delivered: stars for the products, the service and the delivery -->
+    <app-order-rating [orderId]="order.orderId" />
   } @else if (error()) {
     <div class="missing panel">
       <i class="fas fa-circle-exclamation"></i>

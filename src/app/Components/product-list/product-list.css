@@ -347,3 +347,7 @@
   margin-right: 3px;
   color: var(--green);
 }
+
+/* average stars on a card (rated products only) */
+.card-rating { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0; }
+.card-rating small { color: var(--muted); font-size: 0.78rem; }

@@ -6,17 +6,23 @@ import { AuthService } from '../../services/auth';
 import { CartService } from '../../services/cart';
 import { ToastService } from '../../services/toast';
 import { Item } from '../../models/models';
+import { ItemRating, ReviewsService } from '../../services/reviews';
+import { Stars } from '../stars/stars';
 
 type SortKey = 'name' | 'priceAsc' | 'priceDesc' | 'discount';
 
 @Component({
   selector: 'app-product-list',
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, Stars],
   templateUrl: './product-list.html',
   styleUrl: './product-list.css'
 })
 export class ProductList implements OnInit {
   private itemService = inject(ItemService);
+  private reviewsApi = inject(ReviewsService);
+
+  // average stars per product (only rated products), for the cards
+  ratings = signal<Record<number, ItemRating>>({});
   private router = inject(Router);
   private cart = inject(CartService);
   private toasts = inject(ToastService);
@@ -73,6 +79,10 @@ export class ProductList implements OnInit {
   });
 
   ngOnInit() {
+    this.reviewsApi.summary().subscribe({
+      next: list => this.ratings.set(Object.fromEntries(list.map(r => [r.itemId, r]))),
+      error: () => this.ratings.set({})
+    });
     this.itemService.getAll().subscribe({
       next: items => {
         this.items.set(items);

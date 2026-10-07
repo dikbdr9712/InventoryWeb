@@ -65,6 +65,11 @@ export class AuthService {
 
   // ---------- Forgot password ----------
   // The answer is the same whether or not the email has an account
+  // Can the server send the reset email? (No email account set up = ask the shop instead.)
+  resetByEmailAvailable() {
+    return this.http.get<{ email: boolean }>(`${environment.apiUrl}/api/auth/forgot-password`);
+  }
+
   forgotPassword(email: string) {
     return this.http.post<{ message: string }>(`${environment.apiUrl}/api/auth/forgot-password`, { email });
   }

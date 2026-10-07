@@ -1,16 +1,18 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ItemService } from '../../services/item';
 import { AuthService } from '../../services/auth';
 import { CartService } from '../../services/cart';
 import { ToastService } from '../../services/toast';
 import { Item } from '../../models/models';
+import { ProductReviews, ReviewsService } from '../../services/reviews';
+import { Stars } from '../stars/stars';
 
 // URL: /products/12
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, DatePipe, Stars],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.css'
 })
@@ -20,7 +22,10 @@ export class ProductDetail implements OnInit {
   private itemService = inject(ItemService);
   private cart = inject(CartService);
   private toasts = inject(ToastService);
+  private reviewsApi = inject(ReviewsService);
   auth = inject(AuthService);
+
+  reviews = signal<ProductReviews | null>(null);
 
   item = signal<Item | null>(null);
   error = signal('');
@@ -47,6 +52,8 @@ export class ProductDetail implements OnInit {
       this.error.set('This product link is not valid.');
       return;
     }
+
+    this.reviewsApi.product(id).subscribe({ next: r => this.reviews.set(r), error: () => this.reviews.set(null) });
 
     this.itemService.getById(id).subscribe({
       next: item => this.item.set(item),
@@ -130,5 +137,10 @@ export class ProductDetail implements OnInit {
   onImageError(event: Event) {
     const img = event.target as HTMLImageElement;
     if (!img.src.endsWith('Images/default.jpg')) img.src = 'Images/default.jpg';
+  }
+
+  toReviews(event: Event) {
+    event.preventDefault();
+    document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }

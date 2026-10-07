@@ -1,0 +1,67 @@
+@if (rating(); as r) {
+  @if (r.canRate) {
+    <section class="panel rate" id="rate" aria-labelledby="rate-title">
+      <header class="rate-head">
+        <h2 id="rate-title"><i class="fas fa-star"></i> Rate your order</h2>
+        <p>Your stars help other customers choose, and help us do better. Only your first name and initial are shown.</p>
+      </header>
+
+      <!-- each product -->
+      <ul class="rate-items">
+        @for (i of r.items; track i.itemId) {
+          @if (draft(i.itemId); as d) {
+            <li class="rate-item" [class.done]="d.saved && !d.editing">
+              <img [src]="image(i)" [alt]="i.name" loading="lazy" (error)="onImageError($event)" />
+              <div class="ri-body">
+                <a class="ri-name" [routerLink]="['/products', i.itemId]">{{ i.name }}</a>
+                @if (!i.delivered) {
+                  <p class="muted small">You can rate it once it has been delivered.</p>
+                } @else if (d.saved && !d.editing) {
+                  <div class="ri-saved">
+                    <app-stars [value]="d.stars" />
+                    @if (d.comment) { <p class="ri-comment">"{{ d.comment }}"</p> }
+                    <button type="button" class="btn btn-link btn-sm" (click)="edit(i.itemId)">Change</button>
+                  </div>
+                } @else {
+                  <app-stars pick [value]="d.stars" (valueChange)="setStars(i.itemId, $event)" [label]="'Your rating for ' + i.name" />
+                  <textarea class="form-control" rows="2" maxlength="1000" placeholder="What did you like, or not? (optional)"
+                            [ngModel]="d.comment" (ngModelChange)="setComment(i.itemId, $event)" [attr.aria-label]="'Your review of ' + i.name"></textarea>
+                  <button type="button" class="btn btn-primary btn-sm" [disabled]="d.saving" (click)="saveItem(i)">
+                    {{ d.saving ? 'Saving...' : d.saved ? 'Save changes' : 'Post my rating' }}
+                  </button>
+                }
+              </div>
+            </li>
+          }
+        }
+      </ul>
+
+      <!-- the service of this order -->
+      <div class="rate-service" [class.done]="serviceSaved() && !serviceEditing()">
+        <h3>How was our service?</h3>
+        @if (serviceSaved() && !serviceEditing()) {
+          <dl class="rs-saved">
+            <div><dt>Service</dt><dd><app-stars [value]="serviceStars()" /></dd></div>
+            <div><dt>Delivery</dt><dd><app-stars [value]="deliveryStars()" /></dd></div>
+          </dl>
+          @if (serviceComment) { <p class="ri-comment">"{{ serviceComment }}"</p> }
+          <button type="button" class="btn btn-link btn-sm" (click)="serviceEditing.set(true)">Change</button>
+        } @else {
+          <div class="rs-row">
+            <span class="rs-label">Ordering, packing and our answers</span>
+            <app-stars pick [(value)]="serviceStars" label="Our service" />
+          </div>
+          <div class="rs-row">
+            <span class="rs-label">The delivery (on time, friendly, package in good shape)</span>
+            <app-stars pick [(value)]="deliveryStars" label="The delivery" />
+          </div>
+          <textarea class="form-control" rows="3" maxlength="1000" [(ngModel)]="serviceComment"
+                    placeholder="Anything we should know? (optional)" aria-label="Your feedback on our service"></textarea>
+          <button type="button" class="btn btn-primary" [disabled]="serviceSaving()" (click)="saveService()">
+            {{ serviceSaving() ? 'Saving...' : serviceSaved() ? 'Save changes' : 'Send my feedback' }}
+          </button>
+        }
+      </div>
+    </section>
+  }
+}

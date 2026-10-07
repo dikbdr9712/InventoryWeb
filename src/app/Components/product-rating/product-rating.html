@@ -1,31 +1,81 @@
-<div class="page">
+<div class="page reviews-page">
   <div class="page-head">
     <div>
       <h1>Customer reviews</h1>
-      <p>What people say about shopping with us.</p>
+      <p>What customers say after their order was delivered. Only people who bought from us can rate.</p>
     </div>
-    <a routerLink="/contact" class="btn btn-outline-primary">Share your feedback</a>
   </div>
 
-  <div class="reviews">
-    @for (review of reviews; track $index) {
-      <article class="panel review">
-        <header>
-          <span class="photo">
-            <i class="fas fa-user"></i>
-            <img [src]="review.photo" alt="" loading="lazy" (error)="hide($event)" />
-          </span>
-          <div>
-            <span class="stars" [attr.aria-label]="review.rating + ' out of 5 stars'">
-              @for (star of stars(review.rating); track $index) {
-                <i class="fa-star" [class]="star === 'full' ? 'fas fa-star' : star === 'half' ? 'fas fa-star-half-stroke' : 'far fa-star'"></i>
-              }
-            </span>
-            <strong>{{ review.rating }} out of 5</strong>
+  @if (service(); as s) {
+    <!-- the scores -->
+    <section class="scores" aria-label="Average ratings">
+      <div class="score panel">
+        <span class="label">Our service</span>
+        <strong>{{ s.serviceAverage ?? '–' }}</strong>
+        <app-stars [value]="s.serviceAverage" />
+      </div>
+      <div class="score panel">
+        <span class="label">Delivery</span>
+        <strong>{{ s.deliveryAverage ?? '–' }}</strong>
+        <app-stars [value]="s.deliveryAverage" />
+      </div>
+      <div class="score panel">
+        <span class="label">Products</span>
+        <strong>{{ s.productAverage ?? '–' }}</strong>
+        <app-stars [value]="s.productAverage" />
+      </div>
+      <div class="score panel count">
+        <span class="label">Reviews</span>
+        <strong>{{ s.count + s.productReviews }}</strong>
+        <span class="muted small">{{ s.count }} on service · {{ s.productReviews }} on products</span>
+      </div>
+    </section>
+
+    <div class="grid">
+      <!-- what customers wrote about our service -->
+      <section class="feed" aria-labelledby="feed-title">
+        <h2 id="feed-title">What customers say</h2>
+        @for (f of s.reviews; track f.id) {
+          <article class="panel fb">
+            <header class="fb-top">
+              <strong>{{ f.displayName }}</strong>
+              <span class="muted small">{{ f.createdAt | date: 'd MMM y' }}</span>
+            </header>
+            <div class="fb-stars">
+              <span>Service <app-stars [value]="f.serviceRating" /></span>
+              <span>Delivery <app-stars [value]="f.deliveryRating" /></span>
+            </div>
+            @if (f.comment) { <p class="fb-text">{{ f.comment }}</p> }
+            @if (f.reply) { <div class="fb-reply"><strong>DK/Phar replied:</strong> {{ f.reply }}</div> }
+          </article>
+        } @empty {
+          <div class="panel empty">
+            <i class="fas fa-star"></i>
+            <p>No reviews yet. After an order is delivered, the customer can rate it from their order page.</p>
+            <a class="btn btn-primary" routerLink="/products">Shop now</a>
           </div>
-        </header>
-        <p>{{ review.text }}</p>
-      </article>
-    }
-  </div>
+        }
+      </section>
+
+      <!-- the best-rated products -->
+      <aside class="top" aria-labelledby="top-title">
+        <h2 id="top-title">Best rated products</h2>
+        @for (t of topProducts(); track t.item.itemId) {
+          <a class="panel tp" [routerLink]="['/products', t.item.itemId]">
+            <img [src]="image(t.item)" [alt]="t.item.itemName" loading="lazy" (error)="onImageError($event)" />
+            <span class="tp-body">
+              <span class="tp-name">{{ t.item.itemName }}</span>
+              <span class="tp-rating"><app-stars [value]="t.rating.average" /> <small>{{ t.rating.average }} ({{ t.rating.count }})</small></span>
+            </span>
+          </a>
+        } @empty {
+          <p class="muted">No product has been rated yet.</p>
+        }
+      </aside>
+    </div>
+  } @else if (error()) {
+    <div class="panel empty"><p>We could not load the reviews. Please try again in a moment.</p></div>
+  } @else {
+    <p class="muted">Loading reviews...</p>
+  }
 </div>

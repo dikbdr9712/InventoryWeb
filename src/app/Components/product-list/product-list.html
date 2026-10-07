@@ -63,6 +63,9 @@
               <span class="category">{{ item.category }}</span>
             }
             <span class="name">{{ item.itemName }}</span>
+            @if (ratings()[item.itemId]; as r) {
+              <span class="card-rating"><app-stars [value]="r.average" /> <small>{{ r.average }} ({{ r.count }})</small></span>
+            }
             @if (item.sellerName) { <span class="seller"><i class="fas fa-store"></i> {{ item.sellerName }}</span> }
             <span class="price">
               @if (item.sellingPrice != null) {

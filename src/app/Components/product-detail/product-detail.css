@@ -249,3 +249,35 @@
     font-size: 1.7rem;
   }
 }
+
+/* ---------- Rating under the name, and the reviews ---------- */
+.rating-line { display: inline-flex; align-items: center; gap: 6px; margin: -4px 0 8px; color: var(--ink); font-size: 0.9rem; }
+.rating-line span { color: var(--muted); }
+.rating-line:hover span { text-decoration: underline; }
+
+.reviews { margin-top: 20px; padding: 20px; scroll-margin-top: 80px; }
+.reviews h2 { margin: 0 0 12px; font-size: 1.2rem; }
+.reviews .muted { color: var(--muted); }
+.reviews .small { font-size: 0.82rem; }
+
+.rv-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.rv-score { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.rv-score strong { font-size: 2.4rem; line-height: 1; }
+.rv-bars { flex: 1 1 240px; max-width: 420px; margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.rv-bars li { display: grid; grid-template-columns: 42px 1fr 30px; align-items: center; gap: 8px; font-size: 0.85rem; }
+.rv-n i { color: #e2a012; font-size: 0.75rem; }
+.rv-bar { height: 8px; border-radius: 999px; background: var(--wash); overflow: hidden; }
+.rv-bar span { display: block; height: 100%; background: #e2a012; border-radius: 999px; }
+.rv-c { color: var(--muted); text-align: right; }
+
+.rv-list { margin: 0; padding: 0; list-style: none; }
+.rv { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.rv:last-child { border-bottom: 0; }
+.rv-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.verified { color: var(--green); font-size: 0.8rem; font-weight: 600; }
+.rv-text { margin: 6px 0 0; overflow-wrap: anywhere; }
+.rv-reply { margin-top: 8px; padding: 8px 12px; border-left: 3px solid var(--green); border-radius: 6px; background: var(--green-soft); font-size: 0.9rem; }
+
+@media (max-width: 560px) {
+  .reviews { padding: 14px 12px; }
+}

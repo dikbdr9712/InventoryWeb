@@ -19,6 +19,15 @@
           <span class="category">{{ item.category }}</span>
         }
         <h1>{{ item.itemName }}</h1>
+        @if (reviews(); as rv) {
+          @if (rv.count > 0) {
+            <a class="rating-line" href="#reviews" (click)="toReviews($event)">
+              <app-stars [value]="rv.average" />
+              <strong>{{ rv.average }}</strong>
+              <span>({{ rv.count }} {{ rv.count === 1 ? 'review' : 'reviews' }})</span>
+            </a>
+          }
+        }
         <p class="sold-by">
           <i class="fas fa-store"></i>
           Sold by <strong>{{ item.sellerName || 'DK/Phar' }}</strong>
@@ -97,6 +106,52 @@
         </dl>
       </div>
     </div>
+
+    <!-- What customers who bought it say (verified purchases only) -->
+    <section class="panel reviews" id="reviews" aria-labelledby="reviews-title">
+      <h2 id="reviews-title">Customer reviews</h2>
+      @if (reviews(); as rv) {
+        @if (rv.count === 0) {
+          <p class="muted">No reviews yet. Customers can rate this product from their order page once it has been delivered to them.</p>
+        } @else {
+          <div class="rv-summary">
+            <div class="rv-score">
+              <strong>{{ rv.average }}</strong>
+              <app-stars [value]="rv.average" size="big" />
+              <span class="muted">{{ rv.count }} {{ rv.count === 1 ? 'review' : 'reviews' }}</span>
+            </div>
+            <ul class="rv-bars" aria-label="Reviews by stars">
+              @for (n of [5, 4, 3, 2, 1]; track n) {
+                <li>
+                  <span class="rv-n">{{ n }} <i class="fas fa-star"></i></span>
+                  <span class="rv-bar"><span [style.width.%]="rv.distribution[n - 1] * 100 / rv.count"></span></span>
+                  <span class="rv-c">{{ rv.distribution[n - 1] }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <ul class="rv-list">
+            @for (r of rv.reviews; track r.id) {
+              <li class="rv">
+                <div class="rv-top">
+                  <app-stars [value]="r.rating" />
+                  <strong>{{ r.displayName }}</strong>
+                  <span class="verified"><i class="fas fa-circle-check"></i> Bought it</span>
+                  <span class="muted small">{{ (r.updatedAt || r.createdAt) | date: 'd MMM y' }}</span>
+                </div>
+                @if (r.comment) { <p class="rv-text">{{ r.comment }}</p> }
+                @if (r.reply) {
+                  <div class="rv-reply"><strong>DK/Phar replied:</strong> {{ r.reply }}</div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      } @else {
+        <p class="muted">Loading reviews...</p>
+      }
+    </section>
   } @else if (error()) {
     <div class="missing panel">
       <i class="fas fa-circle-exclamation"></i>
