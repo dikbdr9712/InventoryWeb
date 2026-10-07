@@ -40,6 +40,11 @@ export class UserService {
     return this.http.put<AdminUser>(`${this.api}/users/${userId}/active`, { active });
   }
 
+  // Correct a person's name, sign-in email or phone (a new email signs them out; they sign in with the new one)
+  changeDetails(userId: number, details: { name: string; email: string; phone: string }) {
+    return this.http.put<AdminUser>(`${this.api}/users/${userId}`, details);
+  }
+
   resetPassword(userId: number) {
     return this.http.post<{ password: string }>(`${this.api}/users/${userId}/reset-password`, null);
   }

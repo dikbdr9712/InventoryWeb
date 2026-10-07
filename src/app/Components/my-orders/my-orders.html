@@ -23,14 +23,14 @@
             <h2>Order #{{ order.orderId }}</h2>
             <span class="when">Placed {{ order.createdAt | date: 'd MMM y, h:mm a' }}</span>
           </div>
-          <span class="pill" [class]="'pill ' + pillClass(order.orderStatus)">{{ statusLabel(order.orderStatus) }}</span>
+          <span class="pill" [class]="'pill ' + pillClass(order.orderStatus)">{{ statusLabel(order.orderStatus, order.fulfilment === 'PICKUP') }}</span>
         </header>
 
         <!-- Progress: only for orders that have not been cancelled -->
         @if (stage(order.orderStatus) >= 0) {
           <ol class="track" aria-label="Order progress">
-            @for (step of steps; track step; let i = $index) {
-              <li [class.done]="i < stage(order.orderStatus)" [class.now]="i === stage(order.orderStatus)">
+            @for (step of (order.fulfilment === 'PICKUP' ? pickupSteps : steps); track step; let i = $index) {
+              <li [class.done]="i < progress(order)" [class.now]="i === progress(order)">
                 <span class="dot"></span>{{ step }}
               </li>
             }

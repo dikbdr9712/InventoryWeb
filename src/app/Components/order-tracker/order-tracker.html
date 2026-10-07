@@ -1,6 +1,6 @@
 @if (stage() >= 0) {
   <ol class="track" aria-label="Order progress">
-    @for (step of steps; track step; let i = $index) {
+    @for (step of steps(); track step; let i = $index) {
       <li [class.done]="i < stage()" [class.now]="i === stage()">
         <span class="dot"></span>{{ step }}
       </li>

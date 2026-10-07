@@ -79,9 +79,9 @@
       <li>
         <button type="button" class="act" [class.on]="group() === 'PACKED'" [class.hot]="c.ready > 0" (click)="showGroup('PACKED')">
           <i class="fas fa-box"></i>
-          <strong>{{ c.ready + c.riderComing }}</strong>
+          <strong>{{ c.ready + c.riderComing + (c.toCollect || 0) }}</strong>
           <span>Packed</span>
-          <small>{{ c.ready }} need a driver · {{ c.riderComing }} driver coming</small>
+          <small>{{ c.ready }} need a driver · {{ c.riderComing }} driver coming@if (c.toCollect) { · {{ c.toCollect }} to collect}</small>
         </button>
       </li>
       <li>
@@ -230,6 +230,7 @@
                     <strong>#{{ i.orderId }}</strong>
                     @if (i.packageCount > 1) { <span class="pkg-no">package {{ i.packageNo }} of {{ i.packageCount }}</span> }
                     @if (i.packageId) { <span class="from" [class.seller]="!!i.sellerId">{{ i.sellerName }}</span> }
+                    @if (i.selfPickup) { <span class="pickup-tag" title="The customer collects it: no driver"><i class="fas fa-store"></i> Pick up</span> }
                     @if (i.older) { <span class="older-tag" title="Placed before the chosen period">older · {{ i.placedAt | date: 'd MMM' }}</span> }
                   </button>
                   @if (i.stage !== 'DELIVERED' && i.stage !== 'CANCELLED') {
@@ -255,6 +256,8 @@
                       <a [href]="mapLink(i.dropAddress)" target="_blank" rel="noopener"><i class="fas fa-location-dot"></i> {{ i.dropAddress }}</a>
                       @if (i.distanceKm != null) { <span class="muted">· {{ i.distanceKm | number: '1.0-1' }} km</span> }
                     </p>
+                  } @else if (i.selfPickup && i.packageId) {
+                    <p class="route-line"><i class="fas fa-store"></i> {{ i.stage === 'DELIVERED' ? 'Collected from' : 'The customer collects it from' }} <b>{{ fromLabel(i) }}</b></p>
                   } @else if (i.dropAddress) {
                     <a class="addr" [href]="mapLink(i.dropAddress)" target="_blank" rel="noopener"><i class="fas fa-location-dot"></i> {{ i.dropAddress }}</a>
                   }
@@ -286,6 +289,10 @@
                         @if (i.riderAssignedByName) { <span class="muted">· given by {{ i.riderAssignedByName }}</span> }</li>
                     } @else if (i.courierName) {
                       <li><i class="fas fa-person-walking"></i> Delivered by our staff: <b>{{ i.courierName }}</b></li>
+                    } @else if (i.handedOverByName) {
+                      <li><i class="fas fa-handshake"></i> Handed over by <b>{{ i.handedOverByName }}</b></li>
+                    } @else if (i.stage === 'COLLECT') {
+                      <li><i class="fas fa-store"></i> Waiting for the customer to come</li>
                     } @else if (i.stage === 'READY') {
                       <li class="warn"><i class="fas fa-motorcycle"></i> No driver yet · {{ sizeLabel(i.deliverySize) }}@if (i.distanceKm != null) {, {{ i.distanceKm | number: '1.0-1' }} km}</li>
                     }
@@ -357,6 +364,11 @@
                       @if (canFulfil) { <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === i.key" (click)="weDeliver(i)"><i class="fas fa-person-walking"></i> We deliver it</button> }
                       @if (!board()?.canAssign) { <span class="muted">Drivers see it on their job board.</span> }
                     }
+                    @case ('COLLECT') {
+                      @if (i.customerPhone) { <a class="btn btn-outline-secondary btn-sm" [href]="'tel:' + i.customerPhone"><i class="fas fa-phone"></i> Call customer</a> }
+                      @if (i.sellerId && i.sellerPhone) { <a class="btn btn-outline-secondary btn-sm" [href]="'tel:' + i.sellerPhone"><i class="fas fa-phone"></i> Call seller</a> }
+                      @if (canFulfil) { <button type="button" class="btn btn-primary btn-sm" [disabled]="busy() === i.key" (click)="handOver(i)"><i class="fas fa-handshake"></i> Handed over</button> }
+                    }
                     @case ('ASSIGNED') {
                       @if (i.riderPhone) { <a class="btn btn-outline-secondary btn-sm" [href]="'tel:' + i.riderPhone"><i class="fas fa-phone"></i> Call driver</a> }
                       @if (canFulfil) { <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy() === i.key" (click)="collected(i)">Collected</button> }
@@ -377,6 +389,7 @@
                     }
                     @case ('DELIVERED') {
                       <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/receipt', i.orderId]"><i class="fas fa-receipt"></i> Receipt</a>
+                      @if (canReturn) { <button type="button" class="btn btn-outline-secondary btn-sm" (click)="returnOrderId.set(i.orderId)"><i class="fas fa-rotate-left"></i> Return</button> }
                     }
                   }
                   <button type="button" class="btn btn-link btn-sm details" (click)="show(i)">Details <i class="fas fa-chevron-right"></i></button>
@@ -447,7 +460,8 @@
     <header class="dr-head">
       <div>
         <h2 id="drawer-title">Order #{{ i.orderId }}@if (i.packageCount > 1) { <small>· package {{ i.packageNo }} of {{ i.packageCount }}</small> }</h2>
-        <span class="stage-pill">{{ stageTitle(i.stage) }}</span>
+        <span class="stage-pill">{{ itemTitle(i) }}</span>
+        @if (i.selfPickup) { <span class="pickup-tag"><i class="fas fa-store"></i> Pick up</span> }
         @if (i.late && i.stage !== 'PAYMENT_DUE') { <span class="stage-pill bad">Late</span> }
       </div>
       <button type="button" class="dr-x" (click)="close()" aria-label="Close"><i class="fas fa-xmark"></i></button>
@@ -470,11 +484,18 @@
             }
           </tbody>
         </table>
-        <p class="tot"><span>{{ i.packageId ? 'This package (with delivery)' : 'Order total' }}</span><b>Nu. {{ i.amount | number: '1.2-2' }}</b></p>
+        <p class="tot"><span>{{ i.packageId ? (i.selfPickup ? 'This package' : 'This package (with delivery)') : 'Order total' }}</span><b>Nu. {{ i.amount | number: '1.2-2' }}</b></p>
         @if (i.packageId && i.packageCount > 1) { <p class="muted small">Whole order: Nu. {{ i.orderTotal | number: '1.2-2' }} in {{ i.packageCount }} packages.</p> }
       </section>
 
-      @if (i.packageId && (i.riderName || i.courierName || hasRoute(i))) {
+      @if (i.packageId && i.selfPickup) {
+        <section>
+          <h3>Pick up</h3>
+          <p><i class="fas fa-store"></i> The customer collects it from <b>{{ fromLabel(i) }}</b>@if (i.sellerPhone) { · <a [href]="'tel:' + i.sellerPhone">{{ i.sellerPhone }}</a> }</p>
+          @if (i.pickupAddress) { <a class="addr" [href]="mapLink(i.pickupAddress)" target="_blank" rel="noopener">{{ i.pickupAddress }}</a> }
+          <p class="muted small">No driver and no delivery fee. The customer shows the collection code from their order page.</p>
+        </section>
+      } @else if (i.packageId && (i.riderName || i.courierName || hasRoute(i))) {
         <section>
           <h3>Delivery</h3>
           @if (i.riderName) {
@@ -515,7 +536,11 @@
           @if (i.packedAt) { <li class="done"><b>Packed</b><span>{{ i.packedAt | date: 'd MMM, h:mm a' }}@if (i.packerName) { · {{ i.packerName }} }</span></li> }
           @if (i.assignedAt) { <li class="done"><b>Driver assigned</b><span>{{ i.assignedAt | date: 'h:mm a' }} · {{ i.riderName }}@if (i.riderAssignedByName) { (by {{ i.riderAssignedByName }}) }</span></li> }
           @if (i.pickedUpAt) { <li class="done"><b>On the way</b><span>{{ i.pickedUpAt | date: 'd MMM, h:mm a' }} · {{ i.riderName || i.courierName }}</span></li> }
-          @if (i.deliveredAt) { <li class="done"><b>Delivered</b><span>{{ i.deliveredAt | date: 'd MMM, h:mm a' }}</span></li> }
+          @if (i.deliveredAt) {
+            <li class="done"><b>{{ i.selfPickup ? 'Collected' : 'Delivered' }}</b><span>{{ i.deliveredAt | date: 'd MMM, h:mm a' }}@if (i.handedOverByName) { · handed over by {{ i.handedOverByName }} }</span></li>
+          } @else if (i.stage === 'COLLECT') {
+            <li class="now"><b>Waiting for the customer</b><span>{{ duration(i.minutesInStage) }}</span></li>
+          }
           @if (i.stage === 'CANCELLED') { <li class="bad"><b>Cancelled</b><span>{{ (i.cancelledAt || i.stageSince) | date: 'd MMM, h:mm a' }}</span></li> }
         </ol>
       </section>
@@ -529,6 +554,9 @@
       }
       <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/orders', i.orderId]">Order page</a>
       @if (i.verifiedBy) { <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/receipt', i.orderId]">Receipt</a> }
+      @if (i.stage === 'DELIVERED' && canReturn) {
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="returnOrderId.set(i.orderId)"><i class="fas fa-rotate-left"></i> Return</button>
+      }
     </div>
 
     <!-- what prints for the packer: hidden on screen (only the inner sheet is copied for printing) -->
@@ -548,4 +576,8 @@
       <p style="margin:16px 0 0">Packed by: ______________________ &nbsp; Checked: ____________</p>
     </div></div>
   </aside>
+}
+
+@if (returnOrderId(); as returnId) {
+  <app-return-dialog [orderId]="returnId" (closed)="returnOrderId.set(null)" (returned)="onReturned()" />
 }

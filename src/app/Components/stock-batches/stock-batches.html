@@ -21,6 +21,11 @@
         <strong>{{ s.expiringBatches }} {{ s.expiringBatches === 1 ? 'batch' : 'batches' }}</strong>
         <small>{{ s.expiringUnits | number }} units, Nu. {{ s.expiringValue | number: '1.0-0' }} at cost</small>
       </button>
+      <button type="button" class="stat stat-btn" [class.warn]="low().length > 0" (click)="show('low')">
+        <span>Low stock</span>
+        <strong>{{ low().length }} {{ low().length === 1 ? 'product' : 'products' }}</strong>
+        <small>At or below their warning level</small>
+      </button>
       <button type="button" class="stat stat-btn" (click)="show('expired')">
         <span>Expired or written off this month</span>
         <strong>Nu. {{ s.lostThisMonthValue | number: '1.0-0' }}</strong>
@@ -34,6 +39,7 @@
       <button type="button" role="tab" [class.on]="view() === 'shelf'" (click)="show('shelf')">On the shelf</button>
       <button type="button" role="tab" [class.on]="view() === 'expiring'" (click)="show('expiring')">Expiring soon</button>
       <button type="button" role="tab" [class.on]="view() === 'expired'" (click)="show('expired')">Expired</button>
+      <button type="button" role="tab" [class.on]="view() === 'low'" (click)="show('low')">Low stock @if (low().length) { <span class="count">{{ low().length }}</span> }</button>
     </div>
     @if (view() === 'expiring') {
       <select class="custom-select days" aria-label="Within how many days" [ngModel]="days()" (ngModelChange)="setDays(+$event)">
@@ -55,7 +61,23 @@
       shelf and dispose of them safely (or return them to the supplier).</p>
   }
 
-  @if (error()) {
+  @if (view() === 'low') {
+    <p class="note"><i class="fas fa-circle-info"></i> Products whose stock is at or below "Warn me when stock reaches" (set on the
+      product). The people who restock are told when a product gets here; for a seller's product, the seller.</p>
+    <ul class="low-list">
+      @for (l of lowShown(); track l.itemId) {
+        <li class="panel low-row" [class.out]="l.quantity === 0">
+          <span class="b-name"><strong>{{ l.itemName }}</strong><span class="muted small">{{ l.sku }}@if (l.sellerId) { · a seller's product }</span></span>
+          <span class="low-qty"><strong>{{ l.quantity === 0 ? 'Sold out' : l.quantity + ' left' }}</strong><span class="muted small">warn at {{ l.warnAt }}</span></span>
+          @if (canChange && !l.sellerId) {
+            <a class="btn btn-primary btn-sm" routerLink="/restock" [queryParams]="{ sku: l.sku, itemName: l.itemName }"><i class="fas fa-boxes-stacked"></i> Restock</a>
+          }
+        </li>
+      } @empty {
+        <li class="panel low-empty"><i class="fas fa-circle-check"></i> Nothing is low on stock.</li>
+      }
+    </ul>
+  } @else if (error()) {
     <div class="alert alert-danger">{{ error() }}</div>
   } @else if (loading()) {
     <p class="muted">Loading batches...</p>

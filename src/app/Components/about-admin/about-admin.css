@@ -21,6 +21,8 @@ textarea.form-control { line-height: 1.55; }
 .check > span { display: flex; flex-direction: column; gap: 2px; }
 
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sub { margin: 6px 0 2px; font-size: 1rem; }
+.field label i { width: 16px; color: var(--muted); }
 
 /* the team list */
 .people { margin: 0; padding: 0; list-style: none; }

@@ -65,7 +65,7 @@
       @if (cancelled()) {
         <p class="cancelled"><i class="fas fa-ban"></i> This order was cancelled.</p>
       } @else {
-        <app-order-tracker [status]="order.orderStatus" />
+        <app-order-tracker [status]="order.orderStatus" [pickup]="isPickup()" />
       }
     </section>
 
@@ -73,7 +73,11 @@
     @if (packages().length > 0 && !cancelled()) {
       <section class="parcels">
         <h2>
-          {{ packages().length === 1 ? 'Your delivery' : 'Your order comes in ' + packages().length + ' packages' }}
+          @if (isPickup()) {
+            {{ packages().length === 1 ? 'Collect your order' : 'Collect your order from ' + packages().length + ' places' }}
+          } @else {
+            {{ packages().length === 1 ? 'Your delivery' : 'Your order comes in ' + packages().length + ' packages' }}
+          }
         </h2>
         @for (p of packages(); track p.id) {
           <article class="parcel panel">
@@ -82,15 +86,34 @@
                 <strong>From {{ p.sellerName }}</strong>
                 <span class="muted">{{ p.itemCount }} item{{ p.itemCount === 1 ? '' : 's' }}</span>
               </div>
-              <span [class]="'pill ' + packagePill(p.status)">{{ packageLabel(p.status, true) }}</span>
+              <span [class]="'pill ' + packagePill(p.status)">{{ packageLabel(p.status, true, p.selfPickup) }}</span>
             </div>
 
             @if (p.status !== 'CANCELLED' && p.status !== 'PENDING_PAYMENT') {
-              <ol class="mini-steps" [attr.aria-label]="'Progress: ' + packageLabel(p.status, true)">
-                @for (step of steps; track step; let i = $index) {
-                  <li [class.on]="packageStage(p.status) >= i + 1">{{ step }}</li>
+              <ol class="mini-steps" [attr.aria-label]="'Progress: ' + packageLabel(p.status, true, p.selfPickup)">
+                @for (step of (p.selfPickup ? pickupSteps : steps); track step; let i = $index) {
+                  <li [class.on]="stepDone(p, i)">{{ step }}</li>
                 }
               </ol>
+            }
+
+            @if (p.selfPickup && p.status !== 'CANCELLED' && p.status !== 'PENDING_PAYMENT' && p.status !== 'DELIVERED') {
+              <div class="collect">
+                <i class="fas fa-store" aria-hidden="true"></i>
+                <div>
+                  <strong>Collect from {{ p.sellerName }}</strong>
+                  <span>{{ p.pickupAddress || (p.sellerId ? p.pickupTown : shop.address) }}</span>
+                  <span class="muted small">{{ p.status === 'READY_FOR_PICKUP' ? 'It is ready. Come any time the shop is open.' : 'We tell you when it is ready.' }}</span>
+                </div>
+                <div class="collect-actions">
+                  @if (p.sellerPhone || !p.sellerId) {
+                    <a class="btn btn-sm btn-secondary" [href]="shop.dial(p.sellerPhone || shop.phone)"><i class="fas fa-phone"></i> Call</a>
+                  }
+                  @if (p.pickupAddress || !p.sellerId) {
+                    <a class="btn btn-sm btn-secondary" [href]="mapLink(p.pickupAddress || shop.address)" target="_blank" rel="noopener"><i class="fas fa-map-location-dot"></i> Map</a>
+                  }
+                </div>
+              </div>
             }
 
             @if (p.riderName && p.status !== 'DELIVERED') {
@@ -104,15 +127,15 @@
             @if (p.deliveryCode && p.status !== 'DELIVERED') {
               <div class="code">
                 <div>
-                  <strong>Delivery code</strong>
-                  <span>Give this code to the rider only when you have the package in your hands.</span>
+                  <strong>{{ p.selfPickup ? 'Collection code' : 'Delivery code' }}</strong>
+                  <span>{{ p.selfPickup ? 'Show this code when you collect your order.' : 'Give this code to the rider only when you have the package in your hands.' }}</span>
                 </div>
-                <span class="digits" aria-label="Delivery code">{{ p.deliveryCode }}</span>
+                <span class="digits" [attr.aria-label]="p.selfPickup ? 'Collection code' : 'Delivery code'">{{ p.deliveryCode }}</span>
               </div>
             }
 
             @if (p.status === 'DELIVERED' && p.deliveredAt) {
-              <p class="muted done"><i class="fas fa-circle-check"></i> Delivered {{ p.deliveredAt | date: 'd MMM, h:mm a' }}</p>
+              <p class="muted done"><i class="fas fa-circle-check"></i> {{ p.selfPickup ? 'Collected' : 'Delivered' }} {{ p.deliveredAt | date: 'd MMM, h:mm a' }}</p>
             }
           </article>
         }
@@ -145,6 +168,8 @@
             @if (order.deliveryFee) {
               <div><dt>Items</dt><dd>Nu. {{ itemsTotal() | number: '1.2-2' }}</dd></div>
               <div><dt>Delivery</dt><dd>Nu. {{ order.deliveryFee | number: '1.2-2' }}</dd></div>
+            } @else if (isPickup()) {
+              <div><dt>Pick up myself</dt><dd>Free</dd></div>
             }
             <div class="grand"><dt>Total</dt><dd>Nu. {{ order.totalAmount | number: '1.2-2' }}</dd></div>
             @if (order.paymentStatus) {
@@ -161,7 +186,7 @@
 
         @if (order.customerPhone || order.address) {
           <section class="panel box">
-            <h2>Delivery</h2>
+            <h2>{{ isPickup() ? 'Pick up myself' : 'Delivery' }}</h2>
             <dl>
               @if (order.customerName) {
                 <div><dt>Name</dt><dd>{{ order.customerName }}</dd></div>

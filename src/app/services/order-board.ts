@@ -3,7 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
 // The order board: every online order by step, who has it, what is late, and the team.
-export type BoardStage = 'PAYMENT_DUE' | 'VERIFY' | 'PACK' | 'READY' | 'ASSIGNED' | 'ON_THE_WAY' | 'DELIVERED' | 'CANCELLED';
+// COLLECT: packed, the customer comes to collect it ("Pick up myself")
+export type BoardStage = 'PAYMENT_DUE' | 'VERIFY' | 'PACK' | 'READY' | 'COLLECT' | 'ASSIGNED' | 'ON_THE_WAY' | 'DELIVERED' | 'CANCELLED';
 export type DeliverySizeName = 'SMALL' | 'MEDIUM' | 'LARGE' | 'BULKY';
 
 export interface BoardItem {
@@ -57,6 +58,8 @@ export interface BoardItem {
   riderPay?: number | null;     // what the driver earns for it
   pickupTown?: string | null;   // the seller's town (empty for our own shop)
   older: boolean;               // placed before the chosen period, still open
+  selfPickup: boolean;          // "Pick up myself": the customer collects it, no driver
+  handedOverByName?: string | null; // who gave it to the customer
 }
 
 export interface BoardCounts {
@@ -73,6 +76,7 @@ export interface BoardCounts {
   needsAction: number;
   placed: number;       // orders placed in the period
   olderOpen: number;    // placed before the period and still not delivered
+  toCollect: number;    // packed, waiting for the customer to collect
 }
 
 export interface BoardPacker { email: string; name: string; role: string; packing: number; packed: number; }
@@ -123,6 +127,11 @@ export class OrderBoardService {
 
   packed(packageId: number) {
     return this.http.post(`${this.pkgApi}/${packageId}/packed`, null);
+  }
+
+  // "Pick up myself": the customer has it. The code may be empty (staff checked who it is).
+  handOver(packageId: number, code: string | null) {
+    return this.http.post(`${this.api}/packages/${packageId}/handover`, { code });
   }
 
   // ---- delivery ----

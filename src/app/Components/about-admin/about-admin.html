@@ -1,8 +1,8 @@
 <div class="page">
   <div class="page-head">
     <div>
-      <h1>About page</h1>
-      <p>What visitors read on the About page, and who is on the team. Changes show on the website at once.</p>
+      <h1>Website</h1>
+      <p>The About page, the team, and the shop's contact details and links. Changes show on the website at once.</p>
     </div>
     <a routerLink="/about" class="btn btn-secondary"><i class="fas fa-up-right-from-square"></i> See the page</a>
   </div>
@@ -60,6 +60,59 @@
         @if (changed()) {
           <button type="button" class="btn btn-link" (click)="undoTexts()">Undo changes</button>
         }
+      </div>
+    </section>
+
+    <!-- contact details and links -->
+    <section class="panel block" aria-labelledby="contact-title">
+      <header class="block-head">
+        <div>
+          <h2 id="contact-title">Contact details and links</h2>
+          <span class="muted small">Shown in the footer and on the Contact, About and Forgot password pages, and printed on receipts, invoices and credit notes.</span>
+        </div>
+      </header>
+      <div class="two">
+        <div class="field">
+          <label for="c-phone">Phone</label>
+          <input id="c-phone" name="phone" class="form-control" inputmode="tel" [(ngModel)]="contact.phone"
+                 [class.is-invalid]="contactTried() && contactError('phone')" />
+          @if (contactTried() && contactError('phone')) { <span class="err">{{ contactError('phone') }}</span> }
+        </div>
+        <div class="field">
+          <label for="c-phones">More phone numbers <span class="muted small">(optional, Contact page only)</span></label>
+          <input id="c-phones" name="otherPhones" class="form-control" placeholder="For example: 17941806, 77803506"
+                 [(ngModel)]="contact.otherPhones" [class.is-invalid]="contactTried() && contactError('otherPhones')" />
+          @if (contactTried() && contactError('otherPhones')) { <span class="err">{{ contactError('otherPhones') }}</span> }
+        </div>
+        <div class="field">
+          <label for="c-email">Email</label>
+          <input id="c-email" name="email" type="email" class="form-control" [(ngModel)]="contact.email"
+                 [class.is-invalid]="contactTried() && contactError('email')" />
+          @if (contactTried() && contactError('email')) { <span class="err">{{ contactError('email') }}</span> }
+        </div>
+        <div class="field">
+          <label for="c-address">Address</label>
+          <input id="c-address" name="address" class="form-control" maxlength="200" placeholder="For example: Norzin Lam, Thimphu, Bhutan"
+                 [(ngModel)]="contact.address" [class.is-invalid]="contactTried() && contactError('address')" />
+          @if (contactTried() && contactError('address')) { <span class="err">{{ contactError('address') }}</span> }
+        </div>
+      </div>
+      <h3 class="sub">Your pages elsewhere</h3>
+      <p class="muted small">Paste the full address of each page. An empty one is not shown (no icon in the footer).</p>
+      <div class="two">
+        @for (l of linkFields; track l.key) {
+          <div class="field">
+            <label [for]="'c-' + l.key"><i class="fa-brands" [class]="'fa-brands ' + l.icon"></i> {{ l.label }}</label>
+            <input [id]="'c-' + l.key" [name]="l.key" type="url" class="form-control" [placeholder]="l.example"
+                   [(ngModel)]="contact[l.key]" [class.is-invalid]="contactTried() && contactError(l.key)" />
+            @if (contactTried() && contactError(l.key)) { <span class="err">{{ contactError(l.key) }}</span> }
+          </div>
+        }
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" [disabled]="savingContact()" (click)="saveContact()">
+          {{ savingContact() ? 'Saving...' : 'Save contact details' }}
+        </button>
       </div>
     </section>
 

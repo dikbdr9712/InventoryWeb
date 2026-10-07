@@ -6,7 +6,7 @@ import { OrderService } from '../../services/order';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { Receipt as ReceiptData } from '../../models/models';
-import { SHOP } from '../../utils/shop-info';
+import { ShopDetails } from '../../services/shop-details';
 import { printElement } from '../../utils/print-area';
 import { downloadPdf } from '../../utils/pdf';
 import { errorText } from '../../utils/http-error';
@@ -27,7 +27,7 @@ export class Receipt implements OnInit {
 
   private sheet = viewChild<ElementRef<HTMLElement>>('sheet');
 
-  readonly shop = SHOP;
+  readonly shop = inject(ShopDetails);
   orderId = Number(this.route.snapshot.paramMap.get('orderId'));
   receipt = signal<ReceiptData | null>(null);
   error = signal('');

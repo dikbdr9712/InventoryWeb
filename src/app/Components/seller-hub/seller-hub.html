@@ -46,7 +46,7 @@
         <section class="panel box pickup" [class.missing]="!pickupPoint()">
           <h2><i class="fas fa-location-dot"></i> Pickup point</h2>
           <p class="muted">
-            Where riders collect your packages: {{ h.profile.pickupAddress }}@if (h.profile.town) {, {{ h.profile.town }}}.
+            Where riders, and customers who pick up themselves, collect your packages: {{ h.profile.pickupAddress }}@if (h.profile.town) {, {{ h.profile.town }}}.
             @if (!pickupPoint()) {
               <strong>Set it on the map</strong> so customers pay the right delivery price. Until then the distance is estimated.
             } @else {
@@ -90,12 +90,17 @@
             <ul class="list">
               @for (p of toPack().slice(0, 5); track p.id) {
                 <li>
-                  <span>Order #{{ p.orderId }} · {{ p.itemCount }} item{{ p.itemCount === 1 ? '' : 's' }}</span>
+                  <span>Order #{{ p.orderId }} · {{ p.itemCount }} item{{ p.itemCount === 1 ? '' : 's' }}@if (p.selfPickup) { <span class="pickup-tag">Customer collects</span> }</span>
                   <button type="button" class="btn btn-sm btn-primary" [disabled]="busy() === p.id" (click)="markPacked(p)">Packed</button>
                 </li>
               }
             </ul>
             <button type="button" class="btn btn-link px-0" (click)="tab.set('packages')">See all packages</button>
+          }
+          @if (toHandOver().length) {
+            <p class="collect-alert"><i class="fas fa-store"></i>
+              <span><b>{{ toHandOver().length }}</b> packed {{ toHandOver().length === 1 ? 'order waits' : 'orders wait' }} for the customer to collect.</span>
+              <button type="button" class="btn btn-link btn-sm px-0" (click)="filter.set('collect'); tab.set('packages')">See them</button></p>
           }
         </section>
         }
@@ -134,6 +139,7 @@
     @if (tab() === 'packages' && may.orders) {
       <div class="seg filter" role="group" aria-label="Show">
         <button type="button" [class.on]="filter() === 'todo'" (click)="filter.set('todo')">To pack ({{ toPack().length }})</button>
+        <button type="button" [class.on]="filter() === 'collect'" (click)="filter.set('collect')">Customer collects ({{ toHandOver().length }})</button>
         <button type="button" [class.on]="filter() === 'moving'" (click)="filter.set('moving')">With rider</button>
         <button type="button" [class.on]="filter() === 'done'" (click)="filter.set('done')">Finished</button>
         <button type="button" [class.on]="filter() === 'all'" (click)="filter.set('all')">All</button>
@@ -147,8 +153,11 @@
             <article class="pkg">
               <div class="pkg-top">
                 <h3>Order #{{ p.orderId }} <small class="muted">· package {{ p.id }}</small></h3>
-                <span [class]="'pill ' + packagePill(p.status)">{{ packageLabel(p.status) }}</span>
+                <span [class]="'pill ' + packagePill(p.status)">{{ packageLabel(p.status, false, p.selfPickup) }}</span>
               </div>
+              @if (p.selfPickup) {
+                <p class="pickup-line"><i class="fas fa-store"></i> {{ p.status === 'DELIVERED' ? 'The customer collected it from you.' : 'The customer collects it from you. No rider.' }}</p>
+              }
               <ul class="pkg-items">
                 @for (line of p.items; track line.itemId) {
                   <li><span>{{ line.quantity }} × {{ line.itemName }}</span><span>Nu. {{ line.unitPrice * line.quantity | number: '1.2-2' }}</span></li>
@@ -164,11 +173,20 @@
                 @if (p.riderName) {
                   <div><dt>Rider</dt><dd>{{ p.riderName }} · {{ p.riderVehicle }}</dd></div>
                 }
+                @if (p.handedOverBy) {
+                  <div><dt>Handed over by</dt><dd>{{ p.handedOverBy }}</dd></div>
+                }
               </dl>
               @if (p.status === 'TO_PACK') {
                 <div class="pkg-actions">
                   <button type="button" class="btn btn-primary" [disabled]="busy() === p.id" (click)="markPacked(p)">
-                    <i class="fas fa-box"></i> Packed, ready for pickup
+                    <i class="fas fa-box"></i> {{ p.selfPickup ? 'Packed, ready to collect' : 'Packed, ready for pickup' }}
+                  </button>
+                </div>
+              } @else if (p.selfPickup && p.status === 'READY_FOR_PICKUP') {
+                <div class="pkg-actions">
+                  <button type="button" class="btn btn-primary" [disabled]="busy() === p.id" (click)="handOver(p)">
+                    <i class="fas fa-handshake"></i> Customer collected it
                   </button>
                 </div>
               }

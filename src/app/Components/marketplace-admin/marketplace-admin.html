@@ -215,7 +215,7 @@
                     @for (h of history(); track h.id) {
                       <tr>
                         <td>{{ h.createdAt | date: 'd MMM y' }}</td>
-                        <td>{{ h.entryType === 'PAYOUT' ? 'Payout' : h.entryType === 'SALE' ? 'Sale #' + h.orderId : h.entryType === 'DELIVERY' ? 'Delivery #' + h.orderId : 'Adjustment' }}</td>
+                        <td>{{ h.entryType === 'PAYOUT' ? 'Payout' : h.entryType === 'SALE' ? 'Sale #' + h.orderId : h.entryType === 'DELIVERY' ? 'Delivery #' + h.orderId : h.entryType === 'RETURN' ? 'Return, order #' + h.orderId : 'Adjustment' }}</td>
                         <td class="muted">{{ h.note }}</td>
                         <td class="text-right" [class.money-in]="h.amount > 0" [class.money-out]="h.amount < 0">
                           {{ h.amount > 0 ? '+' : '−' }} {{ (h.amount < 0 ? -h.amount : h.amount) | number: '1.2-2' }}

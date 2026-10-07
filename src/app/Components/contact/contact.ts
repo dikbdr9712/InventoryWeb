@@ -1,4 +1,5 @@
 import { Component, ElementRef, OnInit, inject, signal } from '@angular/core';
+import { ShopDetails } from '../../services/shop-details';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -15,6 +16,7 @@ import { focusFirstError } from '../../utils/focus-error';
   styleUrl: './contact.css'
 })
 export class Contact implements OnInit {
+  readonly shop = inject(ShopDetails);
   auth = inject(AuthService);
   private contactService = inject(ContactService);
   private route = inject(ActivatedRoute);

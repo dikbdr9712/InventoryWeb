@@ -4,6 +4,9 @@ import { environment } from '../../environments/environment';
 
 export type StockView = 'shelf' | 'expiring' | 'expired';
 
+// A product at or below its "warn me when stock reaches" level
+export interface LowStockRow { itemId: number; itemName: string; sku: string; quantity: number; warnAt: number; sellerId?: number | null; }
+
 export interface StockBatch {
   id: number;
   itemId: number;
@@ -59,6 +62,10 @@ export class StockService {
 
   summary(days: number) {
     return this.http.get<StockSummary>(`${this.api}/summary`, { params: { days } });
+  }
+
+  lowStock() {
+    return this.http.get<LowStockRow[]>(`${this.api}/low`);
   }
 
   batches(view: StockView, days: number) {

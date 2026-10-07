@@ -91,6 +91,7 @@ export interface OrderRequest {
   dropLatitude?: number | null;
   dropLongitude?: number | null;
   areaId?: number | null;
+  fulfilment?: 'DELIVERY' | 'PICKUP'; // PICKUP: the customer collects it, no delivery fee
 }
 
 // Order from "Buy Now"
@@ -116,6 +117,7 @@ export interface Order {
   note?: string; // the shop's message to the customer (why info is needed, why a payment was refused)
   totalAmount: number;
   deliveryFee?: number | null; // included in totalAmount (marketplace orders)
+  fulfilment?: 'DELIVERY' | 'PICKUP'; // PICKUP: the customer collects it
   orderStatus?: string;
   paymentStatus?: string;
   paymentMethod?: string;
@@ -393,6 +395,8 @@ export interface OrderPackage {
   assignedAt?: string;
   pickedUpAt?: string;
   deliveredAt?: string;
+  selfPickup?: boolean;            // "Pick up myself": the customer collects it where it is packed
+  handedOverBy?: string | null;    // who gave it to the customer (staff and the seller see it)
 }
 
 export interface EarningsSummary {
@@ -406,7 +410,7 @@ export interface EarningsSummary {
 
 export interface LedgerRow {
   id: number;
-  entryType: 'SALE' | 'DELIVERY' | 'PAYOUT' | 'ADJUSTMENT';
+  entryType: 'SALE' | 'DELIVERY' | 'PAYOUT' | 'ADJUSTMENT' | 'RETURN';
   amount: number;
   orderId?: number;
   packageId?: number;
@@ -542,6 +546,7 @@ export interface Receipt {
   savings?: number | null;
   taxes: { label: string; amount: number }[];
   deliveryFee?: number | null;
+  pickup?: boolean;              // "Pick up myself": collected by the customer, no delivery
   total: number;
   payment: {
     method: string;

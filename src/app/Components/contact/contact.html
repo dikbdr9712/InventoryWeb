@@ -16,23 +16,23 @@
           <span class="icon"><i class="fas fa-phone"></i></span>
           <div>
             <span class="label">Phone</span>
-            <a href="tel:77269712">77269712</a>
-            <a href="tel:17941806">17941806</a>
-            <a href="tel:77803506">77803506</a>
+            @for (p of shop.phones(); track p) {
+              <a [href]="shop.dial(p)">{{ p }}</a>
+            }
           </div>
         </li>
         <li>
           <span class="icon"><i class="fas fa-envelope"></i></span>
           <div>
             <span class="label">Email</span>
-            <a href="mailto:dpdrukbazaars&#64;gmail.com">dpdrukbazaars&#64;gmail.com</a>
+            <a [href]="'mailto:' + shop.email">{{ shop.email }}</a>
           </div>
         </li>
         <li>
           <span class="icon"><i class="fas fa-location-dot"></i></span>
           <div>
             <span class="label">Address</span>
-            <span>Thimphu, Bhutan</span>
+            <span>{{ shop.address }}</span>
           </div>
         </li>
       </ul>

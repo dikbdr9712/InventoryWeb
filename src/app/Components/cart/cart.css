@@ -324,3 +324,34 @@
   color: var(--red);
   font-weight: 600;
 }
+
+/* ---------- delivery or pick up ---------- */
+.methods { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.method {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  cursor: pointer;
+}
+.method input { position: absolute; opacity: 0; pointer-events: none; }
+.method i { flex: none; font-size: 1.2rem; color: var(--muted); }
+.method span { display: flex; flex-direction: column; min-width: 0; }
+.method small { color: var(--muted); font-size: 0.78rem; }
+.method.on { border-color: var(--green); background: var(--green-soft); }
+.method.on i { color: var(--green); }
+.method:has(input:focus-visible) { outline: 2px solid var(--green); outline-offset: 2px; }
+.pickup-note { margin-bottom: 14px; padding: 10px 12px; border-radius: 10px; background: var(--blue-soft); font-size: 0.88rem; }
+.pickup-note p { margin: 0 0 6px; }
+.pickup-note p:last-child { margin: 0; }
+.pickup-note i { color: var(--blue); }
+.pickup-note ul { margin: 0; padding-left: 20px; }
+.sub-h { margin-top: 4px; }
+@media (max-width: 400px) {
+  .methods { grid-template-columns: 1fr; }
+}

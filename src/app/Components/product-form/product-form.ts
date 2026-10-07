@@ -230,7 +230,11 @@ export class ProductForm implements OnInit {
     data.append('supplierItemCode', this.model.supplierItemCode.trim());
     data.append('deliverySize', this.model.deliverySize);
     data.append('quantity', String(Math.trunc(Number(this.model.quantity) || 0)));
-    data.append('lowStockThreshold', String(Math.trunc(Number(this.model.lowStockThreshold) || 10)));
+    // "Warn me when stock reaches": 0 is a real level (warn when sold out); empty = no warning
+    const warnAt = this.model.lowStockThreshold;
+    if (warnAt !== null && warnAt !== undefined && String(warnAt).trim() !== '') {
+      data.append('lowStockThreshold', String(Math.max(0, Math.trunc(Number(warnAt)))));
+    }
     // Your backend uses "images" when adding and "image" when editing
     if (this.selectedFile) data.append(this.isEdit ? 'image' : 'images', this.selectedFile);
 

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ShopDetails } from '../../services/shop-details';
 
 @Component({
   selector: 'app-footer',
@@ -9,4 +10,5 @@ import { RouterLink } from '@angular/router';
 })
 export class Footer {
   year = new Date().getFullYear();
+  readonly shop = inject(ShopDetails);
 }

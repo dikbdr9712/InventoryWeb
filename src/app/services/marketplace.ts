@@ -72,6 +72,11 @@ export class MarketplaceService {
     return this.http.post<OrderPackage>(`${this.api}/seller/packages/${id}/packed`, null);
   }
 
+  // "Pick up myself": the customer collected it from the seller, with their collection code
+  sellerHandOver(id: number, code: string) {
+    return this.http.post<OrderPackage>(`${this.api}/seller/packages/${id}/handover`, { code });
+  }
+
   sellerLedger() {
     return this.http.get<LedgerRow[]>(`${this.api}/seller/ledger`);
   }

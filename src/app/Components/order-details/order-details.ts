@@ -9,7 +9,8 @@ import { ItemService } from '../../services/item';
 import { ConfirmService } from '../../services/confirm';
 import { ToastService } from '../../services/toast';
 import { Order, OrderItem, OrderPackage } from '../../models/models';
-import { packageLabel, packagePill, packageStage } from '../../utils/package-status';
+import { mapLink, packageLabel, packagePill, packageStage } from '../../utils/package-status';
+import { ShopDetails } from '../../services/shop-details';
 import { errorText } from '../../utils/http-error';
 import { orderLabel, orderPill, orderStage, paymentLabel, paymentPill } from '../../utils/order-status';
 import { OrderTracker } from '../order-tracker/order-tracker';
@@ -38,6 +39,17 @@ export class OrderDetails implements OnInit {
   packagePill = packagePill;
   packageStage = packageStage;
   readonly steps = ['Packed', 'Picked up', 'Delivered'];
+  readonly pickupSteps = ['Packed', 'Collected']; // "Pick up myself"
+  readonly shop = inject(ShopDetails);
+  readonly mapLink = mapLink;
+
+  isPickup = computed(() => this.order()?.fulfilment === 'PICKUP');
+
+  // a step of a package's progress is done: Packed (1), Picked up (2), Delivered or Collected (3)
+  stepDone(p: { status: string; selfPickup?: boolean }, index: number) {
+    const stage = packageStage(p.status);
+    return p.selfPickup ? stage >= (index === 0 ? 1 : 3) : stage >= index + 1;
+  }
 
   order = signal<Order | null>(null);
   items = signal<OrderItem[]>([]);

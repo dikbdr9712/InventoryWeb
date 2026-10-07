@@ -6,13 +6,15 @@
         <span>DP DrukBazaars<small>Online shopping in Bhutan</small></span>
       </a>
       <p>Shop from trusted local sellers, delivered to your door.</p>
-      <div class="ft-social">
-        <a href="https://www.facebook.com/pharmith.lepcha.2025" target="_blank" rel="noopener" aria-label="Facebook">
-          <i class="fa-brands fa-facebook-f"></i>
-        </a>
-        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-        <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-      </div>
+      @if (shop.links().length) {
+        <div class="ft-social">
+          @for (l of shop.links(); track l.label) {
+            <a [href]="l.url" target="_blank" rel="noopener" [attr.aria-label]="'DP DrukBazaars on ' + l.label">
+              <i class="fa-brands" [class]="'fa-brands ' + l.icon"></i>
+            </a>
+          }
+        </div>
+      }
     </div>
 
     <nav class="ft-col" aria-label="Footer">
@@ -33,9 +35,9 @@
 
     <div class="ft-col ft-contact">
       <h3>Get in touch</h3>
-      <a href="tel:+97577269712"><i class="fas fa-phone"></i><span>77269712</span></a>
-      <a href="mailto:dpdrukbazaars&#64;gmail.com"><i class="fas fa-envelope"></i><span>dpdrukbazaars&#64;gmail.com</span></a>
-      <p><i class="fas fa-location-dot"></i><span>Thimphu / Phuentsholing, Bhutan</span></p>
+      <a [href]="shop.dial(shop.phone)"><i class="fas fa-phone"></i><span>{{ shop.phone }}</span></a>
+      <a [href]="'mailto:' + shop.email"><i class="fas fa-envelope"></i><span>{{ shop.email }}</span></a>
+      <p><i class="fas fa-location-dot"></i><span>{{ shop.address }}</span></p>
     </div>
   </div>
 

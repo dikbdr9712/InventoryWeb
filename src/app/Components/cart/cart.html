@@ -58,7 +58,9 @@
         <dl class="sums">
           <div><dt>Items</dt><dd>{{ cart.count() }}</dd></div>
           <div><dt>Subtotal</dt><dd>Nu. {{ cart.total() | number: '1.2-2' }}</dd></div>
-          @if (quote(); as q) {
+          @if (pickup()) {
+            <div class="fee-row"><dt>Pick up myself</dt><dd>Free</dd></div>
+          } @else if (quote(); as q) {
             @for (p of q.packages; track $index) {
               <div class="fee-row">
                 <dt>
@@ -73,8 +75,8 @@
           }
         </dl>
 
-        @if (quote()?.problem) {
-          <p class="fee-problem" role="alert"><i class="fas fa-triangle-exclamation"></i> {{ quote()!.problem }}</p>
+        @if (problem()) {
+          <p class="fee-problem" role="alert"><i class="fas fa-triangle-exclamation"></i> {{ problem() }} You can also choose "Pick up myself".</p>
         } @else if (estimated()) {
           <p class="fee-note">
             <i class="fas fa-circle-info"></i>
@@ -93,7 +95,34 @@
 
         @if (auth.isLoggedIn()) {
           <div class="delivery">
-            <h3>Delivery details</h3>
+            <h3>How do you want to get it?</h3>
+            <div class="methods" role="radiogroup" aria-label="How do you want to get it?">
+              <label class="method" [class.on]="!pickup()">
+                <input type="radio" name="method" value="DELIVERY" [checked]="!pickup()" (change)="method.set('DELIVERY')" />
+                <i class="fas fa-truck-fast" aria-hidden="true"></i>
+                <span><strong>Deliver to my door</strong><small>A driver brings it</small></span>
+              </label>
+              <label class="method" [class.on]="pickup()">
+                <input type="radio" name="method" value="PICKUP" [checked]="pickup()" (change)="method.set('PICKUP')" />
+                <i class="fas fa-store" aria-hidden="true"></i>
+                <span><strong>Pick up myself</strong><small>Free, no delivery fee</small></span>
+              </label>
+            </div>
+            @if (pickup()) {
+              <div class="pickup-note">
+                <p><i class="fas fa-circle-info"></i> You collect your order where it is packed. We tell you when it is ready, with the
+                  address and a collection code to show.</p>
+                @if (pickupPlaces().length) {
+                  <ul>
+                    @for (pl of pickupPlaces(); track pl.name) {
+                      <li><strong>{{ pl.name }}</strong>@if (pl.where) {<span>, {{ pl.where }}</span>}</li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+
+            <h3 class="sub-h">Your details</h3>
             <p class="who">Ordering as <strong>{{ auth.name() }}</strong></p>
 
             <div class="field">
@@ -105,17 +134,19 @@
               }
             </div>
 
-            <app-delivery-location [(point)]="point" />
+            @if (!pickup()) {
+              <app-delivery-location [(point)]="point" />
 
-            <div class="field">
-              <label for="address">Delivery address</label>
-              <textarea id="address" rows="3" class="form-control" placeholder="House, building, landmark (for example: blue gate opposite the school)"
-                        [class.is-invalid]="submitted() && errors().address" [(ngModel)]="delivery.address" name="address"
-                        autocomplete="street-address"></textarea>
-              @if (submitted() && errors().address) {
-                <p class="err">{{ errors().address }}</p>
-              }
-            </div>
+              <div class="field">
+                <label for="address">Delivery address</label>
+                <textarea id="address" rows="3" class="form-control" placeholder="House, building, landmark (for example: blue gate opposite the school)"
+                          [class.is-invalid]="submitted() && errors().address" [(ngModel)]="delivery.address" name="address"
+                          autocomplete="street-address"></textarea>
+                @if (submitted() && errors().address) {
+                  <p class="err">{{ errors().address }}</p>
+                }
+              </div>
+            }
           </div>
         } @else {
           <p class="signin-note">
@@ -124,7 +155,7 @@
           </p>
         }
 
-        <button type="button" class="btn btn-primary btn-lg go" [disabled]="placing() || !!quote()?.problem" (click)="placeOrder()">
+        <button type="button" class="btn btn-primary btn-lg go" [disabled]="placing() || !!problem()" (click)="placeOrder()">
           @if (placing()) {
             <span class="spinner-border spinner-border-sm" role="status"></span> Creating your order...
           } @else if (auth.isLoggedIn()) {

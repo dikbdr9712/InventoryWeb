@@ -6,11 +6,12 @@ import { Observable } from 'rxjs';
 import { AuthService } from '../../services/auth';
 import { ConfirmService } from '../../services/confirm';
 import { ToastService } from '../../services/toast';
+import { ReturnDialog } from '../return-dialog/return-dialog';
 import { BoardItem, BoardRider, BoardStage, DeliverySizeName, OrderBoard, OrderBoardService } from '../../services/order-board';
 import { errorText } from '../../utils/http-error';
 import { mapLink } from '../../utils/package-status';
 import { printElement } from '../../utils/print-area';
-import { SHOP } from '../../utils/shop-info';
+import { ShopDetails } from '../../services/shop-details';
 
 type View = 'action' | 'mine' | 'late' | 'active' | 'drivers' | 'done';
 type StageGroup = 'PAYMENT_DUE' | 'VERIFY' | 'PACK' | 'PACKED' | 'ON_THE_WAY' | 'DELIVERED';
@@ -24,6 +25,7 @@ const STAGES: StageInfo[] = [
   { key: 'VERIFY', title: 'Verify payment', icon: 'fa-magnifying-glass-dollar', help: 'A payment to check before packing.' },
   { key: 'PACK', title: 'To pack', icon: 'fa-box-open', help: 'Paid: pick the items and pack them.' },
   { key: 'READY', title: 'Packed, needs a driver', icon: 'fa-box', help: 'Packed. Give it to a driver, or deliver it ourselves.' },
+  { key: 'COLLECT', title: 'Waiting for the customer to collect', icon: 'fa-store', help: 'Packed. The customer picks it up themselves.' },
   { key: 'ASSIGNED', title: 'Driver coming to collect', icon: 'fa-person-walking-arrow-right', help: 'A driver has the job and is coming for it.' },
   { key: 'ON_THE_WAY', title: 'On the way', icon: 'fa-truck-fast', help: 'Picked up, going to the customer.' },
   { key: 'DELIVERED', title: 'Delivered', icon: 'fa-circle-check', help: 'With the customer.' },
@@ -32,7 +34,7 @@ const STAGES: StageInfo[] = [
 const STAGE_ORDER = STAGES.map(s => s.key);
 const SIZE_ORDER: DeliverySizeName[] = ['SMALL', 'MEDIUM', 'LARGE', 'BULKY'];
 const GROUP_STAGES: Record<StageGroup, BoardStage[]> = {
-  PAYMENT_DUE: ['PAYMENT_DUE'], VERIFY: ['VERIFY'], PACK: ['PACK'], PACKED: ['READY', 'ASSIGNED'],
+  PAYMENT_DUE: ['PAYMENT_DUE'], VERIFY: ['VERIFY'], PACK: ['PACK'], PACKED: ['READY', 'COLLECT', 'ASSIGNED'],
   ON_THE_WAY: ['ON_THE_WAY'], DELIVERED: ['DELIVERED']
 };
 // steps where a package is with (or going to) a driver or our staff courier
@@ -47,7 +49,7 @@ function day(d: Date): string {
 // and the buttons for the next step. Orders are chosen by the day they were placed (today, this week, ...).
 @Component({
   selector: 'app-order-board',
-  imports: [DatePipe, DecimalPipe, RouterLink],
+  imports: [DatePipe, DecimalPipe, RouterLink, ReturnDialog],
   templateUrl: './order-board.html',
   styleUrl: './order-board.css'
 })
@@ -62,7 +64,7 @@ export class OrderBoardPage implements OnInit {
   private slip = viewChild<ElementRef<HTMLElement>>('slip');
 
   readonly stages = STAGES;
-  readonly shop = SHOP;
+  readonly shop = inject(ShopDetails);
   readonly mapLink = mapLink;
   readonly periods: { key: Period; label: string }[] = [
     { key: 'today', label: 'Today' }, { key: 'week', label: 'This week' }, { key: 'month', label: 'This month' },
@@ -87,6 +89,15 @@ export class OrderBoardPage implements OnInit {
 
   canFulfil = this.auth.can('orders.fulfil');
   canVerify = this.auth.can('payments.verify');
+  canReturn = this.auth.can('sales.return');
+  returnOrderId = signal<number | null>(null); // the order whose items are being taken back
+
+  // after a return: the refund is recorded, stock is back, and a seller's share came off their earnings
+  // (the dialog stays open on the credit note until it is closed)
+  onReturned() {
+    this.toasts.success('Return recorded. Give the customer the refund shown on the credit note.');
+    this.load(true);
+  }
 
   counts = computed(() => this.board()?.counts);
   me = computed(() => (this.board()?.me ?? '').toLowerCase());
@@ -281,7 +292,7 @@ export class OrderBoardPage implements OnInit {
 
   // a package that is packed: show where it goes from and to
   hasRoute(i: BoardItem): boolean {
-    return i.packageId != null && ['READY', 'ASSIGNED', 'ON_THE_WAY', 'DELIVERED'].includes(i.stage);
+    return i.packageId != null && !i.selfPickup && ['READY', 'ASSIGNED', 'ON_THE_WAY', 'DELIVERED'].includes(i.stage);
   }
 
   fromLabel(i: BoardItem): string {
@@ -301,7 +312,7 @@ export class OrderBoardPage implements OnInit {
       case 'PAYMENT_DUE': return 'placed';
       case 'VERIFY': return 'waiting';
       case 'PACK': return 'paid';
-      case 'READY': case 'ASSIGNED': return 'packed';
+      case 'READY': case 'COLLECT': case 'ASSIGNED': return 'packed';
       case 'ON_THE_WAY': return 'on the way';
       default: return '';
     }
@@ -314,6 +325,11 @@ export class OrderBoardPage implements OnInit {
 
   stageTitle(stage: BoardStage): string {
     return STAGES.find(s => s.key === stage)?.title ?? stage;
+  }
+
+  // the step of one item: a pickup that reached the customer was "collected", not delivered
+  itemTitle(i: BoardItem): string {
+    return i.selfPickup && i.stage === 'DELIVERED' ? 'Collected' : this.stageTitle(i.stage);
   }
 
   // Drivers who can carry this package, free ones first
@@ -352,10 +368,27 @@ export class OrderBoardPage implements OnInit {
     const forSeller = !!i.sellerId;
     if (!await this.confirm.ask({
       title: forSeller ? `Mark packed for ${i.sellerName}?` : 'Packed?',
-      message: `Every item of order #${i.orderId}${i.packageCount > 1 ? ' (package ' + i.packageNo + ' of ' + i.packageCount + ')' : ''} is in the package and it is ready to go. Drivers will see the job.`,
+      message: `Every item of order #${i.orderId}${i.packageCount > 1 ? ' (package ' + i.packageNo + ' of ' + i.packageCount + ')' : ''} is in the package and it is ready to go. `
+        + (i.selfPickup ? 'The customer is told it is ready to collect.' : 'Drivers will see the job.'),
       confirmLabel: 'Packed'
     })) return;
     this.run(i, this.api.packed(i.packageId!), `Order #${i.orderId} is packed.`);
+  }
+
+  // "Pick up myself": the customer came for it. Their collection code, or staff vouch for who it is.
+  async handOver(i: BoardItem) {
+    const noCode = 'No code: I checked who the customer is';
+    const answer = await this.confirm.prompt({
+      title: `Hand over order #${i.orderId}?`,
+      message: `Only when the customer has it in hand. Type the 4-digit collection code from their order page. `
+        + 'If they do not have it, check their name and phone, then tap the answer below.',
+      label: 'Collection code',
+      placeholder: '4 digits',
+      templates: [noCode],
+      confirmLabel: 'Handed over'
+    });
+    if (answer === null) return;
+    this.run(i, this.api.handOver(i.packageId!, answer === noCode ? null : answer), `Order #${i.orderId} collected.`);
   }
 
   assignRider(i: BoardItem, riderId: string, select: HTMLSelectElement) {

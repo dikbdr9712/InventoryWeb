@@ -7,6 +7,7 @@ import { AboutAdmin as AboutAdminData, SiteService, TeamPerson } from '../../ser
 import { ConfirmService } from '../../services/confirm';
 import { ToastService } from '../../services/toast';
 import { errorText } from '../../utils/http-error';
+import { ShopDetails, ShopDetailsData } from '../../services/shop-details';
 
 const MAX_PHOTO = 5 * 1024 * 1024;
 const LIMITS = { intro: 600, mission: 800, vision: 800, bio: 400 };
@@ -26,6 +27,18 @@ export class AboutAdmin implements OnInit {
   private site = inject(SiteService);
   private confirm = inject(ConfirmService);
   private toasts = inject(ToastService);
+  private shopDetails = inject(ShopDetails);
+
+  // the shop's contact details and links (footer, Contact page, receipts)
+  contact: ShopDetailsData = { ...this.shopDetails.details() };
+  savingContact = signal(false);
+  contactTried = signal(false);
+  readonly linkFields: { key: 'facebook' | 'instagram' | 'youtube' | 'tiktok'; label: string; icon: string; example: string }[] = [
+    { key: 'facebook', label: 'Facebook', icon: 'fa-facebook-f', example: 'https://www.facebook.com/yourpage' },
+    { key: 'instagram', label: 'Instagram', icon: 'fa-instagram', example: 'https://www.instagram.com/yourpage' },
+    { key: 'youtube', label: 'YouTube', icon: 'fa-youtube', example: 'https://www.youtube.com/@yourchannel' },
+    { key: 'tiktok', label: 'TikTok', icon: 'fa-tiktok', example: 'https://www.tiktok.com/@yourpage' }
+  ];
   private destroyRef = inject(DestroyRef);
 
   readonly limits = LIMITS;
@@ -63,6 +76,8 @@ export class AboutAdmin implements OnInit {
 
   ngOnInit() {
     this.load();
+    // the latest details from the server (the shared copy may still be loading)
+    this.site.shopInfo().subscribe({ next: d => this.contact = { ...this.contact, ...d }, error: () => {} });
     this.destroyRef.onDestroy(() => this.dropPreview());
   }
 
@@ -141,6 +156,40 @@ export class AboutAdmin implements OnInit {
     this.showNumbers = s.showNumbers;
     this.textsTried.set(false);
     this.touched();
+  }
+
+  // ---------- contact details and links ----------
+
+  contactError(field: 'phone' | 'email' | 'address' | 'otherPhones' | 'facebook' | 'instagram' | 'youtube' | 'tiktok') {
+    const v = (this.contact[field] ?? '').trim();
+    switch (field) {
+      case 'phone': return /^\+?[0-9 ]{7,20}$/.test(v) ? '' : 'Enter the phone number (digits only).';
+      case 'email': return /^\S+@\S+\.\S+$/.test(v) ? '' : 'Enter the email address.';
+      case 'address': return v ? (v.length > 200 ? 'Keep it under 200 characters.' : '') : 'Enter the address.';
+      case 'otherPhones': return v.split(',').map(p => p.trim()).filter(Boolean).every(p => /^\+?[0-9 ]{7,20}$/.test(p))
+        ? '' : 'Phone numbers only, separated by commas.';
+      default: return !v || /^https:\/\/\S+$/.test(v) ? '' : 'A full address starting with https://, or leave it empty.';
+    }
+  }
+
+  saveContact() {
+    this.contactTried.set(true);
+    const fields = ['phone', 'otherPhones', 'email', 'address', 'facebook', 'instagram', 'youtube', 'tiktok'] as const;
+    if (fields.some(f => this.contactError(f)) || this.savingContact()) return;
+    this.savingContact.set(true);
+    this.shopDetails.save(this.contact).subscribe({
+      next: d => {
+        this.savingContact.set(false);
+        this.contactTried.set(false);
+        this.contact = { ...d };
+        this.shopDetails.set(d); // the footer and the rest update at once
+        this.toasts.success('Contact details and links saved.');
+      },
+      error: (err: HttpErrorResponse) => {
+        this.savingContact.set(false);
+        this.toasts.error(errorText(err));
+      }
+    });
   }
 
   // ---------- team ----------

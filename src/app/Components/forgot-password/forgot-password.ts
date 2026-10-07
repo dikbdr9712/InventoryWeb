@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService, ResetMethod, ResetWays } from '../../services/auth';
 import { AuthLayout } from '../auth-layout/auth-layout';
 import { errorText } from '../../utils/http-error';
-import { SHOP } from '../../utils/shop-info';
+import { ShopDetails } from '../../services/shop-details';
 
 const MIN_LENGTH = 6;
 type Step = 'start' | 'code' | 'password' | 'done';
@@ -28,7 +28,7 @@ export class ForgotPassword implements OnInit {
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
 
-  readonly shop = SHOP;
+  readonly shop = inject(ShopDetails);
   readonly minLength = MIN_LENGTH;
 
   ways = signal<ResetWays | null>(null); // null until the server answers: both ways are offered meanwhile

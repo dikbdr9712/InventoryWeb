@@ -159,6 +159,9 @@
 
             <div class="row-actions">
               @if (!isMe(u)) {
+                <button type="button" class="btn btn-sm btn-secondary" [disabled]="busyId() === u.id" (click)="editDetails(u)">
+                  <i class="fas fa-pen"></i> Edit details
+                </button>
                 <button type="button" class="btn btn-sm btn-secondary" [disabled]="busyId() === u.id" (click)="resetPassword(u)">
                   <i class="fas fa-key"></i> Reset password
                 </button>
@@ -170,6 +173,35 @@
                 <a class="btn btn-sm btn-secondary" routerLink="/profile">My profile</a>
               }
             </div>
+
+            @if (editingId() === u.id) {
+              <form class="details-form" (ngSubmit)="saveDetails(u)" novalidate>
+                <div class="df-field">
+                  <label [for]="'d-name-' + u.id">Full name</label>
+                  <input [id]="'d-name-' + u.id" name="name" class="form-control" maxlength="100" [(ngModel)]="details.name"
+                         [class.is-invalid]="detailsTried() && detailsError('name')" />
+                  @if (detailsTried() && detailsError('name')) { <span class="df-err">{{ detailsError('name') }}</span> }
+                </div>
+                <div class="df-field">
+                  <label [for]="'d-email-' + u.id">Email (signs in with it)</label>
+                  <input [id]="'d-email-' + u.id" name="email" type="email" class="form-control" maxlength="150" [(ngModel)]="details.email"
+                         [class.is-invalid]="detailsTried() && detailsError('email')" />
+                  @if (detailsTried() && detailsError('email')) { <span class="df-err">{{ detailsError('email') }}</span> }
+                </div>
+                <div class="df-field">
+                  <label [for]="'d-phone-' + u.id">Phone</label>
+                  <input [id]="'d-phone-' + u.id" name="phone" type="tel" inputmode="numeric" class="form-control" maxlength="8"
+                         placeholder="8 digits" [(ngModel)]="details.phone" [class.is-invalid]="detailsTried() && detailsError('phone')" />
+                  @if (detailsTried() && detailsError('phone')) { <span class="df-err">{{ detailsError('phone') }}</span> }
+                </div>
+                <p class="df-note"><i class="fas fa-circle-info"></i> A new email signs them out; they sign in with it and the same
+                  password. Their orders, reviews and notifications move with them, and both addresses are told.</p>
+                <div class="df-actions">
+                  <button type="submit" class="btn btn-primary btn-sm" [disabled]="busyId() === u.id">{{ busyId() === u.id ? 'Saving...' : 'Save details' }}</button>
+                  <button type="button" class="btn btn-link btn-sm" (click)="editingId.set(null)">Cancel</button>
+                </div>
+              </form>
+            }
           </article>
         }
       </div>

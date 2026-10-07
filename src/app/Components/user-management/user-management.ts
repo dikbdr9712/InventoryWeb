@@ -105,6 +105,51 @@ export class UserManagement implements OnInit {
   created = signal<{ name: string; email: string; password: string; role: string } | null>(null);
   tempPassword = signal<{ name: string; email: string; password: string } | null>(null);
 
+  // ---------- correcting a person's name, email or phone ----------
+  editingId = signal<number | null>(null);
+  details = { name: '', email: '', phone: '' };
+  detailsTried = signal(false);
+
+  editDetails(user: AdminUser) {
+    this.details = { name: user.name ?? '', email: user.email ?? '', phone: user.phone ?? '' };
+    this.detailsTried.set(false);
+    this.editingId.set(user.id);
+    setTimeout(() => document.getElementById('d-name-' + user.id)?.focus());
+  }
+
+  detailsError(field: 'name' | 'email' | 'phone') {
+    const v = this.details[field].trim();
+    if (field === 'name') return v ? '' : 'Enter the full name.';
+    if (field === 'email') return /^\S+@\S+\.\S+$/.test(v) ? '' : 'Enter a valid email address.';
+    return /^[0-9]{8}$/.test(v) ? '' : 'Enter an 8-digit phone number.';
+  }
+
+  async saveDetails(user: AdminUser) {
+    this.detailsTried.set(true);
+    if (this.detailsError('name') || this.detailsError('email') || this.detailsError('phone')) return;
+    const emailChanges = this.details.email.trim().toLowerCase() !== (user.email ?? '').toLowerCase();
+    if (emailChanges && !await this.confirm.ask({
+      title: 'Change the sign-in email?',
+      message: `${user.name} will sign in with ${this.details.email.trim()} from now on (same password). They are signed out now, and both the old and the new address get an email about it. Their orders, reviews and notifications move with them.`,
+      confirmLabel: 'Change email'
+    })) return;
+    this.busyId.set(user.id);
+    this.userService.changeDetails(user.id, {
+      name: this.details.name.trim(), email: this.details.email.trim(), phone: this.details.phone.trim()
+    }).subscribe({
+      next: updated => {
+        this.busyId.set(null);
+        this.editingId.set(null);
+        this.replaceUser(updated);
+        this.toasts.success(`${updated.name}'s details are saved.`);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.busyId.set(null);
+        this.toasts.error(errorText(err));
+      }
+    });
+  }
+
   // ---------- Roles ----------
   selectedRoleId = signal<number | null>(null);
   draft = signal<RoleDraft | null>(null);

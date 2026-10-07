@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { StockBatch, StockService, StockSummary, StockView } from '../../services/stock';
+import { LowStockRow, StockBatch, StockService, StockSummary, StockView } from '../../services/stock';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../services/toast';
 import { errorText } from '../../utils/http-error';
@@ -39,7 +39,12 @@ export class StockBatches implements OnInit {
   readonly canChange = this.auth.can('stock.restock');
   readonly reasons = WRITE_OFF_REASONS;
 
-  view = signal<StockView>('shelf');
+  view = signal<StockView | 'low'>('shelf');
+  low = signal<LowStockRow[]>([]); // products at or below their warning level
+  lowShown = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    return q ? this.low().filter(l => (l.itemName + ' ' + l.sku).toLowerCase().includes(q)) : this.low();
+  });
   days = signal(60);
   search = signal('');
   batches = signal<StockBatch[]>([]);
@@ -68,12 +73,12 @@ export class StockBatches implements OnInit {
   ngOnInit() {
     this.route.queryParamMap.subscribe(q => {
       const v = q.get('view');
-      this.view.set(v === 'expiring' || v === 'expired' ? v : 'shelf');
+      this.view.set(v === 'expiring' || v === 'expired' || v === 'low' ? v : 'shelf');
       this.load();
     });
   }
 
-  show(view: StockView) {
+  show(view: StockView | 'low') {
     this.router.navigate([], { queryParams: { view: view === 'shelf' ? null : view }, queryParamsHandling: 'merge' });
   }
 
@@ -87,7 +92,14 @@ export class StockBatches implements OnInit {
     this.error.set('');
     this.panel.set(null);
     this.stock.summary(this.days()).subscribe({ next: s => this.summary.set(s), error: () => {} });
-    this.stock.batches(this.view(), this.days()).subscribe({
+    this.stock.lowStock().subscribe({ next: list => this.low.set(list), error: () => this.low.set([]) });
+    const view = this.view();
+    if (view === 'low') {
+      this.batches.set([]);
+      this.loading.set(false);
+      return;
+    }
+    this.stock.batches(view, this.days()).subscribe({
       next: list => {
         this.batches.set(list);
         this.loading.set(false);

@@ -345,3 +345,11 @@
 .notice.pay-now > i {
   color: var(--green);
 }
+
+/* "Pick up myself": where to collect it */
+.collect { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--blue-soft); }
+.collect > i { color: var(--blue); font-size: 1.3rem; }
+.collect > div:nth-child(2) { flex: 1 1 200px; display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.collect .small { font-size: 0.82rem; }
+.collect-actions { display: flex; gap: 6px; }
+.collect-actions .btn { display: inline-flex; align-items: center; gap: 6px; }

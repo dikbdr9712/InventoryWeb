@@ -27,6 +27,7 @@ export class MyOrders implements OnInit {
 
   // The stages of a normal order, in the order they happen
   steps = ['Placed', 'Confirmed', 'Shipped', 'Delivered'];
+  readonly pickupSteps = ['Placed', 'Confirmed', 'Collected']; // "Pick up myself": never shipped
 
   orders = signal<OrderWithItems[]>([]);
   loading = signal(true);
@@ -89,7 +90,14 @@ export class MyOrders implements OnInit {
     }
   }
 
-  statusLabel(status?: string): string {
+  // where an order is on its own steps (a pickup order has no "Shipped")
+  progress(order: { orderStatus?: string; fulfilment?: string }): number {
+    const stage = this.stage(order.orderStatus);
+    return order.fulfilment === 'PICKUP' && stage === 3 ? 2 : stage;
+  }
+
+  statusLabel(status?: string, pickup = false): string {
+    if (pickup && (status ?? '').toUpperCase() === 'COMPLETED') return 'Collected';
     switch ((status ?? '').toUpperCase()) {
       case 'CREATED': return 'Placed';
       case 'PENDING': return 'Awaiting payment';

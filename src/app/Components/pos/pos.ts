@@ -1,4 +1,5 @@
 import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { ShopDetails } from '../../services/shop-details';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -95,13 +96,6 @@ function newRef(): string {
     : Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
-// Printed at the top of every invoice and receipt
-const SHOP = {
-  name: 'DP DrukBazaars',
-  address: 'Thimphu, Bhutan',
-  phone: '77269712',
-  email: 'dpdrukbazaars@gmail.com'
-};
 
 
 // Turns whatever was typed or pasted into at most 8 digits.
@@ -139,7 +133,7 @@ export class Pos implements OnInit, AfterViewInit, OnDestroy {
   private receiptEl = viewChild<ElementRef<HTMLElement>>('receiptEl');   // the narrow receipt
   private invoiceDialog = viewChild<ElementRef<HTMLElement>>('invoiceDialog');
 
-  shop = SHOP;
+  shop = inject(ShopDetails); // printed at the top of every invoice and receipt
 
   today = new Date();
 

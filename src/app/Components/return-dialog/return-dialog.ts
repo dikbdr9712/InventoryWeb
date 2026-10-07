@@ -9,7 +9,7 @@ import { errorText } from '../../utils/http-error';
 import { focusFirstError } from '../../utils/focus-error';
 import { clampQuantity, itemCount, itemsToSend, lineRefund, refundTotal } from '../../utils/return-math';
 import { printElement } from '../../utils/print-area';
-import { SHOP } from '../../utils/shop-info';
+import { ShopDetails } from '../../services/shop-details';
 
 const REASONS = [
   { value: 'CHANGED_MIND', label: 'The customer changed their mind' },
@@ -39,7 +39,7 @@ export class ReturnDialog implements OnInit, AfterViewInit {
   private creditNote = viewChild<ElementRef<HTMLElement>>('creditNote');
   private creditReceipt = viewChild<ElementRef<HTMLElement>>('creditReceipt');
 
-  shop = SHOP;
+  shop = inject(ShopDetails);
   reasons = REASONS;
 
   loading = signal(true);

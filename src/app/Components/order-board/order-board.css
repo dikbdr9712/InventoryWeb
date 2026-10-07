@@ -523,3 +523,17 @@
 
 /* Angular drops the space between an icon and the next tag */
 .dr-body p > i, .trip-driver > i, .chain li > i { margin-right: 6px; }
+
+/* "Pick up myself": the customer collects it, no driver */
+.pickup-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { ShopDetailsData } from './shop-details';
 
 // The website's own pages that staff can change (the About page).
 
@@ -51,6 +52,10 @@ export class SiteService {
   photoUrl(path?: string | null): string | null {
     if (!path) return null;
     return path.startsWith('/uploads/') ? environment.imageBase + path : path;
+  }
+
+  shopInfo() {
+    return this.http.get<ShopDetailsData>(`${this.api}/info`);
   }
 
   // ---------- staff (site.manage) ----------

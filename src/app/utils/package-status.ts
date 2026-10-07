@@ -24,8 +24,16 @@ const CUSTOMER_LABELS: Record<PackageStatus, string> = {
   CANCELLED: 'Cancelled'
 };
 
-export function packageLabel(status: PackageStatus | string | undefined, forCustomer = false): string {
+// "Pick up myself": the customer collects it, so there is no rider
+const PICKUP_LABELS: Partial<Record<PackageStatus, string>> = { READY_FOR_PICKUP: 'Waiting for the customer to collect', DELIVERED: 'Collected' };
+const PICKUP_CUSTOMER_LABELS: Partial<Record<PackageStatus, string>> = { READY_FOR_PICKUP: 'Ready to collect', DELIVERED: 'Collected' };
+
+export function packageLabel(status: PackageStatus | string | undefined, forCustomer = false, selfPickup = false): string {
   const key = (status ?? '') as PackageStatus;
+  if (selfPickup) {
+    const own = (forCustomer ? PICKUP_CUSTOMER_LABELS : PICKUP_LABELS)[key];
+    if (own) return own;
+  }
   return (forCustomer ? CUSTOMER_LABELS[key] : LABELS[key]) ?? status ?? 'Unknown';
 }
 

@@ -101,7 +101,7 @@
       <p>Questions about an order, a payment, or selling and delivering with us? We are happy to help.</p>
     </div>
     <div class="help-actions">
-      <a class="btn btn-light" [href]="'tel:' + shop.phone"><i class="fas fa-phone"></i> Call {{ shop.phone }}</a>
+      <a class="btn btn-light" [href]="shop.dial(shop.phone)"><i class="fas fa-phone"></i> Call {{ shop.phone }}</a>
       <a class="btn btn-light" routerLink="/contact"><i class="fas fa-envelope"></i> Send a message</a>
       <a class="btn btn-outline-light" routerLink="/orders"><i class="fas fa-box"></i> Find my order</a>
     </div>

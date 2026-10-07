@@ -72,6 +72,9 @@
               }
             }
             <div><dt>{{ r.source === 'POS' ? 'Sold' : 'Ordered' }}</dt><dd>{{ r.orderedAt | date: 'd MMM y' }}{{ r.source === 'POS' ? ' at the counter' : ' online' }}</dd></div>
+            @if (r.pickup) {
+              <div><dt>Received</dt><dd>Collected by the customer</dd></div>
+            }
             @if (r.servedBy) {
               <div><dt>Served by</dt><dd>{{ r.servedBy }}</dd></div>
             }
@@ -110,6 +113,8 @@
         }
         @if (r.deliveryFee) {
           <div><span>Delivery</span><span>Nu. {{ r.deliveryFee | number: '1.2-2' }}</span></div>
+        } @else if (r.pickup) {
+          <div><span>Pick up myself</span><span>Free</span></div>
         }
         <div class="grand"><span>Total paid</span><span>Nu. {{ r.total | number: '1.2-2' }}</span></div>
         @if (r.savings) {

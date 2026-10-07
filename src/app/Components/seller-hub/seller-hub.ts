@@ -17,7 +17,7 @@ import { MapPoint } from '../map-point/map-point';
 import { DELIVERY_SIZES, LatLng, point } from '../../utils/location';
 
 type Tab = 'overview' | 'packages' | 'products' | 'money';
-type PackageFilter = 'todo' | 'moving' | 'done' | 'all';
+type PackageFilter = 'todo' | 'collect' | 'moving' | 'done' | 'all';
 
 interface ProductForm {
   itemName: string;
@@ -67,11 +67,14 @@ export class SellerHub implements OnInit {
   filter = signal<PackageFilter>('todo');
 
   toPack = computed(() => this.packages().filter(p => p.status === 'TO_PACK'));
+  // packed, the customer comes to the shop for it
+  toHandOver = computed(() => this.packages().filter(p => p.selfPickup && p.status === 'READY_FOR_PICKUP'));
   shownPackages = computed(() => {
     const list = this.packages();
     switch (this.filter()) {
       case 'todo': return list.filter(p => p.status === 'TO_PACK');
-      case 'moving': return list.filter(p => ['READY_FOR_PICKUP', 'ASSIGNED', 'PICKED_UP'].includes(p.status));
+      case 'collect': return this.toHandOver();
+      case 'moving': return list.filter(p => !p.selfPickup && ['READY_FOR_PICKUP', 'ASSIGNED', 'PICKED_UP'].includes(p.status));
       case 'done': return list.filter(p => p.status === 'DELIVERED' || p.status === 'CANCELLED');
       default: return list;
     }
@@ -150,8 +153,10 @@ export class SellerHub implements OnInit {
   async markPacked(p: OrderPackage) {
     const ok = await this.dialog.ask({
       title: `Package for order #${p.orderId}`,
-      message: `Is everything (${p.itemCount} item${p.itemCount === 1 ? '' : 's'}) packed and ready for a rider to collect?`,
-      confirmLabel: 'Yes, ready for pickup'
+      message: p.selfPickup
+        ? `Is everything (${p.itemCount} item${p.itemCount === 1 ? '' : 's'}) packed? The customer collects it from you, and we tell them it is ready.`
+        : `Is everything (${p.itemCount} item${p.itemCount === 1 ? '' : 's'}) packed and ready for a rider to collect?`,
+      confirmLabel: p.selfPickup ? 'Yes, ready to collect' : 'Yes, ready for pickup'
     });
     if (!ok) return;
     this.busy.set(p.id);
@@ -159,7 +164,32 @@ export class SellerHub implements OnInit {
       next: updated => {
         this.busy.set(null);
         this.packages.update(list => list.map(x => (x.id === updated.id ? updated : x)));
-        this.toasts.success('Marked as packed. Riders can now see the job.');
+        this.toasts.success(updated.selfPickup ? 'Marked as packed. The customer is told to come and collect it.' : 'Marked as packed. Riders can now see the job.');
+        this.refreshHome();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.busy.set(null);
+        this.toasts.error(errorText(err));
+      }
+    });
+  }
+
+  // the customer came to the shop: their collection code proves it is them
+  async handOver(p: OrderPackage) {
+    const code = await this.dialog.prompt({
+      title: `Hand over order #${p.orderId}?`,
+      message: 'Ask the customer for the 4-digit collection code on their order page. Give the package only when the code is right.',
+      label: 'Collection code',
+      placeholder: '4 digits',
+      confirmLabel: 'Handed over'
+    });
+    if (code === null) return;
+    this.busy.set(p.id);
+    this.marketplace.sellerHandOver(p.id, code).subscribe({
+      next: updated => {
+        this.busy.set(null);
+        this.packages.update(list => list.map(x => (x.id === updated.id ? updated : x)));
+        this.toasts.success(`Order #${p.orderId} collected. Your earnings are added.`);
         this.refreshHome();
       },
       error: (err: HttpErrorResponse) => {
@@ -278,6 +308,7 @@ export class SellerHub implements OnInit {
     switch (row.entryType) {
       case 'SALE': return `Sale, order #${row.orderId}`;
       case 'PAYOUT': return 'Paid to your bank';
+      case 'RETURN': return `Returned by the customer, order #${row.orderId}`;
       default: return 'Adjustment';
     }
   }

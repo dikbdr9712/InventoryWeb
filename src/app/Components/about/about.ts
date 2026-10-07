@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AboutPage, SiteService, TeamPerson } from '../../services/site';
-import { SHOP } from '../../utils/shop-info';
+import { ShopDetails } from '../../services/shop-details';
 
 // Shown when the server cannot be reached; the server has the same built-in wording (SiteService.DEFAULTS).
 const FALLBACK: AboutPage = {
@@ -26,7 +26,7 @@ const FALLBACK: AboutPage = {
 export class About implements OnInit {
   private site = inject(SiteService);
 
-  readonly shop = SHOP;
+  readonly shop = inject(ShopDetails);
   page = signal<AboutPage | null>(null);
 
   // only the numbers worth showing (a 0 would only look odd)
