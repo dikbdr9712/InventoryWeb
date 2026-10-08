@@ -11,6 +11,7 @@ import { ToastService } from '../../services/toast';
 import { Order } from '../../models/models';
 import { PERMISSION_LABELS, permissionsFor } from '../../utils/permissions';
 import { orderLabel, orderPill } from '../../utils/order-status';
+import { MyAddresses } from '../my-addresses/my-addresses';
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrator',
@@ -23,7 +24,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-profile',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, MyAddresses],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })

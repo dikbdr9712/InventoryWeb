@@ -1,17 +1,32 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ItemService } from '../../services/item';
 import { Item } from '../../models/models';
+import { RecentlyViewed } from '../../services/recently-viewed';
+import { ProductRow } from '../product-row/product-row';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, ProductRow],
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
 export class Home implements OnInit, OnDestroy {
   private itemService = inject(ItemService);
+  private recentlyViewed = inject(RecentlyViewed);
+  private catalog = signal<Item[]>([]);
+  // the products this person opened lately, on this device
+  // "Today's deals": products staff marked as a deal (in stock), biggest discount first
+  deals = computed(() => this.catalog()
+    .filter(i => this.itemService.forSale(i) && i.highlight === 'DEAL' && (this.itemService.stockOf(i) ?? 1) > 0)
+    .sort((a, b) => (this.itemService.discountPercent(b) ?? 0) - (this.itemService.discountPercent(a) ?? 0)));
+  // "Featured": products staff chose to show first
+  featuredItems = computed(() => this.catalog().filter(i => this.itemService.forSale(i) && i.highlight === 'FEATURED'));
+  recent = computed(() => {
+    const byId = new Map(this.catalog().filter(i => this.itemService.forSale(i)).map(i => [i.itemId, i]));
+    return this.recentlyViewed.ids().map(id => byId.get(id)).filter((i): i is Item => !!i).slice(0, 10);
+  });
 
   // Pictures drawn for DP DrukBazaars (public/Images/art)
   slides = [
@@ -55,8 +70,11 @@ export class Home implements OnInit, OnDestroy {
     this.warmup = setTimeout(() => this.prepare(1), 2500);
 
     // A few real products from the shop
-    this.itemService.getAll().subscribe({
-      next: items => this.featured.set(items.slice(0, 4)),
+    this.itemService.catalog().subscribe({
+      next: items => {
+        this.catalog.set(items);
+        this.featured.set(items.filter(i => this.itemService.forSale(i)).slice(0, 4));
+      },
       error: () => this.featured.set([]) // the section simply stays hidden
     });
   }

@@ -171,6 +171,9 @@
             } @else if (isPickup()) {
               <div><dt>Pick up myself</dt><dd>Free</dd></div>
             }
+            @if (order.couponDiscount) {
+              <div><dt>Coupon {{ order.couponCode }}</dt><dd>- Nu. {{ order.couponDiscount | number: '1.2-2' }}</dd></div>
+            }
             <div class="grand"><dt>Total</dt><dd>Nu. {{ order.totalAmount | number: '1.2-2' }}</dd></div>
             @if (order.paymentStatus) {
               <div>
@@ -208,6 +211,9 @@
           @if (canCancel()) {
             <button type="button" class="btn btn-outline-danger" [disabled]="cancelling()" (click)="cancel(order)">Cancel order</button>
           }
+          @if (items().length > 0) {
+            <button type="button" class="btn btn-outline-primary" [disabled]="buyingAgain()" (click)="buyAgain()"><i class="fas fa-rotate-right"></i> Buy again</button>
+          }
           <a routerLink="/contact" class="btn btn-secondary">Need help? Contact us</a>
         </div>
       </aside>
@@ -215,6 +221,9 @@
 
     <!-- once something was delivered: stars for the products, the service and the delivery -->
     <app-order-rating [orderId]="order.orderId" />
+
+    <!-- once the whole order arrived: ask to return items, and follow the answer -->
+    <app-return-request [orderId]="order.orderId" [completed]="order.orderStatus === 'COMPLETED'" />
   } @else if (error()) {
     <div class="missing panel">
       <i class="fas fa-circle-exclamation"></i>

@@ -41,8 +41,12 @@
     }
   </section>
 
-  <!-- Featured products (real items from the shop) -->
-  @if (featured().length > 0) {
+  <app-product-row title="Today's deals" [items]="deals()" link="/products" [linkQuery]="{ offer: '1' }" deals />
+  <app-product-row title="Featured" [items]="featuredItems()" link="/products" />
+  <app-product-row title="Recently viewed" [items]="recent()" />
+
+  <!-- A few products from the shelf, when staff have not chosen featured ones -->
+  @if (featuredItems().length === 0 && featured().length > 0) {
     <section class="featured">
       <div class="section-head">
         <h2>From the shelf</h2>

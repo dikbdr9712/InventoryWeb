@@ -1,0 +1,44 @@
+<div class="page">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a routerLink="/products"><i class="fas fa-arrow-left"></i> All products</a>
+  </nav>
+
+  @if (shop(); as s) {
+    <section class="head panel">
+      <span class="logo" aria-hidden="true">{{ initial(s.shopName) }}</span>
+      <div class="about">
+        <h1>{{ s.shopName }}</h1>
+        <p class="facts">
+          @if (s.town) { <span><i class="fas fa-location-dot" aria-hidden="true"></i> {{ s.town }}</span> }
+          @if (s.since) { <span><i class="fas fa-calendar" aria-hidden="true"></i> Selling with us since {{ s.since | date: 'MMMM y' }}</span> }
+          <span><i class="fas fa-box" aria-hidden="true"></i> {{ s.products }} {{ s.products === 1 ? 'product' : 'products' }}</span>
+        </p>
+        @if (s.ratingCount > 0) {
+          <p class="rating"><app-stars [value]="s.rating" /> <strong>{{ s.rating }}</strong> <span class="muted">from {{ s.ratingCount }} {{ s.ratingCount === 1 ? 'review' : 'reviews' }}</span></p>
+        } @else {
+          <p class="muted">No reviews yet.</p>
+        }
+        @if (s.description) { <p class="desc">{{ s.description }}</p> }
+        <p class="trust"><i class="fas fa-shield-halved" aria-hidden="true"></i> A seller checked by DP DrukBazaars. You pay DP DrukBazaars, and our riders deliver.</p>
+      </div>
+    </section>
+
+    <div class="tools">
+      <h2>Products</h2>
+      <input #q type="search" class="form-control" placeholder="Search this shop" [value]="search()" (input)="search.set(q.value)" aria-label="Search this shop" />
+    </div>
+    @if (products().length > 0) {
+      <app-product-row title="" [items]="products()" grid />
+    } @else {
+      <p class="muted">{{ search() ? 'No products match.' : 'This shop has no products for sale right now.' }}</p>
+    }
+  } @else if (error()) {
+    <div class="missing panel">
+      <h2>Shop not found</h2>
+      <p>{{ error() }}</p>
+      <a routerLink="/products" class="btn btn-primary">See all products</a>
+    </div>
+  } @else {
+    <p class="muted">Loading the shop...</p>
+  }
+</div>

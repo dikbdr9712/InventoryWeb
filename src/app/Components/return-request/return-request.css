@@ -1,0 +1,38 @@
+.returns { margin-top: 18px; padding: 20px 22px; }
+.returns h2 { font-size: 1.1rem; margin: 0 0 12px; }
+.returns h2 i { color: var(--green); margin-right: 4px; }
+
+.req { margin-bottom: 10px; padding: 10px 12px; border: 1px solid var(--line); border-left-width: 4px; border-radius: 8px; }
+.req.requested { border-left-color: var(--saffron); }
+.req.approved { border-left-color: var(--blue); }
+.req.done { border-left-color: var(--green); }
+.req.declined { border-left-color: var(--red); }
+.req-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.state { font-weight: 700; font-size: 0.85rem; }
+.req.requested .state { color: #7a5200; }
+.req.approved .state { color: var(--blue); }
+.req.done .state { color: var(--green); }
+.req.declined .state { color: var(--red); }
+.req-top small { color: var(--muted); margin-left: auto; }
+.req p { margin: 4px 0 0; }
+.req-reason { color: var(--muted); font-size: 0.9rem; }
+.req-note { padding: 6px 8px; border-radius: 6px; background: var(--wash); font-size: 0.9rem; }
+
+.ask-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+.ask-row p { margin: 0; color: var(--muted); }
+
+.ask .lbl { display: block; margin: 12px 0 6px; font-weight: 600; }
+.ask .lbl:first-child { margin-top: 0; }
+.lines { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.lines li { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nm small { color: var(--muted); }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; }
+.stepper button { width: 32px; height: 32px; border: 0; background: none; cursor: pointer; }
+.stepper button:disabled { opacity: 0.35; cursor: default; }
+.stepper output { min-width: 28px; text-align: center; font-weight: 700; }
+.reasons { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.reasons label { display: flex; align-items: center; gap: 8px; margin: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.reasons label.on { border-color: var(--green); background: var(--green-soft); }
+.reasons input { accent-color: var(--green); }
+.buttons { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.small { font-size: 0.82rem; margin: 8px 0 0; }

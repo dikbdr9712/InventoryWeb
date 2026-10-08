@@ -1,5 +1,7 @@
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { NotificationBell } from '../notification-bell/notification-bell';
+import { SearchBox } from '../search-box/search-box';
+import { WishlistService } from '../../services/wishlist';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs';
@@ -13,7 +15,7 @@ type MenuName = 'account' | null;
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive, NotificationBell],
+  imports: [RouterLink, RouterLinkActive, NotificationBell, SearchBox],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css'
 })
@@ -21,6 +23,7 @@ export class Navbar {
   auth = inject(AuthService);
   cart = inject(CartService);
   app = inject(AppInstall);
+  wishlist = inject(WishlistService);
   private router = inject(Router);
   private el = inject(ElementRef);
 
@@ -31,6 +34,7 @@ export class Navbar {
   });
 
   drawerOpen = signal(false);
+  searchOpen = signal(false); // the search bar under the header
   openMenu = signal<MenuName>(null);
   // On the sign-in and sign-up pages the header's "Sign in" button would only repeat the form below it
   onAuthPage = signal(this.isAuthUrl(this.router.url));
@@ -105,7 +109,19 @@ export class Navbar {
 
   closeAll() {
     this.openMenu.set(null);
+    this.searchOpen.set(false);
     this.closeDrawer();
+  }
+
+  toggleSearch() {
+    this.openMenu.set(null);
+    this.searchOpen.update(open => !open);
+  }
+
+  // Enter in the header search: the product list with those words
+  goSearch(term: string) {
+    this.router.navigate(['/products'], { queryParams: term ? { q: term } : {} });
+    this.searchOpen.set(false);
   }
 
   signOut() {

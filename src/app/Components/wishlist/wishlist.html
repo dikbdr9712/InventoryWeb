@@ -1,0 +1,60 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>My wishlist</h1>
+      <p>{{ wishlist.count() === 1 ? '1 product' : wishlist.count() + ' products' }} saved for later.</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Loading your wishlist...</p>
+  } @else if (saved().length === 0) {
+    <div class="empty panel">
+      <i class="far fa-heart" aria-hidden="true"></i>
+      <h2>Your wishlist is empty</h2>
+      <p>Tap the heart on a product to save it for later.</p>
+      <a routerLink="/products" class="btn btn-primary">Browse products</a>
+    </div>
+  } @else {
+    <ul class="list">
+      @for (s of saved(); track s.id) {
+        @if (s.item; as item) {
+          <li class="row panel">
+            <a class="photo" [routerLink]="['/products', item.itemId]">
+              <img [src]="image(item)" [alt]="item.itemName" loading="lazy" (error)="onImageError($event)" />
+            </a>
+            <div class="info">
+              <a class="name" [routerLink]="['/products', item.itemId]">{{ item.itemName }}</a>
+              @if (item.sellerName) { <span class="seller"><i class="fas fa-store"></i> {{ item.sellerName }}</span> }
+              <span class="price">
+                Nu. {{ item.sellingPrice | number: '1.2-2' }}
+                @if (discount(item) !== null) {
+                  <s>Nu. {{ item.mrp | number: '1.2-2' }}</s> <span class="off">{{ discount(item) }}% off</span>
+                }
+              </span>
+              @if (isOut(item)) { <span class="out">Out of stock</span> }
+            </div>
+            <div class="actions">
+              @if (isOut(item)) {
+                <app-notify-me small [itemId]="item.itemId" [name]="item.itemName" />
+              } @else {
+                <button type="button" class="btn btn-primary btn-sm" (click)="addToCart(item)">
+                  <i class="fas fa-bag-shopping"></i> Add to cart
+                </button>
+              }
+              <button type="button" class="btn btn-link btn-sm remove" (click)="remove(item.itemId, item.itemName)">Remove</button>
+            </div>
+          </li>
+        } @else {
+          <li class="row panel gone">
+            <span class="photo"><i class="fas fa-box-open" aria-hidden="true"></i></span>
+            <div class="info"><span class="name">This product is no longer sold.</span></div>
+            <div class="actions">
+              <button type="button" class="btn btn-link btn-sm remove" (click)="remove(s.id)">Remove</button>
+            </div>
+          </li>
+        }
+      }
+    </ul>
+  }
+</div>

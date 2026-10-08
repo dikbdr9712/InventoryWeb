@@ -1,0 +1,114 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Offers</h1>
+      <p>Coupon codes for money off, and the products shown on the home page as deals or featured.</p>
+    </div>
+  </div>
+
+  <section class="panel box" aria-labelledby="coupons-title">
+    <div class="head">
+      <h2 id="coupons-title"><i class="fas fa-ticket" aria-hidden="true"></i> Coupon codes</h2>
+      @if (editing() === null) { <button type="button" class="btn btn-primary btn-sm" (click)="add()"><i class="fas fa-plus"></i> New coupon</button> }
+    </div>
+    <p class="help">A coupon takes money off the items of an online order (never the delivery). DP DrukBazaars pays for it, so
+      sellers still earn their full share. An order that is cancelled gives its use back.</p>
+
+    @if (editing() !== null) {
+      <form class="form" (ngSubmit)="save()">
+        <h3>{{ editing() === 'new' ? 'New coupon' : 'Edit ' + form.code }}</h3>
+        <div class="grid">
+          <label>Code
+            <input class="form-control code" name="code" maxlength="30" [(ngModel)]="form.code" [disabled]="editing() !== 'new'" placeholder="DRUK10" />
+          </label>
+          <label>What customers see
+            <input class="form-control" name="description" maxlength="200" [(ngModel)]="form.description" placeholder="10% off for Losar" />
+          </label>
+          <label>Kind
+            <select class="custom-select" name="kind" [(ngModel)]="form.kind">
+              <option value="PERCENT">A percent off</option>
+              <option value="AMOUNT">An amount off (Nu.)</option>
+            </select>
+          </label>
+          <label>{{ form.kind === 'PERCENT' ? 'Percent off' : 'Nu. off' }}
+            <input class="form-control" name="value" type="number" min="1" step="0.01" [(ngModel)]="form.value" />
+          </label>
+          @if (form.kind === 'PERCENT') {
+            <label>At most (Nu., optional)
+              <input class="form-control" name="maxDiscount" type="number" min="1" step="0.01" [(ngModel)]="form.maxDiscount" />
+            </label>
+          }
+          <label>Smallest order (Nu. of items)
+            <input class="form-control" name="minOrder" type="number" min="0" step="0.01" [(ngModel)]="form.minOrder" />
+          </label>
+          <label>Starts (optional)
+            <input class="form-control" name="startsAt" type="datetime-local" [(ngModel)]="form.startsAt" />
+          </label>
+          <label>Ends (optional)
+            <input class="form-control" name="endsAt" type="datetime-local" [(ngModel)]="form.endsAt" />
+          </label>
+          <label>Uses in all (empty = no limit)
+            <input class="form-control" name="usageLimit" type="number" min="1" step="1" [(ngModel)]="form.usageLimit" />
+          </label>
+          <label>Uses per customer
+            <input class="form-control" name="perCustomerLimit" type="number" min="1" max="100" step="1" [(ngModel)]="form.perCustomerLimit" />
+          </label>
+        </div>
+        <label class="check"><input type="checkbox" name="active" [(ngModel)]="form.active" /> Switched on</label>
+        <div class="buttons">
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save coupon' }}</button>
+          <button type="button" class="btn btn-link btn-sm" (click)="editing.set(null)">Cancel</button>
+        </div>
+      </form>
+    }
+
+    @if (loading()) {
+      <p class="muted">Loading...</p>
+    } @else if (coupons().length === 0) {
+      <p class="muted">No coupons yet.</p>
+    } @else {
+      <ul class="list">
+        @for (c of coupons(); track c.id) {
+          <li class="coupon" [class.off]="state(c) !== 'On'">
+            <div class="main">
+              <strong class="code">{{ c.code }}</strong>
+              <span class="state" [class]="'state ' + state(c).toLowerCase().replace(' ', '-')">{{ state(c) }}</span>
+              <span>{{ what(c) }}@if (c.minOrder > 0) { · items from Nu. {{ c.minOrder | number: '1.0-2' }} }</span>
+              @if (c.description) { <small class="muted">{{ c.description }}</small> }
+              <small class="muted">
+                Used {{ c.uses }}{{ c.usageLimit ? ' of ' + c.usageLimit : '' }} times · {{ c.perCustomerLimit }} per customer
+                @if (c.endsAt) { · until {{ c.endsAt | date: 'd MMM y, h:mm a' }} }
+              </small>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn btn-link btn-sm" (click)="edit(c)">Edit</button>
+              <button type="button" class="btn btn-link btn-sm" (click)="toggle(c)">{{ c.active ? 'Switch off' : 'Switch on' }}</button>
+              @if (c.uses === 0) { <button type="button" class="btn btn-link btn-sm text-danger" (click)="remove(c)">Delete</button> }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section class="panel box" aria-labelledby="home-title">
+    <h2 id="home-title"><i class="fas fa-bullhorn" aria-hidden="true"></i> On the home page</h2>
+    <p class="help">Open a product and use "On the home page" to make it a deal (until a time) or featured.</p>
+    @if (onHome().length === 0) {
+      <p class="muted">Nothing yet: the home page shows a few products from the shelf.</p>
+    } @else {
+      <ul class="list">
+        @for (i of onHome(); track i.itemId) {
+          <li class="coupon">
+            <div class="main">
+              <a [routerLink]="['/products', i.itemId]"><strong>{{ i.itemName }}</strong></a>
+              <span class="state" [class.deal]="i.highlight === 'DEAL'">{{ i.highlight === 'DEAL' ? 'Deal' : 'Featured' }}</span>
+              @if (i.highlight === 'DEAL' && dealEnds(i.dealEndsAt)) { <small class="muted">{{ dealEnds(i.dealEndsAt) }}</small> }
+            </div>
+            <div class="actions"><a class="btn btn-link btn-sm" [routerLink]="['/products', i.itemId]">Change</a></div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</div>

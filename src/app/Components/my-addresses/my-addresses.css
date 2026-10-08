@@ -1,0 +1,27 @@
+.addresses { margin: 18px 0; padding: 22px 24px; }
+.head h2 { font-size: 1.1rem; }
+@media (max-width: 560px) { .addresses { padding: 18px 16px; } }
+.head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.head h2 { margin: 0; }
+.help { color: var(--muted); font-size: 0.9rem; margin: 6px 0 12px; }
+
+.list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.addr { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.addr.def { border-color: #9fc8ba; background: var(--green-soft); }
+.text { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.text small { color: var(--muted); }
+.badge-def { margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--green); color: #fff; font-size: 0.7rem; font-weight: 700; vertical-align: middle; }
+.actions { display: flex; flex-wrap: wrap; gap: 2px; }
+.actions .btn { padding: 0 6px; }
+
+.form { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.form h3 { font-size: 1.05rem; margin-bottom: 10px; }
+.field { margin-bottom: 12px; }
+.field label, .lbl { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.9rem; }
+.labels { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.labels button { padding: 3px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 0.85rem; cursor: pointer; }
+.labels button.on { border-color: var(--green); background: var(--green); color: #fff; font-weight: 600; }
+.labels .own { width: 150px; }
+.check { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; cursor: pointer; }
+.check input { accent-color: var(--green); }
+.buttons { display: flex; gap: 8px; align-items: center; }

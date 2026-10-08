@@ -549,3 +549,12 @@
 .nb-home i {
   color: var(--green);
 }
+
+/* ---------- Search: the button, and the bar under the header ---------- */
+.nb-search-btn { border: 0; background: none; cursor: pointer; }
+.nb-search-btn.on { background: var(--green-soft); color: var(--green); }
+.nb-search {
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding: 0 var(--gutter) 12px;
+}

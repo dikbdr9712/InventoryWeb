@@ -42,6 +42,8 @@ export const routes: Routes = [
 
   // ---------- Customer account ----------
   { path: 'profile', loadComponent: () => import('./Components/profile/profile').then(m => m.Profile), canActivate: [authGuard] },
+  { path: 'shop/:id', loadComponent: () => import('./Components/seller-shop/seller-shop').then(m => m.SellerShopPage) }, // a seller's shop
+  { path: 'wishlist', loadComponent: () => import('./Components/wishlist/wishlist').then(m => m.WishlistPage), canActivate: [authGuard] },
   { path: 'orders', loadComponent: () => import('./Components/my-orders/my-orders').then(m => m.MyOrders), canActivate: [authGuard] },
   { path: 'receipt/:orderId', loadComponent: () => import('./Components/receipt/receipt').then(m => m.Receipt), canActivate: [authGuard] },
   { path: 'orders/:id', loadComponent: () => import('./Components/order-details/order-details').then(m => m.OrderDetails), canActivate: [authGuard] },
@@ -51,6 +53,8 @@ export const routes: Routes = [
   { path: 'admin/stock', loadComponent: () => import('./Components/stock-batches/stock-batches').then(m => m.StockBatches), canActivate: [permissionGuard('stock.restock')] },
   { path: 'pos', loadComponent: () => import('./Components/pos/pos').then(m => m.Pos), canActivate: [permissionGuard('pos.use')] },
   { path: 'pos-history', loadComponent: () => import('./Components/pos-history/pos-history').then(m => m.PosHistory), canActivate: [permissionGuard('pos.use')] },
+  { path: 'admin/offers', loadComponent: () => import('./Components/offers-admin/offers-admin').then(m => m.OffersAdmin), canActivate: [permissionGuard('offers.manage')] },
+  { path: 'admin/return-requests', loadComponent: () => import('./Components/return-requests-admin/return-requests-admin').then(m => m.ReturnRequestsAdmin), canActivate: [permissionGuard('sales.return')] },
   { path: 'admin/orders', loadComponent: () => import('./Components/order-board/order-board').then(m => m.OrderBoardPage), canActivate: [permissionGuard('orders.view')] },
   { path: 'order-verification', loadComponent: () => import('./Components/order-verification/order-verification').then(m => m.OrderVerification), canActivate: [permissionGuard('payments.verify')] },
   { path: 'admin/messages', loadComponent: () => import('./Components/contact-messages/contact-messages').then(m => m.ContactMessages), canActivate: [permissionGuard('messages.view')] },

@@ -16,6 +16,12 @@
     </nav>
 
     <div class="nb-actions">
+      <!-- Search: opens a bar with suggestions under the header -->
+      <button type="button" class="nb-cart nb-search-btn" (click)="toggleSearch()" [class.on]="searchOpen()"
+              [attr.aria-expanded]="searchOpen()" aria-controls="nb-search" aria-label="Search products">
+        <i class="fas" [class.fa-magnifying-glass]="!searchOpen()" [class.fa-xmark]="searchOpen()"></i>
+      </button>
+
       <!-- What happened to my orders, jobs and money -->
       @if (auth.isLoggedIn()) {
         <app-notification-bell />
@@ -51,6 +57,8 @@
               }
               <a class="nb-item" role="menuitem" routerLink="/profile" (click)="closeAll()"><i class="fas fa-user"></i> My profile</a>
               <a class="nb-item" role="menuitem" routerLink="/orders" (click)="closeAll()"><i class="fas fa-receipt"></i> My orders</a>
+              <a class="nb-item" role="menuitem" routerLink="/wishlist" (click)="closeAll()"><i class="fas fa-heart"></i> My wishlist
+                @if (wishlist.count() > 0) { <span class="nb-pill">{{ wishlist.count() }}</span> }</a>
               <button type="button" class="nb-item nb-out" role="menuitem" (click)="signOut()">
                 <i class="fas fa-arrow-right-from-bracket"></i> Sign out
               </button>
@@ -64,6 +72,11 @@
       }
     </div>
   </div>
+  @if (searchOpen()) {
+    <div class="nb-search" id="nb-search">
+      <app-search-box [autofocus]="true" placeholder="Search products, categories or sellers" (search)="goSearch($event)" (picked)="searchOpen.set(false)" />
+    </div>
+  }
 </header>
 
 <!-- Slide-in menu for phones and tablets -->
@@ -111,6 +124,12 @@
     @for (link of mainLinks; track link.path) {
       <a class="nb-item" [routerLink]="link.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: link.exact }" (click)="closeAll()">
         <i class="fas" [class]="'fas ' + link.icon"></i> {{ link.label }}
+      </a>
+    }
+    @if (auth.isLoggedIn()) {
+      <a class="nb-item" routerLink="/wishlist" routerLinkActive="active" (click)="closeAll()">
+        <i class="fas fa-heart"></i> My wishlist
+        @if (wishlist.count() > 0) { <span class="nb-pill">{{ wishlist.count() }}</span> }
       </a>
     }
     <a class="nb-item" routerLink="/cart" routerLinkActive="active" (click)="closeAll()">

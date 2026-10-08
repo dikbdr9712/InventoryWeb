@@ -1,0 +1,65 @@
+@if (visible()) {
+  @let v = view()!;
+  <section class="panel returns" aria-labelledby="returns-title">
+    <h2 id="returns-title"><i class="fas fa-rotate-left" aria-hidden="true"></i> Returns</h2>
+
+    @for (r of v.requests; track r.id) {
+      <article class="req" [class]="'req ' + r.status.toLowerCase()">
+        <div class="req-top">
+          <strong>Return request</strong>
+          <span class="state">{{ statusLabels[r.status] }}</span>
+          <small>{{ r.createdAt | date: 'd MMM y, h:mm a' }}</small>
+        </div>
+        <p class="req-lines">
+          @for (l of r.lines; track l.orderItemId; let last = $last) {
+            <span>{{ l.quantity }} × {{ l.itemName }}@if (!last) {<span>, </span>}</span>
+          }
+        </p>
+        <p class="req-reason">{{ reasonLabels[r.reason] }}@if (r.details) { · {{ r.details }} }</p>
+        @if (r.staffNote) { <p class="req-note"><strong>DP DrukBazaars:</strong> {{ r.staffNote }}</p> }
+      </article>
+    }
+
+    @if (v.canRequest) {
+      @if (!open()) {
+        <div class="ask-row">
+          <p>Something wrong? You can ask to return items of this order
+            {{ v.daysLeft > 0 ? 'for ' + v.daysLeft + (v.daysLeft === 1 ? ' more day' : ' more days') : 'until the end of today' }}.</p>
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="start()">Request a return</button>
+        </div>
+      } @else {
+        <form class="ask" (ngSubmit)="send()">
+          <p class="lbl">What do you want to return?</p>
+          <ul class="lines">
+            @for (l of returnable(); track l.orderItemId) {
+              <li>
+                <span class="nm">{{ l.itemName }} <small>(up to {{ l.quantityLeft }})</small></span>
+                <span class="stepper">
+                  <button type="button" (click)="change(l.orderItemId, -1, l.quantityLeft)" [disabled]="!quantities()[l.orderItemId]" [attr.aria-label]="'One less ' + l.itemName"><i class="fas fa-minus"></i></button>
+                  <output [attr.aria-label]="'How many ' + l.itemName">{{ quantities()[l.orderItemId] ?? 0 }}</output>
+                  <button type="button" (click)="change(l.orderItemId, 1, l.quantityLeft)" [disabled]="(quantities()[l.orderItemId] ?? 0) >= l.quantityLeft" [attr.aria-label]="'One more ' + l.itemName"><i class="fas fa-plus"></i></button>
+                </span>
+              </li>
+            }
+          </ul>
+          <p class="lbl">Why?</p>
+          <div class="reasons" role="radiogroup" aria-label="Why?">
+            @for (r of reasons; track r[0]) {
+              <label [class.on]="reason() === r[0]"><input type="radio" name="reason" [checked]="reason() === r[0]" (change)="reason.set(r[0])" /> {{ r[1] }}</label>
+            }
+          </div>
+          <label class="lbl" for="ret-details">Tell us more {{ reason() === 'OTHER' ? '' : '(if you like)' }}</label>
+          <textarea id="ret-details" rows="2" class="form-control" maxlength="500" [(ngModel)]="details" name="details"
+                    placeholder="For example: the jar was broken when it arrived"></textarea>
+          <div class="buttons">
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="sending()">{{ sending() ? 'Sending...' : 'Send request' }}</button>
+            <button type="button" class="btn btn-link btn-sm" (click)="open.set(false)">Cancel</button>
+          </div>
+          <p class="small muted">We answer within a day. If we approve it, we tell you how to hand the items back; the refund follows when we have them.</p>
+        </form>
+      }
+    } @else if (v.message && v.requests.length === 0) {
+      <p class="muted">{{ v.message }}</p>
+    }
+  </section>
+}

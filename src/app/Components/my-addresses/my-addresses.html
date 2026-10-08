@@ -1,0 +1,63 @@
+<section class="panel box addresses" aria-labelledby="addr-title">
+  <div class="head">
+    <h2 id="addr-title">My addresses</h2>
+    @if (editing() === null && addresses().length < 10) {
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="add()"><i class="fas fa-plus"></i> Add an address</button>
+    }
+  </div>
+  <p class="help">Saved addresses are offered at checkout, so you do not type them again.</p>
+
+  @if (!loaded()) {
+    <p class="muted">Loading...</p>
+  } @else {
+    @if (addresses().length === 0 && editing() === null) {
+      <p class="muted">No saved addresses yet. You can also save one when you check out.</p>
+    }
+    <ul class="list">
+      @for (a of addresses(); track a.id) {
+        <li class="addr" [class.def]="a.isDefault">
+          <div class="text">
+            <strong>{{ a.label }} @if (a.isDefault) { <span class="badge-def">Default</span> }</strong>
+            <span>{{ a.address }}</span>
+            <small>{{ a.phone }}@if (a.pointLabel) { · <i class="fas fa-location-dot" aria-hidden="true"></i> {{ a.pointLabel }} }</small>
+          </div>
+          <div class="actions">
+            @if (!a.isDefault) { <button type="button" class="btn btn-link btn-sm" (click)="makeDefault(a)">Make default</button> }
+            <button type="button" class="btn btn-link btn-sm" (click)="edit(a)">Edit</button>
+            <button type="button" class="btn btn-link btn-sm text-danger" (click)="remove(a)">Remove</button>
+          </div>
+        </li>
+      }
+    </ul>
+
+    @if (editing() !== null) {
+      <form class="form" (ngSubmit)="save()">
+        <h3>{{ editing() === 'new' ? 'A new address' : 'Edit address' }}</h3>
+        <div class="field">
+          <span class="lbl">Name it</span>
+          <span class="labels" role="group" aria-label="Name it">
+            @for (l of labels; track l) {
+              <button type="button" [class.on]="form.label === l" [attr.aria-pressed]="form.label === l" (click)="form.label = l">{{ l }}</button>
+            }
+            <input type="text" class="form-control form-control-sm own" maxlength="30" [(ngModel)]="form.label" name="label" aria-label="Or your own name for it" />
+          </span>
+        </div>
+        <div class="field">
+          <label for="addr-phone">Phone number</label>
+          <input id="addr-phone" type="tel" inputmode="numeric" class="form-control" placeholder="8 digits" [(ngModel)]="form.phone" name="phone" />
+        </div>
+        <app-delivery-location [(point)]="point" />
+        <div class="field">
+          <label for="addr-text">Address</label>
+          <textarea id="addr-text" rows="2" class="form-control" maxlength="300" placeholder="House, building, landmark"
+                    [(ngModel)]="form.address" name="address"></textarea>
+        </div>
+        <label class="check"><input type="checkbox" [(ngModel)]="form.makeDefault" name="makeDefault" /> Use it by default</label>
+        <div class="buttons">
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save address' }}</button>
+          <button type="button" class="btn btn-link btn-sm" (click)="cancel()">Cancel</button>
+        </div>
+      </form>
+    }
+  }
+</section>

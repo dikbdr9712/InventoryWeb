@@ -37,7 +37,8 @@ export const STAFF_GROUPS: { title: string; icon: string; items: StaffLink[] }[]
     icon: 'fa-list-check',
     items: [
       { path: '/admin/orders', label: 'Orders', icon: 'fa-list-check', permission: 'orders.view', hint: 'Payment to door: who has each order, what is late' },
-      { path: '/order-verification', label: 'Verify payments', icon: 'fa-circle-check', permission: 'payments.verify', hint: 'Check payments and bank answers' }
+      { path: '/order-verification', label: 'Verify payments', icon: 'fa-circle-check', permission: 'payments.verify', hint: 'Check payments and bank answers' },
+      { path: '/admin/return-requests', label: 'Return requests', icon: 'fa-rotate-left', permission: 'sales.return', hint: 'Customers asking to return items' }
     ]
   },
   {
@@ -46,7 +47,8 @@ export const STAFF_GROUPS: { title: string; icon: string; items: StaffLink[] }[]
     items: [
       { path: '/products/new', label: 'Add product', icon: 'fa-plus', permission: 'items.manage', hint: 'A new product for the shop' },
       { path: '/restock', label: 'Restock', icon: 'fa-boxes-stacked', permission: 'stock.restock', hint: 'Stock that arrived' },
-      { path: '/admin/stock', label: 'Stock & expiry', icon: 'fa-calendar-xmark', permission: 'stock.restock', hint: 'Batches, expiry dates, write-offs, counts' }
+      { path: '/admin/stock', label: 'Stock & expiry', icon: 'fa-calendar-xmark', permission: 'stock.restock', hint: 'Batches, expiry dates, write-offs, counts' },
+      { path: '/admin/offers', label: 'Offers', icon: 'fa-ticket', permission: 'offers.manage', hint: 'Coupon codes, deals and featured products' }
     ]
   },
   {

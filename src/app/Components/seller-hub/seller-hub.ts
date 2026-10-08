@@ -14,6 +14,7 @@ import { focusFirstError } from '../../utils/focus-error';
 import { packageLabel, packagePill } from '../../utils/package-status';
 import { TermsGate } from '../terms-gate/terms-gate';
 import { MapPoint } from '../map-point/map-point';
+import { PhotoManager } from '../photo-manager/photo-manager';
 import { DELIVERY_SIZES, LatLng, point } from '../../utils/location';
 
 type Tab = 'overview' | 'packages' | 'products' | 'money';
@@ -29,12 +30,14 @@ interface ProductForm {
   quantity: number | null;
   isActive: boolean;
   deliverySize: DeliverySize;
+  variantOf: number | null; // a size/colour option of this main product (one of the seller's own)
+  variantName: string;
 }
 
 // A seller's shop: what to pack, their products, and the money they have earned.
 @Component({
   selector: 'app-seller-hub',
-  imports: [FormsModule, RouterLink, DecimalPipe, DatePipe, TermsGate, MapPoint],
+  imports: [FormsModule, RouterLink, DecimalPipe, DatePipe, TermsGate, MapPoint, PhotoManager],
   templateUrl: './seller-hub.html',
   styleUrl: './seller-hub.css'
 })
@@ -201,7 +204,20 @@ export class SellerHub implements OnInit {
 
   // ---------- Products ----------
   private emptyForm(): ProductForm {
-    return { itemName: '', category: '', description: '', uom: 'pcs', sellingPrice: null, mrp: null, quantity: 0, isActive: true, deliverySize: 'SMALL' };
+    return { itemName: '', category: '', description: '', uom: 'pcs', sellingPrice: null, mrp: null, quantity: 0, isActive: true, deliverySize: 'SMALL', variantOf: null, variantName: '' };
+  }
+
+  // main products a product can be an option of: the seller's own products that are not options themselves
+  mains() {
+    const id = this.editingId();
+    return this.products().filter(p => p.itemId !== id && !p.variantOf);
+  }
+
+  // a new main photo chosen in "More photos": the form and the list show it
+  onMainChanged(path: string) {
+    this.photoPreview.set(this.image(path));
+    const id = this.editingId();
+    this.products.update(list => list.map(p => (p.itemId === id ? { ...p, imagePath: path } : p)));
   }
 
   newProduct() {
@@ -214,7 +230,7 @@ export class SellerHub implements OnInit {
     this.form = {
       itemName: item.itemName, category: item.category ?? '', description: item.description ?? '', uom: item.uom ?? 'pcs',
       sellingPrice: item.sellingPrice ?? null, mrp: item.mrp ?? null, quantity: item.currentQuantity ?? 0, isActive: item.isActive !== false,
-      deliverySize: item.deliverySize ?? 'SMALL'
+      deliverySize: item.deliverySize ?? 'SMALL', variantOf: item.variantOf ?? null, variantName: item.variantName ?? ''
     };
     this.editingId.set(item.itemId);
     this.openForm(item.imagePath ? this.image(item.imagePath) : null);
@@ -284,6 +300,8 @@ export class SellerHub implements OnInit {
     data.append('quantity', String(f.quantity ?? 0));
     data.append('isActive', String(f.isActive));
     data.append('deliverySize', f.deliverySize);
+    if (f.variantOf) data.append('variantOf', String(f.variantOf));
+    data.append('variantName', (f.variantName || '').trim());
     if (this.photo) data.append('image', this.photo);
 
     this.saving.set(true);

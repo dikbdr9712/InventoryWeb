@@ -46,6 +46,12 @@ export interface Item {
   sellerId?: number | null;   // marketplace seller; empty = our own product
   sellerName?: string;        // "Sold by ..."
   deliverySize?: DeliverySize; // decides the delivery price and which riders can carry it
+  isActive?: boolean;         // false = switched off (staff still see it)
+  highlight?: 'DEAL' | 'FEATURED' | null; // on the home page (an ended deal comes as nothing)
+  dealEndsAt?: string | null;
+  variantOf?: number | null;  // a size/colour option of this main product
+  variantName?: string | null; // the option's short name: "Size M", "Red"
+  photos?: { id: number; path: string }[]; // more photos (product page only)
 }
 
 export interface RestockRequest {
@@ -92,6 +98,7 @@ export interface OrderRequest {
   dropLongitude?: number | null;
   areaId?: number | null;
   fulfilment?: 'DELIVERY' | 'PICKUP'; // PICKUP: the customer collects it, no delivery fee
+  couponCode?: string | null;         // a coupon for the items (DRUK10)
 }
 
 // Order from "Buy Now"
@@ -118,6 +125,8 @@ export interface Order {
   totalAmount: number;
   deliveryFee?: number | null; // included in totalAmount (marketplace orders)
   fulfilment?: 'DELIVERY' | 'PICKUP'; // PICKUP: the customer collects it
+  couponCode?: string | null;     // the coupon used
+  couponDiscount?: number | null; // what it took off the items (the total is after it)
   orderStatus?: string;
   paymentStatus?: string;
   paymentMethod?: string;
@@ -128,6 +137,7 @@ export interface Order {
 }
 
 export interface OrderItem {
+  itemId?: number;
   itemName?: string;
   quantity?: number;
   unitPrice?: number;
@@ -547,6 +557,8 @@ export interface Receipt {
   taxes: { label: string; amount: number }[];
   deliveryFee?: number | null;
   pickup?: boolean;              // "Pick up myself": collected by the customer, no delivery
+  couponCode?: string | null;    // a coupon taken off the items
+  couponDiscount?: number | null;
   total: number;
   payment: {
     method: string;

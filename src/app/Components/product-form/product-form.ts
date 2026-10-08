@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe, Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -7,7 +7,8 @@ import { ItemService } from '../../services/item';
 import { ToastService } from '../../services/toast';
 import { errorText } from '../../utils/http-error';
 import { focusFirstError } from '../../utils/focus-error';
-import { DeliverySize } from '../../models/models';
+import { DeliverySize, Item } from '../../models/models';
+import { PhotoManager } from '../photo-manager/photo-manager';
 import { DELIVERY_SIZES } from '../../utils/location';
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
@@ -17,7 +18,7 @@ const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 //   /products/edit/:id  -> edit a product
 @Component({
   selector: 'app-product-form',
-  imports: [FormsModule, DecimalPipe, RouterLink],
+  imports: [FormsModule, DecimalPipe, RouterLink, PhotoManager],
   templateUrl: './product-form.html',
   styleUrl: './product-form.css'
 })
@@ -47,8 +48,16 @@ export class ProductForm implements OnInit {
     lowStockThreshold: 10 as number | null,
     barcode: '',
     supplierItemCode: '',
-    deliverySize: 'SMALL' as DeliverySize
+    deliverySize: 'SMALL' as DeliverySize,
+    variantOf: null as number | null, // a size/colour option of this main product
+    variantName: ''
   };
+  private sellerId: number | null = null; // the product's seller (options stay within one shop)
+  private all = signal<Item[]>([]);
+  // main products this one can be an option of: the same shop's products that are not options themselves
+  mains = computed(() => this.all()
+    .filter(i => i.itemId !== this.itemId && !i.variantOf && (i.sellerId ?? null) === this.sellerId)
+    .sort((a, b) => (a.itemName || '').localeCompare(b.itemName || '')));
   readonly sizes = DELIVERY_SIZES;
 
   loaded = signal(false);
@@ -63,6 +72,12 @@ export class ProductForm implements OnInit {
   private originalImage = 'Images/default.jpg';
   fileError = signal('');
 
+  // "More photos": a new main photo chosen there shows here at once
+  onMainChanged(path: string) {
+    this.originalImage = this.itemService.imageUrl(path);
+    if (!this.selectedFile) this.imageUrl.set(this.originalImage);
+  }
+
   get isMarkup() {
     return this.model.pricingMethod === 'markupPercent';
   }
@@ -75,6 +90,7 @@ export class ProductForm implements OnInit {
     // Existing categories, offered as suggestions so the same one is not typed two ways
     this.itemService.getAll().subscribe({
       next: items => {
+        this.all.set(items);
         const names = items.map(i => (i.category || '').trim()).filter(Boolean);
         this.categories.set([...new Set(names)].sort((a, b) => a.localeCompare(b)));
       },
@@ -113,8 +129,11 @@ export class ProductForm implements OnInit {
           lowStockThreshold: item.lowStockThreshold ?? 10,
           barcode: item.barcode ?? '',
           supplierItemCode: item.supplierItemCode ?? '',
-          deliverySize: item.deliverySize ?? 'SMALL'
+          deliverySize: item.deliverySize ?? 'SMALL',
+          variantOf: item.variantOf ?? null,
+          variantName: item.variantName ?? ''
         };
+        this.sellerId = item.sellerId ?? null;
         this.originalImage = this.itemService.imageUrl(item.imagePath);
         this.imageUrl.set(this.originalImage);
         this.loaded.set(true);
@@ -229,6 +248,8 @@ export class ProductForm implements OnInit {
     data.append('barcode', this.model.barcode.trim());
     data.append('supplierItemCode', this.model.supplierItemCode.trim());
     data.append('deliverySize', this.model.deliverySize);
+    if (this.model.variantOf) data.append('variantOf', String(this.model.variantOf));
+    data.append('variantName', (this.model.variantName || '').trim());
     data.append('quantity', String(Math.trunc(Number(this.model.quantity) || 0)));
     // "Warn me when stock reaches": 0 is a real level (warn when sold out); empty = no warning
     const warnAt = this.model.lowStockThreshold;
@@ -283,7 +304,8 @@ export class ProductForm implements OnInit {
       category: this.model.category,
       uom: this.model.uom,
       lowStockThreshold: this.model.lowStockThreshold,
-      deliverySize: this.model.deliverySize
+      deliverySize: this.model.deliverySize,
+      variantOf: this.model.variantOf
     };
     this.model = {
       itemName: '',
@@ -298,7 +320,9 @@ export class ProductForm implements OnInit {
       lowStockThreshold: keep.lowStockThreshold,
       barcode: '',
       supplierItemCode: '',
-      deliverySize: keep.deliverySize
+      deliverySize: keep.deliverySize,
+      variantOf: keep.variantOf, // adding sizes one after another: the same main product
+      variantName: ''
     };
     this.selectedFile = null;
     this.fileError.set('');

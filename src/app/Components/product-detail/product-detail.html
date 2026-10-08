@@ -5,11 +5,27 @@
 
   @if (item(); as item) {
     <div class="detail">
-      <!-- Photo -->
-      <div class="picture panel">
-        <img [src]="image(item)" [alt]="item.itemName" (error)="onImageError($event)" />
-        @if (discount(item) !== null) {
-          <span class="off">{{ discount(item) }}% off</span>
+      <!-- Photos -->
+      <div class="gallery">
+        <div class="picture panel">
+          <img [src]="gallery()[shown()] || image(item)" [alt]="item.itemName" (error)="onImageError($event)" />
+          @if (discount(item) !== null) {
+            <span class="off">{{ discount(item) }}% off</span>
+          }
+          @if (gallery().length > 1) {
+            <button type="button" class="nav-btn prev" (click)="showPhoto(-1)" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>
+            <button type="button" class="nav-btn next" (click)="showPhoto(1)" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>
+          }
+        </div>
+        @if (gallery().length > 1) {
+          <div class="thumbs" role="group" aria-label="Photos">
+            @for (src of gallery(); track $index) {
+              <button type="button" [class.on]="$index === shown()" (click)="shown.set($index)" [attr.aria-label]="'Photo ' + ($index + 1)"
+                      [attr.aria-pressed]="$index === shown()">
+                <img [src]="src" alt="" loading="lazy" (error)="onImageError($event)" />
+              </button>
+            }
+          </div>
         }
       </div>
 
@@ -30,8 +46,13 @@
         }
         <p class="sold-by">
           <i class="fas fa-store"></i>
-          Sold by <strong>{{ item.sellerName || 'DP DrukBazaars' }}</strong>
-          @if (item.sellerName) { <span>· delivered by DP DrukBazaars riders</span> }
+          Sold by
+          @if (item.sellerId) {
+            <a class="shop-link" [routerLink]="['/shop', item.sellerId]"><strong>{{ item.sellerName }}</strong></a>
+          } @else {
+            <strong>DP DrukBazaars</strong>
+          }
+          @if (item.sellerName) { <span>&nbsp;· delivered by DP DrukBazaars riders</span> }
         </p>
 
         <div class="price-row">
@@ -48,6 +69,23 @@
         </div>
         @if (savings() > 0) {
           <p class="savings">You save Nu. {{ savings() | number: '1.2-2' }}</p>
+        }
+        @if (item.highlight === 'DEAL') {
+          <p class="deal"><span class="deal-tag"><i class="fas fa-bolt" aria-hidden="true"></i> Deal</span>
+            @if (dealEnds(item.dealEndsAt)) { <span>{{ dealEnds(item.dealEndsAt) }}</span> }</p>
+        }
+
+        <!-- Sizes and colours -->
+        @if (options().length > 1) {
+          <div class="options" role="group" aria-label="Choose an option">
+            <span class="options-title">Choose</span>
+            @for (o of options(); track o.itemId) {
+              <a class="opt" [routerLink]="['/products', o.itemId]" [class.on]="o.itemId === item.itemId" [class.out]="isOut(o)"
+                 [attr.aria-current]="o.itemId === item.itemId ? 'true' : null" [title]="isOut(o) ? 'Out of stock' : o.itemName">
+                {{ o.variantName || o.itemName }}
+              </a>
+            }
+          </div>
         }
 
         <p class="status">
@@ -74,7 +112,11 @@
           <button type="button" class="btn btn-primary btn-lg add" [disabled]="isOut(item)" (click)="addToCart(item)">
             <i class="fas fa-bag-shopping"></i> {{ isOut(item) ? 'Out of stock' : 'Add to cart' }}
           </button>
+          <app-wish-heart labelled class="save" [itemId]="item.itemId" [name]="item.itemName" />
         </div>
+        @if (isOut(item)) {
+          <app-notify-me class="notify-me" [itemId]="item.itemId" [name]="item.itemName" />
+        }
 
         <div class="secondary-actions">
           @if (!isOut(item)) {
@@ -86,6 +128,36 @@
             <a class="btn btn-outline-secondary" [routerLink]="['/products/edit', item.itemId]">
               <i class="fas fa-pen"></i> Edit item
             </a>
+          }
+        </div>
+
+        <!-- Staff: on the home page as a deal or featured -->
+        @if (canOffer()) {
+          <form class="offer" (ngSubmit)="saveOffer(item)">
+            <span class="offer-title"><i class="fas fa-bullhorn" aria-hidden="true"></i> On the home page</span>
+            <select class="custom-select custom-select-sm" name="offerChoice" [(ngModel)]="offer.choice" aria-label="On the home page">
+              <option value="NONE">Not shown</option>
+              <option value="FEATURED">Featured</option>
+              <option value="DEAL">Deal</option>
+            </select>
+            @if (offer.choice === 'DEAL') {
+              <label class="until">until <input type="datetime-local" class="form-control form-control-sm" name="offerUntil" [(ngModel)]="offer.until" /></label>
+            }
+            <button type="submit" class="btn btn-outline-primary btn-sm" [disabled]="savingOffer()">Save</button>
+          </form>
+        }
+
+        <!-- Share it, or ask the shop about it -->
+        <div class="share" aria-label="Share this product">
+          <span class="share-title">Share</span>
+          <a class="share-btn wa" [href]="whatsappShare(item)" target="_blank" rel="noopener" aria-label="Share on WhatsApp" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+          <a class="share-btn fb" [href]="facebookShare(item)" target="_blank" rel="noopener" aria-label="Share on Facebook" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+          <button type="button" class="share-btn" (click)="copyLink(item)" aria-label="Copy the link" title="Copy the link"><i class="fas fa-link"></i></button>
+          @if (canShareNatively) {
+            <button type="button" class="share-btn" (click)="shareNatively(item)" aria-label="More ways to share" title="More ways to share"><i class="fas fa-share-nodes"></i></button>
+          }
+          @if (askOnWhatsApp(item); as ask) {
+            <a class="ask" [href]="ask" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> Ask us about it</a>
           }
         </div>
 
@@ -106,6 +178,8 @@
         </dl>
       </div>
     </div>
+
+    <app-product-row title="You may also like" [items]="similar()" link="/products" [linkQuery]="item.category ? { category: item.category } : {}" />
 
     <!-- What customers who bought it say (verified purchases only) -->
     <section class="panel reviews" id="reviews" aria-labelledby="reviews-title">
@@ -152,6 +226,7 @@
         <p class="muted">Loading reviews...</p>
       }
     </section>
+    <app-product-row title="Recently viewed" [items]="recent()" />
   } @else if (error()) {
     <div class="missing panel">
       <i class="fas fa-circle-exclamation"></i>

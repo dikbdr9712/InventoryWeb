@@ -355,3 +355,35 @@
 @media (max-width: 400px) {
   .methods { grid-template-columns: 1fr; }
 }
+
+/* ---------- Saved addresses ---------- */
+.saved { display: grid; gap: 8px; margin-bottom: 14px; }
+.saved-title { margin: 0; font-weight: 600; }
+.saved-card {
+  position: relative; display: flex; gap: 10px; margin: 0; padding: 10px 12px;
+  border: 2px solid var(--line); border-radius: 10px; background: var(--paper); cursor: pointer;
+}
+.saved-card input { margin-top: 4px; accent-color: var(--green); }
+.saved-card.on { border-color: var(--green); background: var(--green-soft); }
+.saved-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.saved-text small { color: var(--muted); }
+.def { margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--green); color: #fff; font-size: 0.7rem; font-weight: 700; }
+.save-new { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: -4px 0 14px; font-size: 0.9rem; }
+.save-new .check { display: inline-flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; }
+.save-new .check input { accent-color: var(--green); }
+.labels { display: inline-flex; gap: 4px; }
+.labels button { padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 0.82rem; cursor: pointer; }
+.labels button.on { border-color: var(--green); background: var(--green); color: #fff; font-weight: 600; }
+
+/* ---------- Coupon code ---------- */
+.coupon { display: flex; gap: 6px; margin: 10px 0 4px; }
+.coupon input { text-transform: uppercase; }
+.coupon-err { margin: 2px 0 6px; }
+.coupon-on {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 10px 0 4px; padding: 8px 10px;
+  border: 1px dashed var(--green); border-radius: 8px; background: var(--green-soft);
+}
+.coupon-on i { color: var(--green); }
+.coupon-on small { color: var(--muted); }
+.coupon-off { margin-left: auto; font-weight: 700; color: var(--green-deep); }
+.coupon-on .btn { padding: 0 4px; }

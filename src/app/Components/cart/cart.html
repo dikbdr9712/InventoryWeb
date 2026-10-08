@@ -88,6 +88,25 @@
           </p>
         }
 
+        <!-- A coupon code -->
+        @if (coupon(); as c) {
+          <div class="coupon-on">
+            <span><i class="fas fa-ticket" aria-hidden="true"></i> <strong>{{ c.code }}</strong>@if (c.description) { <small> · {{ c.description }}</small> }</span>
+            <span class="coupon-off">- Nu. {{ discount() | number: '1.2-2' }}</span>
+            <button type="button" class="btn btn-link btn-sm" (click)="removeCoupon()">Remove</button>
+          </div>
+        } @else {
+          <form class="coupon" (ngSubmit)="applyCoupon()">
+            <label for="coupon" class="sr-only">Coupon code</label>
+            <input id="coupon" name="coupon" class="form-control form-control-sm" placeholder="Coupon code" autocomplete="off"
+                   [(ngModel)]="couponCode" [class.is-invalid]="couponError()" />
+            <button type="submit" class="btn btn-outline-primary btn-sm" [disabled]="checkingCoupon() || !couponCode.trim()">
+              {{ checkingCoupon() ? 'Checking...' : 'Apply' }}
+            </button>
+          </form>
+          @if (couponError()) { <p class="err coupon-err" role="alert">{{ couponError() }}</p> }
+        }
+
         <div class="total">
           <span>Total</span>
           <strong>Nu. {{ grandTotal() | number: '1.2-2' }}</strong>
@@ -125,6 +144,26 @@
             <h3 class="sub-h">Your details</h3>
             <p class="who">Ordering as <strong>{{ auth.name() }}</strong></p>
 
+            @if (!pickup() && savedAddresses().length > 0) {
+              <div class="saved" role="radiogroup" aria-label="Deliver to">
+                <p class="saved-title">Deliver to</p>
+                @for (a of savedAddresses(); track a.id) {
+                  <label class="saved-card" [class.on]="chosen() === a.id">
+                    <input type="radio" name="saved-address" [checked]="chosen() === a.id" (change)="choose(a)" />
+                    <span class="saved-text">
+                      <strong>{{ a.label }} @if (a.isDefault) { <small class="def">Default</small> }</strong>
+                      <span>{{ a.address }}</span>
+                      <small>{{ a.phone }}@if (a.pointLabel) { · {{ a.pointLabel }} }</small>
+                    </span>
+                  </label>
+                }
+                <label class="saved-card" [class.on]="chosen() === 'new'">
+                  <input type="radio" name="saved-address" [checked]="chosen() === 'new'" (change)="choose('new')" />
+                  <span class="saved-text"><strong><i class="fas fa-plus" aria-hidden="true"></i> A new address</strong></span>
+                </label>
+              </div>
+            }
+
             <div class="field">
               <label for="phone">Phone number</label>
               <input id="phone" type="tel" inputmode="numeric" class="form-control" placeholder="8 digits"
@@ -134,7 +173,7 @@
               }
             </div>
 
-            @if (!pickup()) {
+            @if (!pickup() && chosen() === 'new') {
               <app-delivery-location [(point)]="point" />
 
               <div class="field">
@@ -146,6 +185,21 @@
                   <p class="err">{{ errors().address }}</p>
                 }
               </div>
+
+              @if (savedAddresses().length < 10) {
+                <div class="save-new">
+                  <label class="check">
+                    <input type="checkbox" [checked]="saveNew()" (change)="saveNew.set(!saveNew())" /> Save this address for next time
+                  </label>
+                  @if (saveNew()) {
+                    <span class="labels" role="group" aria-label="Save it as">
+                      @for (l of labels; track l) {
+                        <button type="button" [class.on]="newLabel() === l" [attr.aria-pressed]="newLabel() === l" (click)="newLabel.set(l)">{{ l }}</button>
+                      }
+                    </span>
+                  }
+                </div>
+              }
             }
           </div>
         } @else {

@@ -214,6 +214,11 @@
                   <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onPhoto($any($event.target))" hidden />
                   {{ photoPreview() ? 'Change photo' : 'Add photo' }}
                 </label>
+                @if (editingId(); as id) {
+                  <app-photo-manager [itemId]="id" scope="seller" (mainChanged)="onMainChanged($event)" />
+                } @else {
+                  <p class="muted small">More photos can be added once the product is saved.</p>
+                }
               </div>
 
               <div class="form-grid">
@@ -256,6 +261,19 @@
                   Description
                   <textarea class="form-control" name="description" rows="3" [(ngModel)]="form.description"></textarea>
                 </label>
+                <label>
+                  Option of <small class="muted">(for sizes, colours)</small>
+                  <select class="form-control" name="variantOf" [(ngModel)]="form.variantOf">
+                    <option [ngValue]="null">Nothing: a product of its own</option>
+                    @for (m of mains(); track m.itemId) { <option [ngValue]="m.itemId">{{ m.itemName }}</option> }
+                  </select>
+                </label>
+                <label>
+                  Option name
+                  <input class="form-control" name="variantName" maxlength="60" [(ngModel)]="form.variantName" placeholder="For example: Size M, Red, 500 g" />
+                </label>
+                <p class="muted small full">Sold in sizes or colours? Add each one as its own product, named in full ("Kira, blue"), with its
+                  own price, stock and photo, and make it an option of the main one. Customers see one product with the choices.</p>
                 <fieldset class="sizes full">
                   <legend>Delivery size <small>sets the delivery price and which riders can carry it</small></legend>
                   <div class="size-grid">

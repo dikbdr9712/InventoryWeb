@@ -1,0 +1,23 @@
+.crumbs { margin-bottom: 12px; }
+.head { display: flex; gap: 18px; padding: 22px; margin-bottom: 18px; }
+.logo {
+  flex: none; display: flex; align-items: center; justify-content: center; width: 72px; height: 72px;
+  border-radius: 18px; background: var(--green); color: #fff; font-size: 2rem; font-weight: 700;
+}
+.about { min-width: 0; }
+.about h1 { margin: 0 0 6px; font-size: 1.6rem; overflow-wrap: anywhere; }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 6px; color: var(--muted); font-size: 0.92rem; }
+.facts i { color: var(--green); margin-right: 3px; }
+.rating { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; }
+.desc { margin: 8px 0; white-space: pre-line; }
+.trust { margin: 8px 0 0; color: var(--green-deep); font-size: 0.88rem; }
+.tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.tools h2 { margin: 0; font-size: 1.2rem; }
+.tools input { max-width: 280px; }
+.missing { padding: 30px; text-align: center; }
+
+@media (max-width: 560px) {
+  .head { flex-direction: column; padding: 18px 16px; }
+  .logo { width: 56px; height: 56px; font-size: 1.5rem; border-radius: 14px; }
+  .tools input { max-width: none; }
+}

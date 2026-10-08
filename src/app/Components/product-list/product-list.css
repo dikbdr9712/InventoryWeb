@@ -66,6 +66,7 @@
 }
 
 .product {
+  position: relative; /* the heart sits over the photo */
   container-type: inline-size; /* the card adapts to its own width (see the end of this file) */
   display: flex;
   flex-direction: column;
@@ -351,3 +352,40 @@
 /* average stars on a card (rated products only) */
 .card-rating { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0; }
 .card-rating small { color: var(--muted); font-size: 0.78rem; }
+
+/* ---------- More filters ---------- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: -4px 0 14px;
+}
+.price-range { display: inline-flex; align-items: center; gap: 6px; }
+.price-range label { margin: 0; font-weight: 600; font-size: 0.88rem; }
+.price-range input { width: 86px; }
+.price-range span { color: var(--muted); font-size: 0.85rem; }
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.toggle i { color: var(--muted); font-size: 0.8rem; }
+.toggle:hover { border-color: var(--green); }
+.toggle.on { border-color: var(--green); background: var(--green-soft); font-weight: 600; }
+.toggle.on i { color: var(--green); }
+.filters .clear { padding: 0 4px; }
+
+/* ---------- The wishlist heart, over the photo ---------- */
+.card-heart { position: absolute; top: 18px; right: 18px; z-index: 1; }
+
+/* a product with sizes or colours */
+.opts { color: var(--blue); font-size: 0.8rem; font-weight: 600; }

@@ -14,6 +14,8 @@ import { ToastService } from '../../services/toast';
 import { CartItem, DeliveryPoint, DeliveryQuote, OrderRequest } from '../../models/models';
 import { errorText } from '../../utils/http-error';
 import { ShopDetails } from '../../services/shop-details';
+import { AddressService, SavedAddress } from '../../services/addresses';
+import { CouponQuote, CouponService } from '../../services/coupons';
 
 @Component({
   selector: 'app-cart',
@@ -27,6 +29,14 @@ export class Cart {
   private orders = inject(OrderService);
   private deliveryApi = inject(DeliveryService);
   readonly shop = inject(ShopDetails);
+  private addressApi = inject(AddressService);
+
+  // Saved addresses: choose one, or type a new one (and save it for next time)
+  savedAddresses = signal<SavedAddress[]>([]);
+  chosen = signal<number | 'new'>('new');
+  saveNew = signal(true);
+  newLabel = signal('Home');
+  readonly labels = ['Home', 'Office', 'Other'];
 
   // DELIVERY: a driver brings it (with a fee). PICKUP: the customer collects it where it is packed, free.
   method = signal<'DELIVERY' | 'PICKUP'>('DELIVERY');
@@ -43,7 +53,35 @@ export class Cart {
   quote = signal<DeliveryQuote | null>(null);
   quoting = signal(false);
   deliveryTotal = computed(() => this.pickup() ? 0 : Number(this.quote()?.totalFee) || 0);
-  grandTotal = computed(() => this.cart.total() + this.deliveryTotal());
+  // A coupon: what it takes off the items (worked out again by the server when the order is placed)
+  private couponApi = inject(CouponService);
+  coupon = signal<CouponQuote | null>(null);
+  couponCode = '';
+  checkingCoupon = signal(false);
+  couponError = signal('');
+  discount = computed(() => Math.min(Number(this.coupon()?.discount) || 0, this.cart.total()));
+  grandTotal = computed(() => this.cart.total() + this.deliveryTotal() - this.discount());
+
+  applyCoupon(code = this.couponCode) {
+    const clean = code.trim().toUpperCase();
+    if (!clean) return;
+    if (!this.auth.isLoggedIn()) {
+      this.couponError.set('Sign in to use a coupon code.');
+      return;
+    }
+    this.checkingCoupon.set(true);
+    this.couponError.set('');
+    this.couponApi.check(clean, this.cart.items().map(i => ({ itemId: i.id, quantity: i.quantity }))).subscribe({
+      next: q => { this.checkingCoupon.set(false); this.coupon.set(q); this.couponCode = q.code; },
+      error: (err: HttpErrorResponse) => { this.checkingCoupon.set(false); this.coupon.set(null); this.couponError.set(errorText(err)); }
+    });
+  }
+
+  removeCoupon() {
+    this.coupon.set(null);
+    this.couponCode = '';
+    this.couponError.set('');
+  }
   estimated = computed(() => !this.pickup() && (this.quote()?.packages.some(p => p.estimated) ?? false));
   // "too far" stops a delivery, never a pickup
   problem = computed(() => this.pickup() ? null : this.quote()?.problem ?? null);
@@ -62,6 +100,14 @@ export class Cart {
       this.quote.set(q);
       this.quoting.set(false);
     });
+    this.loadAddresses();
+    // the cart changed: the coupon is checked again (its amount, or whether it still applies)
+    toObservable(computed(() => this.cart.items().map(i => i.id + 'x' + i.quantity).join(','))).pipe(
+      debounceTime(300), takeUntilDestroyed()
+    ).subscribe(() => {
+      const applied = this.coupon();
+      if (applied) this.applyCoupon(applied.code);
+    });
   }
   private router = inject(Router);
   private toasts = inject(ToastService);
@@ -71,6 +117,34 @@ export class Cart {
 
   // Where the order goes. The phone is filled in from the account when we have it.
   delivery = { phone: this.auth.phone() ?? '', address: '' };
+
+  // saved addresses: the default one is chosen at once (called from the constructor)
+  private loadAddresses() {
+    if (this.auth.isLoggedIn()) {
+      this.addressApi.list().subscribe({
+        next: list => {
+          this.savedAddresses.set(list);
+          const preferred = list.find(a => a.isDefault) ?? list[0];
+          if (preferred) this.choose(preferred);
+        },
+        error: () => {} // typing the address still works
+      });
+    }
+  }
+
+  choose(choice: SavedAddress | 'new') {
+    if (choice === 'new') {
+      this.chosen.set('new');
+      this.delivery.address = '';
+      this.delivery.phone = this.auth.phone() ?? this.delivery.phone;
+      return;
+    }
+    this.chosen.set(choice.id);
+    this.delivery.phone = choice.phone;
+    this.delivery.address = choice.address;
+    const point = AddressService.pointOf(choice);
+    if (point) this.point.set(point);
+  }
 
   errors() {
     const e: { phone?: string; address?: string } = {};
@@ -140,6 +214,7 @@ export class Cart {
       totalAmount: total,
       items: items.map(i => ({ itemId: i.id, quantity: i.quantity, price: i.price })),
       fulfilment: this.method(),
+      couponCode: this.coupon()?.code ?? null,
       areaId: this.pickup() ? null : point?.areaId ?? null,
       dropLatitude: this.pickup() || point?.areaId ? null : point?.latitude ?? null,
       dropLongitude: this.pickup() || point?.areaId ? null : point?.longitude ?? null
@@ -147,7 +222,16 @@ export class Cart {
 
     this.placing.set(true);
     this.orders.create(order).subscribe({
-      next: res => this.router.navigate(['/payment'], { queryParams: { orderId: res.orderId, total } }),
+      next: res => {
+        // keep a new address for next time (it does not hold up the payment)
+        if (!this.pickup() && this.chosen() === 'new' && this.saveNew() && this.savedAddresses().length < 10) {
+          this.addressApi.add({
+            label: this.newLabel(), phone: this.delivery.phone.trim(), address: this.delivery.address.trim(),
+            ...AddressService.fromPoint(point)
+          }).subscribe({ error: () => {} });
+        }
+        this.router.navigate(['/payment'], { queryParams: { orderId: res.orderId, total } });
+      },
       error: (err: HttpErrorResponse) => {
         this.placing.set(false);
         this.toasts.error(err.status === 0

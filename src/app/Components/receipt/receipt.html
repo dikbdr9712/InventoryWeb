@@ -116,6 +116,9 @@
         } @else if (r.pickup) {
           <div><span>Pick up myself</span><span>Free</span></div>
         }
+        @if (r.couponDiscount) {
+          <div><span>Coupon {{ r.couponCode }}</span><span>- Nu. {{ r.couponDiscount | number: '1.2-2' }}</span></div>
+        }
         <div class="grand"><span>Total paid</span><span>Nu. {{ r.total | number: '1.2-2' }}</span></div>
         @if (r.savings) {
           <p class="saved">You saved Nu. {{ r.savings | number: '1.2-2' }} on this order.</p>

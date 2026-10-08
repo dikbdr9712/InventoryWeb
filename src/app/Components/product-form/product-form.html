@@ -83,6 +83,30 @@
           </fieldset>
         </section>
 
+        <!-- ======== Size or colour option ======== -->
+        <section class="panel sec">
+          <h2>Size or colour</h2>
+          <p class="hint">For a product sold in sizes or colours, add each one as its own product (with its own price, stock and
+            photo), named in full, for example "Gho, size M". Then make it an option of the main one: the shop shows one
+            card, and the choices on the product page.</p>
+          <div class="two">
+            <div class="field">
+              <label for="variantOf">This is an option of</label>
+              <select id="variantOf" name="variantOf" class="custom-select" [(ngModel)]="model.variantOf">
+                <option [ngValue]="null">Nothing: a product of its own (or a main product)</option>
+                @for (m of mains(); track m.itemId) {
+                  <option [ngValue]="m.itemId">{{ m.itemName }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label for="variantName">Option name <small>{{ model.variantOf ? '' : '(if it has options: its own choice)' }}</small></label>
+              <input id="variantName" name="variantName" type="text" class="form-control" maxlength="60"
+                     placeholder="For example: Size M, Red, 500 g" [(ngModel)]="model.variantName" />
+            </div>
+          </div>
+        </section>
+
         <!-- ======== Pricing ======== -->
         <section class="panel sec">
           <h2>Pricing</h2>
@@ -230,6 +254,12 @@
             <p class="err">{{ fileError() }}</p>
           } @else {
             <p class="hint">JPG or PNG, under 2 MB. A square photo on a plain background looks best.</p>
+          }
+
+          @if (isEdit && itemId) {
+            <app-photo-manager [itemId]="itemId" scope="staff" (mainChanged)="onMainChanged($event)" />
+          } @else {
+            <p class="hint">More photos can be added once the product is saved.</p>
           }
         </section>
 

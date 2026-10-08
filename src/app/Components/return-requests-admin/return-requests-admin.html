@@ -1,0 +1,57 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Return requests</h1>
+      <p>Customers ask to return items of delivered orders. Answer each one; record the return when the items are back.</p>
+    </div>
+  </div>
+
+  <div class="seg" role="tablist" aria-label="Which requests">
+    <button type="button" role="tab" [class.on]="view() === 'open'" [attr.aria-selected]="view() === 'open'" (click)="show('open')">To handle</button>
+    <button type="button" role="tab" [class.on]="view() === 'closed'" [attr.aria-selected]="view() === 'closed'" (click)="show('closed')">Done and declined</button>
+  </div>
+
+  @if (loading()) {
+    <p class="muted">Loading...</p>
+  } @else if (requests().length === 0) {
+    <div class="empty panel">
+      <i class="fas fa-circle-check" aria-hidden="true"></i>
+      <p>{{ view() === 'open' ? 'No return requests to handle.' : 'Nothing here yet.' }}</p>
+    </div>
+  } @else {
+    <ul class="list">
+      @for (r of requests(); track r.id) {
+        <li class="req panel" [class]="'req panel ' + r.status.toLowerCase()">
+          <div class="top">
+            <strong>Order #{{ r.orderId }}</strong>
+            <span class="state">{{ statusLabels[r.status] }}</span>
+            <small>{{ r.createdAt | date: 'd MMM y, h:mm a' }}</small>
+          </div>
+          <p class="who">{{ r.customerName || 'Customer' }} <span class="muted">· {{ r.customerEmail }}</span></p>
+          <ul class="lines">
+            @for (l of r.lines; track l.orderItemId) { <li>{{ l.quantity }} × {{ l.itemName }}</li> }
+          </ul>
+          <p class="reason"><strong>{{ reasonLabels[r.reason] }}</strong>@if (r.details) { · {{ r.details }} }</p>
+          @if (r.staffNote) {
+            <p class="note"><strong>{{ (r.status === 'DECLINED' ? 'Declined' : 'Answer') + (r.decidedBy ? ' by ' + r.decidedBy : '') }}:</strong> {{ r.staffNote }}</p>
+          }
+          <div class="actions">
+            @if (r.status === 'REQUESTED') {
+              <button type="button" class="btn btn-primary btn-sm" [disabled]="busy() === r.id" (click)="approve(r)">Approve</button>
+              <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="busy() === r.id" (click)="decline(r)">Decline</button>
+            }
+            @if (r.status === 'APPROVED') {
+              <button type="button" class="btn btn-primary btn-sm" (click)="returnOrderId.set(r.orderId)"><i class="fas fa-rotate-left"></i> Record the return</button>
+              <button type="button" class="btn btn-link btn-sm text-danger" [disabled]="busy() === r.id" (click)="decline(r)">Decline after all</button>
+            }
+            <a class="btn btn-link btn-sm" routerLink="/admin/orders" [queryParams]="{ q: r.orderId }">Open the order</a>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+@if (returnOrderId(); as orderId) {
+  <app-return-dialog [orderId]="orderId" (closed)="returnOrderId.set(null)" (returned)="onReturned()" />
+}

@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { OrderService } from '../../services/order';
 import { MarketplaceService } from '../../services/marketplace';
@@ -15,11 +15,13 @@ import { errorText } from '../../utils/http-error';
 import { orderLabel, orderPill, orderStage, paymentLabel, paymentPill } from '../../utils/order-status';
 import { OrderTracker } from '../order-tracker/order-tracker';
 import { OrderRatingPanel } from '../order-rating/order-rating';
+import { ReturnRequestPanel } from '../return-request/return-request';
+import { CartService } from '../../services/cart';
 
 // URL: /orders/12
 @Component({
   selector: 'app-order-details',
-  imports: [RouterLink, DatePipe, DecimalPipe, OrderTracker, OrderRatingPanel],
+  imports: [RouterLink, DatePipe, DecimalPipe, OrderTracker, OrderRatingPanel, ReturnRequestPanel],
   templateUrl: './order-details.html',
   styleUrl: './order-details.css'
 })
@@ -30,6 +32,43 @@ export class OrderDetails implements OnInit {
   private itemService = inject(ItemService);
   private confirm = inject(ConfirmService);
   private toasts = inject(ToastService);
+  private cart = inject(CartService);
+  private router = inject(Router);
+  buyingAgain = signal(false);
+
+  // "Buy again": this order's products into the cart, at today's prices (the ones still sold and in stock)
+  buyAgain() {
+    this.buyingAgain.set(true);
+    this.itemService.catalog().subscribe({
+      next: list => {
+        this.buyingAgain.set(false);
+        const byId = new Map(list.map(i => [i.itemId, i]));
+        let added = 0, missing = 0;
+        for (const line of this.items()) {
+          const item = line.itemId != null ? byId.get(line.itemId) : undefined;
+          const stock = item ? this.itemService.stockOf(item) : null;
+          if (!item || !this.itemService.forSale(item) || (stock !== null && stock <= 0)) { missing++; continue; }
+          this.cart.add({
+            id: item.itemId, name: item.itemName, price: Number(item.sellingPrice) || 0, image: this.itemService.imageFor(item),
+            sellerId: item.sellerId ?? null, sellerName: item.sellerName
+          }, Math.min(line.quantity ?? 1, stock ?? 99));
+          added++;
+        }
+        if (!added) {
+          this.toasts.error('None of these products can be bought right now (sold out or no longer sold).');
+          return;
+        }
+        this.toasts.success(missing
+          ? `Added ${added} to your cart. ${missing} cannot be bought right now.`
+          : "Added to your cart at today's prices.");
+        this.router.navigate(['/cart']);
+      },
+      error: () => {
+        this.buyingAgain.set(false);
+        this.toasts.error('We could not load the products. Please try again.');
+      }
+    });
+  }
 
   orderLabel = orderLabel;
   orderPill = orderPill;
