@@ -1,0 +1,18 @@
+@if (app.updateReady()) {
+  <div class="app-banner" role="status">
+    <i class="fas fa-rotate" aria-hidden="true"></i>
+    <p><strong>A new version is ready</strong><span>Update to get the latest DP DrukBazaars.</span></p>
+    <button type="button" class="btn btn-primary btn-sm" (click)="app.reload()">Update now</button>
+  </div>
+} @else if (showInstall()) {
+  <div class="app-banner" role="region" aria-label="Get the app">
+    <img src="icons/icon-192.png" width="40" height="40" alt="" />
+    <p><strong>Get the DP DrukBazaars app</strong><span>Free. Opens from your home screen, no app store needed.</span></p>
+    @if (app.canPrompt()) {
+      <button type="button" class="btn btn-primary btn-sm" (click)="install()">Install</button>
+    } @else {
+      <a class="btn btn-primary btn-sm" routerLink="/app">How</a>
+    }
+    <button type="button" class="close-x" (click)="notNow()" aria-label="Not now"><i class="fas fa-xmark"></i></button>
+  </div>
+}

@@ -4,11 +4,12 @@ import { Navbar } from './Components/navbar/navbar';
 import { StaffBar } from './Components/staff-bar/staff-bar';
 import { Footer } from './Components/footer/footer';
 import { ToastHost } from './Components/toast-host/toast-host';
+import { AppBanner } from './Components/app-banner/app-banner';
 import { AuthService } from './services/auth';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Navbar, StaffBar, Footer, ToastHost],
+  imports: [RouterOutlet, Navbar, StaffBar, Footer, ToastHost, AppBanner],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

@@ -14,6 +14,7 @@ export const routes: Routes = [
   { path: 'about', loadComponent: () => import('./Components/about/about').then(m => m.About) },
   { path: 'services', loadComponent: () => import('./Components/our-services/our-services').then(m => m.OurServices) },
   { path: 'reviews', loadComponent: () => import('./Components/product-rating/product-rating').then(m => m.ProductRating) },
+  { path: 'app', loadComponent: () => import('./Components/get-app/get-app').then(m => m.GetApp) }, // install the website as an app
   { path: 'contact', loadComponent: () => import('./Components/contact/contact').then(m => m.Contact) },
   { path: 'login', loadComponent: () => import('./Components/login/login').then(m => m.Login) },
   { path: 'signup', loadComponent: () => import('./Components/signup/signup').then(m => m.Signup) },

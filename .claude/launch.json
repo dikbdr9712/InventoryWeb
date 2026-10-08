@@ -20,6 +20,15 @@
       ],
       "port": 4300,
       "autoPort": true
+    },
+    {
+      "name": "built-site",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        ".claude/serve-dist.mjs"
+      ],
+      "port": 4400,
+      "autoPort": true
     }
   ]
 }

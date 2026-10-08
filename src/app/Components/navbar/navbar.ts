@@ -5,6 +5,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/ro
 import { filter } from 'rxjs';
 import { AuthService } from '../../services/auth';
 import { CartService } from '../../services/cart';
+import { AppInstall } from '../../services/app-install';
 import { StaffLink, STAFF_GROUPS } from '../../utils/staff-nav';
 import { homeFor } from '../../utils/home';
 
@@ -19,6 +20,7 @@ type MenuName = 'account' | null;
 export class Navbar {
   auth = inject(AuthService);
   cart = inject(CartService);
+  app = inject(AppInstall);
   private router = inject(Router);
   private el = inject(ElementRef);
 

@@ -9,6 +9,14 @@
   <meta name="theme-color" content="#0b6b4f">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
+  <!-- The app: installable from the browser on phones and computers (see /app) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="DrukBazaars">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
   <!-- Open the connections early, while the page is still being read -->
   <link rel="preconnect" href="https://stackpath.bootstrapcdn.com">
   <link rel="preconnect" href="https://kit.fontawesome.com" crossorigin>
@@ -27,5 +35,6 @@
 </head>
 <body>
   <app-root></app-root>
+  <noscript>Please turn on JavaScript to use DP DrukBazaars.</noscript>
 </body>
 </html>

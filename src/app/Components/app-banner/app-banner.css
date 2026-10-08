@@ -1,0 +1,53 @@
+/* A card at the bottom of the screen, above the phone's home bar */
+.app-banner {
+  position: fixed;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(480px, calc(100vw - 24px));
+  padding: 10px 8px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  transform: translateX(-50%);
+  animation: rise 0.2s ease-out;
+}
+
+.app-banner img { flex: none; border-radius: 10px; }
+.app-banner > i { flex: none; font-size: 1.3rem; color: var(--green); padding: 0 4px; }
+
+.app-banner p {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.3;
+}
+.app-banner p span { color: var(--muted); font-size: 0.82rem; }
+
+.app-banner .btn { flex: none; white-space: nowrap; }
+
+.close-x {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+}
+.close-x:hover { background: var(--wash); color: var(--ink); }
+
+@keyframes rise {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media print {
+  .app-banner { display: none; }
+}

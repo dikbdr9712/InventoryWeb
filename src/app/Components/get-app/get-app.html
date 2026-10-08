@@ -1,0 +1,69 @@
+<div class="page">
+  <section class="hero panel">
+    <img src="icons/icon-192.png" width="96" height="96" alt="" />
+    <div>
+      <h1>The DP DrukBazaars app</h1>
+      <p>Shop, pay and follow your orders from an icon on your home screen. It is free, takes a few seconds,
+        uses almost no space, and needs no app store.</p>
+      @if (app.installed()) {
+        <p class="ok"><i class="fas fa-circle-check"></i> You are using the app.</p>
+      } @else if (app.canPrompt()) {
+        <button type="button" class="btn btn-primary" (click)="install()"><i class="fas fa-download"></i> Install the app</button>
+      }
+    </div>
+  </section>
+
+  @if (!app.installed()) {
+    <section class="panel steps">
+      <h2>How to install</h2>
+      <div class="seg" role="tablist" aria-label="Your device">
+        @for (d of devices; track d.key) {
+          <button type="button" role="tab" [class.on]="device() === d.key" [attr.aria-selected]="device() === d.key" (click)="device.set(d.key)">
+            <i [class]="(d.key === 'computer' ? 'fas ' : 'fab ') + d.icon" aria-hidden="true"></i> {{ d.label }}
+          </button>
+        }
+      </div>
+
+      @switch (device()) {
+        @case ('android') {
+          <ol>
+            <li>Open this website in <b>Chrome</b> (or Samsung Internet).</li>
+            <li>If you see an <b>Install</b> button (on this page or at the bottom of the screen), tap it. Otherwise open the
+              menu <b><i class="fas fa-ellipsis-vertical"></i></b> and tap <b>Install app</b> (on some phones: <b>Add to Home screen</b>).</li>
+            <li>Tap <b>Install</b> again to confirm. The DP DrukBazaars icon appears with your other apps.</li>
+          </ol>
+        }
+        @case ('iphone') {
+          <ol>
+            <li>Open this website in <b>Safari</b>.</li>
+            <li>Tap the <b>Share</b> button <i class="fas fa-arrow-up-from-bracket"></i> (at the bottom, or at the top on an iPad).</li>
+            <li>Scroll down and tap <b>Add to Home Screen</b> <i class="far fa-square-plus"></i>.</li>
+            <li>Tap <b>Add</b>. The DP DrukBazaars icon appears on your home screen.</li>
+          </ol>
+        }
+        @case ('computer') {
+          <ol>
+            <li>Open this website in <b>Chrome</b> or <b>Microsoft Edge</b>.</li>
+            <li>Click the install icon <i class="fas fa-desktop"></i> at the right end of the address bar, or open the menu and choose
+              <b>Install DP DrukBazaars</b> (Edge: <b>Apps &gt; Install this site as an app</b>).</li>
+            <li>It opens in its own window and can be pinned to the taskbar. Handy for the counter (POS) and the order board.</li>
+          </ol>
+        }
+      }
+      @if (thisDevice()) { <p class="muted small">These are the steps for the device you are using now.</p> }
+    </section>
+  }
+
+  <section class="panel good">
+    <h2>Good to know</h2>
+    <ul>
+      <li><i class="fas fa-user-check"></i> <span><b>The same account.</b> Sign in with the email and password you use on the website.
+        Your cart, orders and notifications are the same everywhere.</span></li>
+      <li><i class="fas fa-rotate"></i> <span><b>Always up to date.</b> New versions arrive by themselves. When one is ready, the app
+        offers <b>Update now</b>.</span></li>
+      <li><i class="fas fa-bolt"></i> <span><b>Fast to open.</b> The app keeps its pages on your phone. Ordering, paying and following
+        orders still need the internet.</span></li>
+      <li><i class="fas fa-trash-can"></i> <span><b>To remove it,</b> press and hold the icon and choose Remove or Uninstall, like any app.</span></li>
+    </ul>
+  </section>
+</div>

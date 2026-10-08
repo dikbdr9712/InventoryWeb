@@ -143,6 +143,9 @@
   }
 
   <div class="nb-drawer-foot">
+    @if (!app.installed()) {
+      <a class="nb-item" routerLink="/app" (click)="closeAll()"><i class="fas fa-mobile-screen-button"></i> Get the app</a>
+    }
     @if (auth.isLoggedIn()) {
       <a class="nb-item" routerLink="/profile" (click)="closeAll()"><i class="fas fa-user"></i> My profile</a>
       <button type="button" class="nb-item nb-out" (click)="signOut()"><i class="fas fa-arrow-right-from-bracket"></i> Sign out</button>
