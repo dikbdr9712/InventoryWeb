@@ -558,3 +558,28 @@
   margin: 0 auto;
   padding: 0 var(--gutter) 12px;
 }
+
+/* ---------- The profile photo in the circle ---------- */
+.nb-avatar { flex: none; overflow: hidden; padding: 0; }
+.nb-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- Phones: everything on one row, nothing cut off ---------- */
+.nb-signin { flex: none; white-space: nowrap; }
+.nb-actions { flex: none; }
+.nb-brand { min-width: 0; }
+.nb-brand-text { min-width: 0; }
+
+@media (max-width: 480px) {
+  .nb-actions { gap: 2px; }
+  .nb-actions .nb-cart, .nb-search-btn { width: 36px; height: 36px; font-size: 1rem; }
+  .nb-avatar { width: 36px; height: 36px; font-size: 0.82rem; margin-left: 2px; }
+  .nb-brand { gap: 6px; }
+  .nb-brand img { width: 34px; height: 34px; }
+  .nb-brand-text { font-size: 0.92rem; }
+  .nb-signin { height: 34px; padding: 0 10px; font-size: 0.88rem; }
+}
+
+/* the smallest phones: the logo alone, so the buttons keep their room */
+@media (max-width: 359px) {
+  .nb-brand-text { display: none; }
+}

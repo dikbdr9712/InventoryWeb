@@ -44,9 +44,43 @@ export class AuthService {
     return fromServer ? fromServer.includes(permission) : permissionsFor(this.role()).includes(permission);
   }
 
-  email() { return localStorage.getItem('currentUser'); }
-  name() { return localStorage.getItem('userName'); }
-  phone() { return localStorage.getItem('userPhone'); }
+  // Read from the browser's storage. Reading `details` first makes the header and menus update when they change.
+  private details = signal(0);
+  email() { this.details(); return localStorage.getItem('currentUser'); }
+  name() { this.details(); return localStorage.getItem('userName'); }
+  phone() { this.details(); return localStorage.getItem('userPhone'); }
+  // their profile photo's address, or null (then their initials are shown)
+  photo(): string | null {
+    this.details();
+    const path = localStorage.getItem('userPhoto');
+    return path ? (path.startsWith('http') ? path : environment.imageBase + path) : null;
+  }
+
+  // keeps what the server says about this person
+  private remember(user: LoginResponse) {
+    localStorage.setItem('currentUser', user.email);
+    localStorage.setItem('userEmail', user.email);
+    localStorage.setItem('userName', user.name);
+    localStorage.setItem('userPhone', user.phone ?? '');
+    if (user.photoPath) localStorage.setItem('userPhoto', user.photoPath);
+    else localStorage.removeItem('userPhoto');
+    this.details.update(n => n + 1);
+  }
+
+  // My profile: name, phone and email (a new email needs the current password)
+  updateProfile(change: { name: string; email: string; phone: string; currentPassword?: string }) {
+    return this.http.put<LoginResponse>(`${environment.apiUrl}/api/auth/me`, change).pipe(tap(user => this.remember(user)));
+  }
+
+  uploadPhoto(file: Blob) {
+    const data = new FormData();
+    data.append('photo', file, 'photo.jpg');
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/api/auth/me/photo`, data).pipe(tap(user => this.remember(user)));
+  }
+
+  removePhoto() {
+    return this.http.delete<LoginResponse>(`${environment.apiUrl}/api/auth/me/photo`).pipe(tap(user => this.remember(user)));
+  }
 
   login(email: string, password: string) {
     return this.http
@@ -54,11 +88,8 @@ export class AuthService {
       .pipe(
         tap(user => {
           localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('currentUser', user.email);
-          localStorage.setItem('userName', user.name);
-          localStorage.setItem('userPhone', user.phone);
           localStorage.setItem('userRole', user.role);
-          localStorage.setItem('userEmail', user.email);
+          this.remember(user);
           this.isLoggedIn.set(true);
           this.role.set(user.role);
           this.setPermissions(user.permissions);
@@ -105,7 +136,7 @@ export class AuthService {
       tap(user => {
         if (!this.isLoggedIn()) return;
         localStorage.setItem('userRole', user.role);
-        localStorage.setItem('userName', user.name);
+        this.remember(user);
         this.role.set(user.role);
         this.setPermissions(user.permissions);
       })
@@ -118,7 +149,7 @@ export class AuthService {
   }
 
   logout() {
-    ['isLoggedIn', 'currentUser', 'userName', 'userPhone', 'userRole', 'userEmail', 'userPermissions']
+    ['isLoggedIn', 'currentUser', 'userName', 'userPhone', 'userRole', 'userEmail', 'userPermissions', 'userPhoto']
       .forEach(key => localStorage.removeItem(key));
     this.isLoggedIn.set(false);
     this.role.set(null);

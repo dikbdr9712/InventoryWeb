@@ -81,6 +81,7 @@ const ICONS: Record<string, string> = {
       font-size: 1.1rem; cursor: pointer;
     }
     .bell-btn:hover { background: var(--wash); }
+    @media (max-width: 480px) { .bell-btn { width: 36px; height: 36px; font-size: 1rem; } } /* phones: the header fits on one row */
     .bell-count {
       position: absolute; top: 0; right: -2px; min-width: 18px; height: 18px; padding: 0 5px;
       border-radius: 999px; background: var(--red); color: #fff; font-size: 0.72rem; font-weight: 700; line-height: 18px;

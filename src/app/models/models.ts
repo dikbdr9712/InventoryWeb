@@ -5,6 +5,7 @@ export interface LoginResponse {
   phone: string;
   role: string;
   permissions?: string[]; // from the server: what this person may do
+  photoPath?: string | null; // their profile photo (empty = initials)
 }
 
 export interface SignupRequest {

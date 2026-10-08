@@ -7,7 +7,17 @@
   </div>
 
   <section class="panel who">
-    <span class="avatar">{{ initials }}</span>
+    <div class="photo-box">
+      <span class="avatar">@if (photo; as p) { <img [src]="p" alt="Your profile photo" /> } @else { {{ initials }} }</span>
+      <input #photoFile id="photoFile" type="file" accept="image/*" class="sr-only" (change)="onPhoto(photoFile)" />
+      <label for="photoFile" class="photo-btn" [class.busy]="photoBusy()" title="Change your photo">
+        <i class="fas" [class.fa-camera]="!photoBusy()" [class.fa-spinner]="photoBusy()" [class.fa-spin]="photoBusy()" aria-hidden="true"></i>
+        <span class="sr-only">Change your photo</span>
+      </label>
+      @if (photo && !photoBusy()) {
+        <button type="button" class="photo-remove" (click)="removePhoto()">Remove photo</button>
+      }
+    </div>
     <div class="who-text">
       <h2>{{ name }}</h2>
       <span class="who-email">{{ email }}</span>
@@ -20,19 +30,39 @@
 
   <div class="grid">
     <section class="panel box">
-      <h2>Your details</h2>
-      <dl>
-        <div><dt>Name</dt><dd>{{ name }}</dd></div>
-        <div><dt>Email</dt><dd>{{ email }}</dd></div>
-        <div>
-          <dt>Phone</dt>
-          <dd>{{ phone || 'Not given' }}</dd>
-        </div>
-      </dl>
-      <p class="help">
-        Need to change your name or phone number?
-        <a routerLink="/contact">Contact us</a> and we will update it for you.
-      </p>
+      <div class="box-head">
+        <h2>Your details</h2>
+        @if (!editing()) { <button type="button" class="btn btn-outline-primary btn-sm" (click)="editDetails()"><i class="fas fa-pen"></i> Edit</button> }
+      </div>
+      @if (!editing()) {
+        <dl>
+          <div><dt>Name</dt><dd>{{ name }}</dd></div>
+          <div><dt>Email</dt><dd>{{ email }}</dd></div>
+          <div>
+            <dt>Phone</dt>
+            <dd>{{ phone || 'Not given' }}</dd>
+          </div>
+        </dl>
+      } @else {
+        <form class="details-form" (ngSubmit)="saveDetails()" novalidate>
+          @if (detailsError()) { <div class="alert alert-danger" role="alert">{{ detailsError() }}</div> }
+          <label for="d-name">Full name</label>
+          <input id="d-name" name="d-name" class="form-control" maxlength="100" autocomplete="name" [(ngModel)]="details.name" />
+          <label for="d-phone">Phone number</label>
+          <input id="d-phone" name="d-phone" type="tel" inputmode="numeric" class="form-control" placeholder="8 digits" autocomplete="tel" [(ngModel)]="details.phone" />
+          <label for="d-email">Email <small>(you sign in with it)</small></label>
+          <input id="d-email" name="d-email" type="email" class="form-control" autocomplete="email" [(ngModel)]="details.email" />
+          @if (emailChanging()) {
+            <label for="d-pass">Your current password <small>(to change your email)</small></label>
+            <input id="d-pass" name="d-pass" type="password" class="form-control" autocomplete="current-password" [(ngModel)]="details.currentPassword" />
+            <p class="help">From now on you sign in with the new email. Your orders and everything else stay in your account.</p>
+          }
+          <div class="form-buttons">
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save' }}</button>
+            <button type="button" class="btn btn-link btn-sm" (click)="editing.set(false)">Cancel</button>
+          </div>
+        </form>
+      }
     </section>
 
     <section class="panel box">

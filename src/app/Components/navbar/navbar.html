@@ -39,11 +39,13 @@
       @if (auth.isLoggedIn()) {
         <div class="nb-menu">
           <button type="button" class="nb-avatar" (click)="toggle('account')" [attr.aria-expanded]="openMenu() === 'account'"
-                  aria-label="Account menu">{{ initials() }}</button>
+                  aria-label="Account menu">
+            @if (auth.photo(); as p) { <img [src]="p" alt="" /> } @else { {{ initials() }} }
+          </button>
           @if (openMenu() === 'account') {
             <div class="nb-panel" role="menu">
               <div class="nb-who">
-                <span class="nb-avatar nb-avatar-lg">{{ initials() }}</span>
+                <span class="nb-avatar nb-avatar-lg">@if (auth.photo(); as p) { <img [src]="p" alt="" /> } @else { {{ initials() }} }</span>
                 <div>
                   <strong>{{ auth.name() }}</strong>
                   <span>{{ auth.email() }}</span>
@@ -95,7 +97,7 @@
   <!-- Who is using the app, or an invitation to sign in -->
   @if (auth.isLoggedIn()) {
     <div class="nb-who nb-drawer-who">
-      <span class="nb-avatar nb-avatar-lg">{{ initials() }}</span>
+      <span class="nb-avatar nb-avatar-lg">@if (auth.photo(); as p) { <img [src]="p" alt="" /> } @else { {{ initials() }} }</span>
       <div>
         <strong>{{ auth.name() }}</strong>
         <span>{{ auth.email() }}</span>
